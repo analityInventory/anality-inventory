@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gestión de Entregas</title>
+    <!-- Incluimos Tailwind CSS para un diseño moderno y adaptable -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Usamos el set de iconos de Phosphor Icons para una mejor UI -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* Agregamos padding-bottom al body para que el último elemento no quede oculto por la barra de navegación */
+        body {
+            padding-bottom: 90px;
+        }
+        /* Estilo para una transición suave al eliminar elementos */
+        .card-exit {
+            transition: opacity 0.5s, transform 0.5s;
+        }
+        .card-exit-active {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        /* Estilo para el spinner de carga */
+        .loader {
+            border-top-color: #3b82f6; /* Azul más intenso */
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Estilos para la barra de navegación activa */
+        .nav-item.active i, .nav-item.active span {
+            color: #3b82f6; /* Azul */
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans">
+
+    <!-- Encabezado de la Aplicación -->
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-5 py-4 flex justify-between items-center">
+            <h1 id="header-title" class="text-2xl font-bold text-slate-800">Entregas Pendientes</h1>
+            <button id="refreshButton" class="text-slate-600 hover:text-blue-600 transition active:scale-90">
+                <i class="ph ph-arrow-clockwise text-3xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Contenedor principal para la lista de entregas -->
+    <main id="lista-entregas" class="max-w-4xl mx-auto p-4">
+        <!-- Las tarjetas de entrega se insertarán aquí con JavaScript -->
+    </main>
+
+    <!-- Mensaje para cuando no hay entregas en una categoría -->
+    <div id="mensaje-vacio" class="hidden text-center mt-16 px-4">
+        <i id="mensaje-vacio-icono" class="ph ph-package text-6xl text-slate-400"></i>
+        <p id="mensaje-vacio-texto" class="text-slate-500 mt-4 text-lg">No hay entregas en esta sección.</p>
+    </div>
+
+    <!-- Indicador de Carga Global -->
+    <div id="loader-global" class="hidden fixed inset-0 bg-white bg-opacity-75 flex justify-center items-center z-50">
+        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
+    </div>
+    
+    <!-- Barra de Navegación Inferior (Widgets) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-t-md border-t border-slate-200 h-[80px] z-20">
+        <div class="max-w-4xl mx-auto h-full grid grid-cols-3">
+            <button data-vista="Pendiente" class="nav-item flex flex-col items-center justify-center text-slate-500 active">
+                <i class="ph ph-clock-countdown text-3xl"></i>
+                <span class="text-xs font-medium">Pendientes</span>
+            </button>
+            <button data-vista="Entregado" class="nav-item flex flex-col items-center justify-center text-slate-500">
+                <i class="ph ph-check-circle text-3xl"></i>
+                <span class="text-xs font-medium">Entregadas</span>
+            </button>
+            <button data-vista="Cancelado" class="nav-item flex flex-col items-center justify-center text-slate-500">
+                <i class="ph ph-x-circle text-3xl"></i>
+                <span class="text-xs font-medium">Canceladas</span>
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Plantilla para una tarjeta de entrega (sin cambios) -->
+    <template id="tarjeta-entrega-template">
+        <div class="bg-white rounded-lg shadow-md mb-4 overflow-hidden">
+            <div class="p-5">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-sm font-semibold bg-blue-100 text-blue-800 px-3 py-1 rounded-full">ID: <span class="font-bold" data-id></span></span>
+                    <div class="loader-card hidden w-6 h-6 border-4 border-t-4 border-gray-200 rounded-full"></div>
+                </div>
+                <h2 class="text-xl font-bold text-slate-800" data-producto></h2>
+                <p class="text-slate-600 mb-4" data-cliente></p>
+                <div class="border-t border-slate-200 pt-4">
+                    <a data-direccion-link href="#" target="_blank" class="flex items-center gap-3 group">
+                        <i class="ph ph-map-pin text-2xl text-slate-500 group-hover:text-blue-600 transition"></i>
+                        <div>
+                            <p class="font-semibold text-slate-700 group-hover:text-blue-600 transition" data-direccion></p>
+                            <span class="text-sm text-blue-500">Tocar para abrir en el mapa</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 btns-container">
+                <button data-accion="Cancelado" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 transition flex items-center justify-center gap-2">
+                    <i class="ph-fill ph-x-circle text-xl"></i>
+                    Cancelar
+                </button>
+                <button data-accion="Entregado" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 transition flex items-center justify-center gap-2">
+                    <i class="ph-fill ph-check-circle text-xl"></i>
+                    Entregado
+                </button>
+            </div>
+        </div>
+    </template>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- CONFIGURACIÓN Y SOLUCIÓN DE ERRORES ---
+    const API_BASE_URL = 'AnalitycInventory.pythonanywhere.com'; 
+
+    /****************************************************************************************
+     * ¡ATENCIÓN! Causa Común de Errores: "Failed to fetch" (Error al Cargar)
+     * * Este error generalmente ocurre por una de dos razones:
+     * * 1. URL INCORRECTA: No has cambiado la `API_BASE_URL` de arriba.
+     * Reemplaza `'http://tu-usuario.pythonanywhere.com'` por la URL real de tu API.
+     * * 2. ERROR DE CORS (MUY PROBABLE): Tu API en PythonAnywhere no permite que esta página
+     * web se conecte. Para solucionarlo, debes añadir el siguiente código a tu archivo 
+     * `main.py` en PythonAnywhere, justo después de la línea `app = FastAPI(...)`:
+     * * ```python
+     * from fastapi.middleware.cors import CORSMiddleware
+     *
+     * origins = ["*"]  # Permite todas las conexiones (para empezar)
+     *
+     * app.add_middleware(
+     * CORSMiddleware,
+     * allow_origins=origins,
+     * allow_credentials=True,
+     * allow_methods=["*"],
+     * allow_headers=["*"],
+     * )
+     * ```
+     * Después de añadir este código, guarda el archivo y **recarga tu aplicación web** * desde la pestaña "Web" en PythonAnywhere.
+     ****************************************************************************************/
+
+    // --- Validación Inicial de la URL ---
+    if (API_BASE_URL.includes('tu-usuario')) {
+        alert('¡Configuración Requerida!\n\nPor favor, abre este archivo HTML y cambia la variable "API_BASE_URL" por la URL real de tu API en PythonAnywhere.');
+        return; // Detener la ejecución si la URL no está configurada
+    }
+
+    // --- Elementos del DOM ---
+    const listaEntregasContainer = document.getElementById('lista-entregas');
+    const tarjetaTemplate = document.getElementById('tarjeta-entrega-template');
+    const loaderGlobal = document.getElementById('loader-global');
+    const mensajeVacio = document.getElementById('mensaje-vacio');
+    const refreshButton = document.getElementById('refreshButton');
+    const navItems = document.querySelectorAll('.nav-item');
+    const headerTitle = document.getElementById('header-title');
+    const mensajeVacioIcono = document.getElementById('mensaje-vacio-icono');
+    const mensajeVacioTexto = document.getElementById('mensaje-vacio-texto');
+
+    // --- Estado de la Aplicación ---
+    let allEntregas = []; // Caché para guardar todas las entregas
+    let currentVista = 'Pendiente'; // La vista activa por defecto
+
+    // --- Lógica de la API ---
+    async function fetchAllEntregas() {
+        showLoader(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/entregas`);
+            if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
+            allEntregas = await response.json();
+            renderVista(currentVista);
+        } catch (error) {
+            console.error('Error fatal al cargar las entregas:', error);
+            alert('ERROR AL CONECTAR CON LA API.\n\nPosibles causas:\n1. La URL de la API es incorrecta.\n2. El servidor de la API no está funcionando.\n3. Error de CORS. Revisa el comentario de configuración en el código para la solución.\n\nDetalle técnico: ' + error.message);
+        } finally {
+            showLoader(false);
+        }
+    }
+
+    // --- Lógica de Renderizado ---
+    function renderVista(vista) {
+        listaEntregasContainer.innerHTML = ''; 
+        mensajeVacio.classList.add('hidden');
+
+        const entregasFiltradas = allEntregas.filter(entrega => entrega.estado === vista);
+
+        headerTitle.textContent = `Entregas ${vista}s`;
+        if (vista === "Pendiente") headerTitle.textContent = `Entregas ${vista}s`;
+
+        if (entregasFiltradas.length === 0) {
+            mostrarMensajeVacio(vista);
+        } else {
+            entregasFiltradas.forEach(crearTarjetaEntrega);
+        }
+    }
+    
+    function crearTarjetaEntrega(entrega) {
+        const card = tarjetaTemplate.content.cloneNode(true).firstElementChild;
+
+        card.querySelector('[data-id]').textContent = entrega.id;
+        card.querySelector('[data-producto]').textContent = entrega.producto;
+        card.querySelector('[data-cliente]').textContent = `Cliente: ${entrega.cliente}`;
+        card.querySelector('[data-direccion]').textContent = entrega.direccion;
+        card.querySelector('[data-direccion-link]').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.direccion)}`;
+
+        if (entrega.estado !== 'Pendiente') {
+            card.querySelector('.btns-container').remove();
+        } else {
+            card.querySelectorAll('[data-accion]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const nuevoEstado = button.dataset.accion;
+                    actualizarEstado(entrega.id, nuevoEstado, card);
+                });
+            });
+        }
+        listaEntregasContainer.appendChild(card);
+    }
+    
+    function mostrarMensajeVacio(vista) {
+        const iconos = {
+            Pendiente: 'ph-package',
+            Entregado: 'ph-check-square-offset',
+            Cancelado: 'ph-smiley-sad'
+        };
+        mensajeVacioIcono.className = `ph ${iconos[vista]} text-6xl text-slate-400`;
+        mensajeVacioTexto.textContent = `No hay entregas en la sección de "${vista}s".`;
+        mensajeVacio.classList.remove('hidden');
+    }
+
+    async function actualizarEstado(id, nuevoEstado, card) {
+        const loaderCard = card.querySelector('.loader-card');
+        const buttons = card.querySelectorAll('button');
+        
+        loaderCard.classList.remove('hidden');
+        buttons.forEach(b => b.disabled = true);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/entregas/${id}/estado`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(nuevoEstado)
+            });
+
+            if (!response.ok) throw new Error('La API rechazó la actualización.');
+            
+            card.classList.add('card-exit', 'card-exit-active');
+            card.addEventListener('transitionend', () => {
+                 fetchAllEntregas(); 
+            });
+
+        } catch (error) {
+            console.error('Error al actualizar:', error);
+            alert(`No se pudo actualizar la entrega ${id}. Inténtalo de nuevo.`);
+            loaderCard.classList.add('hidden');
+            buttons.forEach(b => b.disabled = false);
+        }
+    }
+    
+    function showLoader(visible) {
+        loaderGlobal.classList.toggle('hidden', !visible);
+    }
+
+    // --- Event Listeners ---
+    refreshButton.addEventListener('click', fetchAllEntregas);
+
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            currentVista = item.dataset.vista;
+            navItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            renderVista(currentVista);
+        });
+    });
+
+    // Carga inicial
+    fetchAllEntregas();
+});
+</script>
+</body>
+</html>

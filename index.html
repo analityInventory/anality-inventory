@@ -158,25 +158,34 @@ document.addEventListener('DOMContentLoaded', () => {
         card.querySelector('[data-telefono]').textContent = entrega.customer_phone || 'Teléfono no disponible';
         card.querySelector('[data-direccion-link]').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.customer_address)}`;
         
-        // --- Lógica de Botones Dinámica CORREGIDA ---
+        // --- Lógica de Botones Dinámica REFORZADA ---
         const btnsContainer = card.querySelector('.btns-container .grid');
         const btnEnCamino = card.querySelector('[data-accion="En Camino"]');
         const btnConfirmar = card.querySelector('[data-accion="Confirmar"]');
         const btnCancelar = card.querySelector('[data-accion="Cancelar"]');
         
-        const estadoActual = entrega.status.toLowerCase();
+        // 1. Ocultar todos los botones primero para evitar estados residuales
+        btnEnCamino.style.display = 'none';
+        btnConfirmar.style.display = 'none';
+        btnCancelar.style.display = 'none';
 
+        // 2. Usar trim() para eliminar espacios en blanco accidentales en el estado
+        const estadoActual = entrega.status ? entrega.status.trim().toLowerCase() : '';
+
+        // 3. Mostrar solo los botones correctos según el estado
         if (estadoActual === 'pendiente') {
+            btnsContainer.classList.remove('grid-cols-1');
             btnsContainer.classList.add('grid-cols-2');
             btnEnCamino.style.display = 'flex';
             btnCancelar.style.display = 'flex';
         } else if (estadoActual === 'en camino') {
+            btnsContainer.classList.remove('grid-cols-1');
             btnsContainer.classList.add('grid-cols-2');
             btnConfirmar.style.display = 'flex';
-            btnCancelar.style.display = 'flex'; 
+            btnCancelar.style.display = 'flex';
         } else {
             // Si el estado es "Entregado" o "Cancelado", no mostrar ningún botón.
-            card.querySelector('.btns-container').remove(); 
+            card.querySelector('.btns-container').remove();
         }
 
         // --- Lógica de Eventos ---

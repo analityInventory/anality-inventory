@@ -124,15 +124,15 @@
         <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
     </div>
 
-    <!-- NUEVO: Banner para solicitar permiso de notificaciones -->
+    <!-- Banner para solicitar permiso de notificaciones -->
     <div id="notification-permission-banner" class="hidden fixed bottom-[90px] left-0 right-0 bg-slate-800 text-white p-4 z-20 flex justify-between items-center">
         <span>¿Quieres recibir notificaciones de nuevos pedidos?</span>
         <button id="enable-notifications-btn" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg font-semibold">Activar</button>
     </div>
     
-    <!-- NUEVO: Modal para mostrar nuevo pedido y para confirmaciones -->
-    <div id="modal-container" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 modal-overlay">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center modal-container">
+    <!-- Modal para mostrar nuevo pedido y para confirmaciones -->
+    <div id="modal-container" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center modal-container opacity-0 scale-95">
             <div id="modal-content">
                 <!-- El contenido se inyectará dinámicamente -->
             </div>
@@ -186,6 +186,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- Selectores de Elementos ---
+    // IMPORTANTE: Asegúrate de que esta URL apunte a tu backend desplegado.
     const API_BASE_URL = 'https://mi-primera-app.fly.dev'; 
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
@@ -200,7 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshButton = document.getElementById('refreshButton');
     const headerTitle = document.getElementById('header-title');
     
-    // --- NUEVO: Selectores para Notificaciones y Modales ---
     const notificationPermissionBanner = document.getElementById('notification-permission-banner');
     const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
     const modalContainer = document.getElementById('modal-container');
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentVista = 'Pendiente';
     let initialFetchDone = false;
     let knownPendingIds = new Set();
-    let notificationSynth; // Sintetizador para el sonido
+    let notificationSynth; 
 
     // --- Lógica de Notificaciones ---
     function setupNotifications() {
@@ -219,11 +219,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Este navegador no soporta notificaciones de escritorio.");
             return;
         }
-
         if (Notification.permission === 'default') {
             notificationPermissionBanner.classList.remove('hidden');
         }
-
         enableNotificationsBtn.addEventListener('click', () => {
             Notification.requestPermission().then(permission => {
                 if (permission === 'granted') {
@@ -236,16 +234,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function playNotificationSound() {
         if (typeof Tone !== 'undefined') {
-            // Asegurarse de que el contexto de audio se inicie con un gesto del usuario
             Tone.start();
-            // Crear el sintetizador si no existe
             if (!notificationSynth) {
                 notificationSynth = new Tone.Synth({
                     oscillator: { type: 'sine' },
                     envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
                 }).toDestination();
             }
-            // Tocar una secuencia de notas
             notificationSynth.triggerAttackRelease('C5', '8n', Tone.now());
             notificationSynth.triggerAttackRelease('G5', '8n', Tone.now() + 0.2);
         }
@@ -253,13 +248,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showNotification(title, body, orderId) {
         if (Notification.permission !== 'granted') return;
-        
         playNotificationSound();
-
         const options = {
             body: body,
-            icon: 'https://placehold.co/192x192/3b82f6/ffffff?text=P', // Un ícono genérico
-            tag: `pedido-${orderId}` // Agrupa notificaciones del mismo pedido
+            icon: 'https://placehold.co/192x192/3b82f6/ffffff?text=P',
+            tag: `pedido-${orderId}`
         };
         new Notification(title, options);
     }
@@ -268,7 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function showModal(htmlContent) {
         modalContent.innerHTML = htmlContent;
         modalContainer.classList.remove('hidden');
-        // Forzar reflow para la transición
         modalContainer.offsetHeight;
         modalContainer.classList.remove('opacity-0');
         modalContainer.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
@@ -321,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function showLogin() {
         appContainer.classList.add('hidden');
         loginContainer.classList.remove('hidden');
-        // Detener el polling al cerrar sesión
         if (window.orderPollingInterval) {
             clearInterval(window.orderPollingInterval);
         }
@@ -331,7 +322,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (token) {
         showApp();
         fetchAllEntregas();
-        // Iniciar polling para nuevos pedidos cada 30 segundos
         window.orderPollingInterval = setInterval(fetchAllEntregas, 30000);
     } else {
         showLogin();
@@ -367,7 +357,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showApp();
             await fetchAllEntregas();
-            // Iniciar polling después de iniciar sesión
             window.orderPollingInterval = setInterval(fetchAllEntregas, 30000);
 
         } catch (error) {
@@ -395,44 +384,44 @@ document.addEventListener('DOMContentLoaded', () => {
         return response;
     }
 
+    // --- FUNCIÓN CORREGIDA ---
     async function fetchAllEntregas() {
-        // No mostrar el loader global para el polling en segundo plano
-        if (!initialFetchDone) showLoader(true);
+        const isFirstRun = !initialFetchDone;
+        if (isFirstRun) {
+            showLoader(true);
+        }
         try {
             const response = await fetchApi(`${API_BASE_URL}/entregas`);
             if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
             allEntregas = await response.json();
             
-            // --- NUEVO: Lógica para detectar nuevos pedidos ---
             checkForNewOrders();
-
             renderVista(currentVista);
         } catch (error) {
             console.error('ERROR al cargar los pedidos:', error);
         } finally {
-            if (!initialFetchDone) showLoader(false);
+            if (isFirstRun) {
+                showLoader(false);
+                initialFetchDone = true;
+            }
         }
     }
 
+    // --- FUNCIÓN CORREGIDA ---
     function checkForNewOrders() {
         const currentPendingOrders = allEntregas.filter(e => e.status && e.status.toLowerCase() === 'pendiente');
         
         if (!initialFetchDone) {
-            // En la primera carga, solo guardamos los IDs existentes
             knownPendingIds = new Set(currentPendingOrders.map(o => o.id));
-            initialFetchDone = true;
         } else {
-            // En cargas posteriores, buscamos nuevos IDs
             currentPendingOrders.forEach(order => {
                 if (!knownPendingIds.has(order.id)) {
-                    // ¡Nuevo pedido encontrado!
                     showNotification(`Nuevo Pedido #${order.id}`, `Cliente: ${order.customer_name}`, order.id);
                     showNewOrderModal(order);
-                    knownPendingIds.add(order.id); // Lo añadimos para no notificar de nuevo
+                    knownPendingIds.add(order.id);
                 }
             });
         }
-        // Opcional: limpiar IDs que ya no están pendientes para mantener el Set limpio
         const currentPendingIdsSet = new Set(currentPendingOrders.map(o => o.id));
         knownPendingIds = new Set([...knownPendingIds].filter(id => currentPendingIdsSet.has(id)));
     }
@@ -531,7 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } catch (error) {
                 console.error(`Error al ejecutar la acción '${accion}':`, error);
-                alert(`No se pudo completar la acción: ${error.message}`); // Se puede reemplazar por un modal de error
+                alert(`No se pudo completar la acción: ${error.message}`);
                 loaderCard.classList.add('hidden');
                 buttons.forEach(b => b.disabled = false);
             }

@@ -7,8 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <!-- Tone.js para generar sonidos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
-        body { background-color: #f1f5f9; }
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
         #app-container { padding-bottom: 90px; }
         .card-exit { transition: opacity 0.5s, transform 0.5s; }
         .card-exit-active { opacity: 0; transform: scale(0.9); }
@@ -16,7 +18,18 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .nav-item.active i, .nav-item.active span { color: #3b82f6; }
         .btn-accion { display: none; }
+
+        /* --- NUEVO: Estilos para el Modal de Notificación y Confirmación --- */
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+        .modal-container {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
     </style>
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body class="font-sans">
@@ -110,7 +123,22 @@
     <div id="loader-global" class="hidden fixed inset-0 bg-white bg-opacity-75 flex justify-center items-center z-50">
         <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
     </div>
+
+    <!-- NUEVO: Banner para solicitar permiso de notificaciones -->
+    <div id="notification-permission-banner" class="hidden fixed bottom-[90px] left-0 right-0 bg-slate-800 text-white p-4 z-20 flex justify-between items-center">
+        <span>¿Quieres recibir notificaciones de nuevos pedidos?</span>
+        <button id="enable-notifications-btn" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg font-semibold">Activar</button>
+    </div>
     
+    <!-- NUEVO: Modal para mostrar nuevo pedido y para confirmaciones -->
+    <div id="modal-container" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 modal-overlay">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center modal-container">
+            <div id="modal-content">
+                <!-- El contenido se inyectará dinámicamente -->
+            </div>
+        </div>
+    </div>
+
     <!-- Plantilla de Tarjeta -->
     <template id="tarjeta-entrega-template">
         <div class="bg-white rounded-lg shadow-md mb-4 overflow-hidden">
@@ -157,7 +185,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
+    // --- Selectores de Elementos ---
     const API_BASE_URL = 'https://mi-primera-app.fly.dev'; 
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
@@ -172,23 +200,139 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshButton = document.getElementById('refreshButton');
     const headerTitle = document.getElementById('header-title');
     
+    // --- NUEVO: Selectores para Notificaciones y Modales ---
+    const notificationPermissionBanner = document.getElementById('notification-permission-banner');
+    const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
+    const modalContainer = document.getElementById('modal-container');
+    const modalContent = document.getElementById('modal-content');
+
+    // --- Estado de la Aplicación ---
     let allEntregas = []; 
     let currentVista = 'Pendiente';
+    let initialFetchDone = false;
+    let knownPendingIds = new Set();
+    let notificationSynth; // Sintetizador para el sonido
 
+    // --- Lógica de Notificaciones ---
+    function setupNotifications() {
+        if (!('Notification' in window)) {
+            console.log("Este navegador no soporta notificaciones de escritorio.");
+            return;
+        }
+
+        if (Notification.permission === 'default') {
+            notificationPermissionBanner.classList.remove('hidden');
+        }
+
+        enableNotificationsBtn.addEventListener('click', () => {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    notificationPermissionBanner.classList.add('hidden');
+                    showNotification('¡Gracias!', 'Ahora recibirás notificaciones de nuevos pedidos.');
+                }
+            });
+        });
+    }
+
+    function playNotificationSound() {
+        if (typeof Tone !== 'undefined') {
+            // Asegurarse de que el contexto de audio se inicie con un gesto del usuario
+            Tone.start();
+            // Crear el sintetizador si no existe
+            if (!notificationSynth) {
+                notificationSynth = new Tone.Synth({
+                    oscillator: { type: 'sine' },
+                    envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
+                }).toDestination();
+            }
+            // Tocar una secuencia de notas
+            notificationSynth.triggerAttackRelease('C5', '8n', Tone.now());
+            notificationSynth.triggerAttackRelease('G5', '8n', Tone.now() + 0.2);
+        }
+    }
+
+    function showNotification(title, body, orderId) {
+        if (Notification.permission !== 'granted') return;
+        
+        playNotificationSound();
+
+        const options = {
+            body: body,
+            icon: 'https://placehold.co/192x192/3b82f6/ffffff?text=P', // Un ícono genérico
+            tag: `pedido-${orderId}` // Agrupa notificaciones del mismo pedido
+        };
+        new Notification(title, options);
+    }
+
+    // --- Lógica de Modales ---
+    function showModal(htmlContent) {
+        modalContent.innerHTML = htmlContent;
+        modalContainer.classList.remove('hidden');
+        // Forzar reflow para la transición
+        modalContainer.offsetHeight;
+        modalContainer.classList.remove('opacity-0');
+        modalContainer.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
+    }
+
+    function hideModal() {
+        modalContainer.classList.add('opacity-0');
+        modalContainer.querySelector('.modal-container').classList.add('opacity-0', 'scale-95');
+        setTimeout(() => modalContainer.classList.add('hidden'), 300);
+    }
+
+    function showNewOrderModal(order) {
+        const modalHTML = `
+            <i class="ph ph-bell-ringing text-6xl text-blue-500 mb-4"></i>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Nuevo Pedido!</h2>
+            <p class="text-lg text-slate-600 mb-1">Cliente: <span class="font-bold">${order.customer_name}</span></p>
+            <p class="text-lg text-slate-600 mb-4">Total: <span class="font-bold">R$${parseFloat(order.total).toFixed(2)}</span></p>
+            <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">
+                Entendido
+            </button>
+        `;
+        showModal(modalHTML);
+        document.getElementById('close-modal-btn').addEventListener('click', hideModal);
+    }
+
+    function showConfirmationModal(message, onConfirm) {
+        const modalHTML = `
+            <i class="ph ph-warning-circle text-6xl text-yellow-500 mb-4"></i>
+            <h2 class="text-xl font-bold text-slate-800 mb-4">${message}</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <button id="confirm-cancel-btn" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Cancelar</button>
+                <button id="confirm-action-btn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg transition">Confirmar</button>
+            </div>
+        `;
+        showModal(modalHTML);
+        document.getElementById('confirm-cancel-btn').addEventListener('click', hideModal);
+        document.getElementById('confirm-action-btn').addEventListener('click', () => {
+            hideModal();
+            onConfirm();
+        });
+    }
+
+    // --- Lógica Principal de la App ---
     function showApp() {
         loginContainer.classList.add('hidden');
         appContainer.classList.remove('hidden');
+        setupNotifications();
     }
 
     function showLogin() {
         appContainer.classList.add('hidden');
         loginContainer.classList.remove('hidden');
+        // Detener el polling al cerrar sesión
+        if (window.orderPollingInterval) {
+            clearInterval(window.orderPollingInterval);
+        }
     }
 
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     if (token) {
         showApp();
         fetchAllEntregas();
+        // Iniciar polling para nuevos pedidos cada 30 segundos
+        window.orderPollingInterval = setInterval(fetchAllEntregas, 30000);
     } else {
         showLogin();
     }
@@ -199,12 +343,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = document.getElementById('password').value;
         const rememberMe = document.getElementById('remember-me').checked;
         errorMessage.textContent = '';
-
-        // --- PASO 3: OBTENER Y VALIDAR LA RESPUESTA DEL RECAPTCHA ---
         const recaptchaResponse = grecaptcha.getResponse();
         if (recaptchaResponse.length === 0) {
             errorMessage.textContent = 'Por favor, completa el reCAPTCHA.';
-            return; // Detener el envío si no está completo
+            return;
         }
         
         try {
@@ -213,26 +355,20 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('password', password);
             formData.append('g-recaptcha-response', recaptchaResponse);
             
-            const response = await fetch(`${API_BASE_URL}/login`, {
-                method: 'POST',
-                body: formData 
-            });
-
+            const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', body: formData });
             if (!response.ok) {
                 const errorData = await response.json().catch(() => null);
                 throw new Error(errorData?.detail || 'Usuario o contraseña incorrectos.');
             }
-
             const data = await response.json();
             
-            if (rememberMe) {
-                localStorage.setItem('authToken', data.access_token);
-            } else {
-                sessionStorage.setItem('authToken', data.access_token);
-            }
+            if (rememberMe) localStorage.setItem('authToken', data.access_token);
+            else sessionStorage.setItem('authToken', data.access_token);
 
             showApp();
-            fetchAllEntregas();
+            await fetchAllEntregas();
+            // Iniciar polling después de iniciar sesión
+            window.orderPollingInterval = setInterval(fetchAllEntregas, 30000);
 
         } catch (error) {
             errorMessage.textContent = error.message;
@@ -247,18 +383,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getAuthHeaders() {
         const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-        };
+        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` };
     }
 
     async function fetchApi(url, options = {}) {
-        const response = await fetch(url, {
-            ...options,
-            headers: getAuthHeaders()
-        });
-
+        const response = await fetch(url, { ...options, headers: getAuthHeaders() });
         if (response.status === 401 || response.status === 403) {
             showLogin();
             throw new Error('Sesión expirada. Por favor, inicie sesión de nuevo.');
@@ -267,27 +396,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchAllEntregas() {
-        showLoader(true);
+        // No mostrar el loader global para el polling en segundo plano
+        if (!initialFetchDone) showLoader(true);
         try {
             const response = await fetchApi(`${API_BASE_URL}/entregas`);
             if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
             allEntregas = await response.json();
+            
+            // --- NUEVO: Lógica para detectar nuevos pedidos ---
+            checkForNewOrders();
+
             renderVista(currentVista);
         } catch (error) {
-            console.error('ERROR FATAL al cargar los pedidos:', error);
+            console.error('ERROR al cargar los pedidos:', error);
         } finally {
-            showLoader(false);
+            if (!initialFetchDone) showLoader(false);
         }
     }
+
+    function checkForNewOrders() {
+        const currentPendingOrders = allEntregas.filter(e => e.status && e.status.toLowerCase() === 'pendiente');
+        
+        if (!initialFetchDone) {
+            // En la primera carga, solo guardamos los IDs existentes
+            knownPendingIds = new Set(currentPendingOrders.map(o => o.id));
+            initialFetchDone = true;
+        } else {
+            // En cargas posteriores, buscamos nuevos IDs
+            currentPendingOrders.forEach(order => {
+                if (!knownPendingIds.has(order.id)) {
+                    // ¡Nuevo pedido encontrado!
+                    showNotification(`Nuevo Pedido #${order.id}`, `Cliente: ${order.customer_name}`, order.id);
+                    showNewOrderModal(order);
+                    knownPendingIds.add(order.id); // Lo añadimos para no notificar de nuevo
+                }
+            });
+        }
+        // Opcional: limpiar IDs que ya no están pendientes para mantener el Set limpio
+        const currentPendingIdsSet = new Set(currentPendingOrders.map(o => o.id));
+        knownPendingIds = new Set([...knownPendingIds].filter(id => currentPendingIdsSet.has(id)));
+    }
+
 
     function renderVista(vista) {
         listaEntregasContainer.innerHTML = ''; 
         mensajeVacio.classList.add('hidden');
         headerTitle.textContent = `Pedidos ${vista}s`;
         
-        const entregasFiltradas = allEntregas.filter(entrega => 
-            entrega.status && entrega.status.toLowerCase() === vista.toLowerCase()
-        );
+        const entregasFiltradas = allEntregas.filter(entrega => entrega.status && entrega.status.toLowerCase() === vista.toLowerCase());
         
         if (entregasFiltradas.length === 0) {
             mensajeVacio.classList.remove('hidden');
@@ -305,44 +461,25 @@ document.addEventListener('DOMContentLoaded', () => {
         card.querySelector('[data-telefono]').textContent = entrega.customer_phone || 'Teléfono no disponible';
         card.querySelector('[data-direccion-link]').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.customer_address)}`;
         
-        // --- CORRECCIÓN IMPORTANTE ---
         const productosContainer = card.querySelector('[data-productos]');
         productosContainer.innerHTML = '';
-        
         let products = [];
         if (typeof entrega.products === 'string') {
-            try {
-                products = JSON.parse(entrega.products);
-            } catch (e) {
-                console.error("Error al parsear los productos JSON para el pedido ID " + entrega.id, e);
-            }
-        } else {
-            products = entrega.products || [];
-        }
+            try { products = JSON.parse(entrega.products); } catch (e) { console.error("Error al parsear JSON", e); }
+        } else { products = entrega.products || []; }
 
         if (products && products.length > 0) {
-            products.forEach(product => {
-                const li = document.createElement('li');
-                li.textContent = `${product.quantity}x ${product.name}`;
-                productosContainer.appendChild(li);
-            });
-        } else {
-            const li = document.createElement('li');
-            li.textContent = 'No se especificaron productos.';
-            productosContainer.appendChild(li);
-        }
+            products.forEach(p => { const li = document.createElement('li'); li.textContent = `${p.quantity}x ${p.name}`; productosContainer.appendChild(li); });
+        } else { const li = document.createElement('li'); li.textContent = 'No se especificaron productos.'; productosContainer.appendChild(li); }
 
         const btnsContainer = card.querySelector('.btns-container .grid');
         const btnEnCamino = card.querySelector('[data-accion="En Camino"]');
         const btnConfirmar = card.querySelector('[data-accion="Confirmar"]');
         const btnCancelar = card.querySelector('[data-accion="Cancelar"]');
         
-        btnEnCamino.style.display = 'none';
-        btnConfirmar.style.display = 'none';
-        btnCancelar.style.display = 'none';
+        [btnEnCamino, btnConfirmar, btnCancelar].forEach(btn => btn.style.display = 'none');
 
         const estadoActual = entrega.status ? entrega.status.trim().toLowerCase() : '';
-
         if (estadoActual === 'pendiente') {
             btnsContainer.classList.add('grid-cols-2');
             btnEnCamino.style.display = 'flex';
@@ -356,55 +493,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         card.querySelectorAll('[data-accion]').forEach(button => {
-            button.addEventListener('click', () => {
-                handleAction(button.dataset.accion, entrega, card);
-            });
+            button.addEventListener('click', () => handleAction(button.dataset.accion, entrega, card));
         });
         
         listaEntregasContainer.appendChild(card);
     }
 
     async function handleAction(accion, entrega, card) {
-        const loaderCard = card.querySelector('.loader-card');
-        const buttons = card.querySelectorAll('button');
-        loaderCard.classList.remove('hidden');
-        buttons.forEach(b => b.disabled = true);
+        const performAction = async () => {
+            const loaderCard = card.querySelector('.loader-card');
+            const buttons = card.querySelectorAll('button');
+            loaderCard.classList.remove('hidden');
+            buttons.forEach(b => b.disabled = true);
 
-        let endpoint = '';
-        let method = 'POST';
-        let options = { method };
+            let endpoint = '';
+            let method = 'POST';
+            let options = { method };
 
-        try {
-            if (accion === 'En Camino') {
-                endpoint = `${API_BASE_URL}/entregas/${entrega.id}/estado?nuevo_estado=En Camino`;
-                options.method = 'PATCH';
-            } else if (accion === 'Confirmar') {
-                endpoint = `${API_BASE_URL}/orders/${entrega.id}/confirm`;
-            } else if (accion === 'Cancelar') {
-                // Usaremos un modal custom en el futuro, por ahora un confirm
-                if (!confirm(`¿Está seguro de que desea CANCELAR el Pedido #${entrega.id}?`)) {
-                    loaderCard.classList.add('hidden');
-                    buttons.forEach(b => b.disabled = false);
-                    return;
+            try {
+                if (accion === 'En Camino') {
+                    endpoint = `${API_BASE_URL}/entregas/${entrega.id}/estado?nuevo_estado=En Camino`;
+                    options.method = 'PATCH';
+                } else if (accion === 'Confirmar') {
+                    endpoint = `${API_BASE_URL}/orders/${entrega.id}/confirm`;
+                } else if (accion === 'Cancelar') {
+                    endpoint = `${API_BASE_URL}/orders/${entrega.id}/cancel`;
                 }
-                endpoint = `${API_BASE_URL}/orders/${entrega.id}/cancel`;
+
+                const response = await fetchApi(endpoint, options);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ detail: 'Error desconocido.' }));
+                    throw new Error(errorData.detail);
+                }
+
+                card.classList.add('card-exit', 'card-exit-active');
+                card.addEventListener('transitionend', () => fetchAllEntregas());
+
+            } catch (error) {
+                console.error(`Error al ejecutar la acción '${accion}':`, error);
+                alert(`No se pudo completar la acción: ${error.message}`); // Se puede reemplazar por un modal de error
+                loaderCard.classList.add('hidden');
+                buttons.forEach(b => b.disabled = false);
             }
+        };
 
-            const response = await fetchApi(endpoint, options);
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ detail: 'Error desconocido.' }));
-                throw new Error(errorData.detail);
-            }
-
-            card.classList.add('card-exit', 'card-exit-active');
-            card.addEventListener('transitionend', () => fetchAllEntregas());
-
-        } catch (error) {
-            console.error(`Error al ejecutar la acción '${accion}':`, error);
-            alert(`No se pudo completar la acción: ${error.message}`);
-            loaderCard.classList.add('hidden');
-            buttons.forEach(b => b.disabled = false);
+        if (accion === 'Cancelar') {
+            showConfirmationModal(`¿Seguro que quieres CANCELAR el Pedido #${entrega.id}?`, performAction);
+        } else {
+            performAction();
         }
     }
     

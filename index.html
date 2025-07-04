@@ -6,27 +6,75 @@
     <title>Gestión de Pedidos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
-        body { padding-bottom: 90px; background-color: #f1f5f9; }
+        body { background-color: #f1f5f9; }
+        #app-container { padding-bottom: 90px; }
         .card-exit { transition: opacity 0.5s, transform 0.5s; }
         .card-exit-active { opacity: 0; transform: scale(0.9); }
         .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .nav-item.active i, .nav-item.active span { color: #3b82f6; }
-        .btn-accion { display: none; } /* Ocultar botones por defecto */
+        .btn-accion { display: none; }
     </style>
 </head>
 
 <body class="font-sans">
-    
-    <div id="app-container">
+
+    <!-- Contenedor del Login -->
+    <div id="login-container" class="flex items-center justify-center h-screen">
+        <div class="w-full max-w-md bg-white p-8 rounded-lg shadow-md mx-4">
+            <h1 class="text-2xl font-bold mb-6 text-center text-slate-800">Iniciar Sesión</h1>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label class="block text-slate-700 mb-2" for="username">Usuario</label>
+                    <input class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" type="text" id="username" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-slate-700 mb-2" for="password">Contraseña</label>
+                    <input class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" type="password" id="password" required>
+                </div>
+                
+                <div class="mb-6 flex justify-center">
+                    <div class="g-recaptcha" data-sitekey="6LdVrXcrAAAAAC41CuesKaE1vj-xPO9JhCc2iQvU"></div>
+                </div>
+                
+                <div class="flex items-center justify-between mb-6">
+                    <label class="flex items-center text-sm text-slate-600">
+                        <input type="checkbox" id="remember-me" class="form-checkbox h-4 w-4 text-blue-600 rounded">
+                        <span class="ml-2">Recordar usuario</span>
+                    </label>
+                </div>
+                <button class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition" type="submit">
+                    Entrar
+                </button>
+                <p id="error-message" class="text-red-500 text-sm mt-4 text-center h-4"></p>
+            </form>
+             <div class="text-center mt-6">
+                <p class="text-slate-600">
+                    ¿No tienes una cuenta?
+                    <a href="register.html" class="font-semibold text-blue-500 hover:underline">
+                        Regístrate aquí
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor de la App Principal (inicialmente oculto) -->
+    <div id="app-container" class="hidden">
         <!-- Encabezado -->
         <header class="bg-white shadow-md sticky top-0 z-10">
             <div class="max-w-4xl mx-auto px-5 py-4 flex justify-between items-center">
                 <h1 id="header-title" class="text-2xl font-bold text-slate-800">Pedidos Pendientes</h1>
-                <button id="refreshButton" class="text-slate-600 hover:text-blue-600 transition active:scale-90">
-                    <i class="ph ph-arrow-clockwise text-3xl"></i>
-                </button>
+                <div>
+                    <button id="refreshButton" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4">
+                        <i class="ph ph-arrow-clockwise text-3xl"></i>
+                    </button>
+                    <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90">
+                        <i class="ph ph-sign-out text-3xl"></i>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -72,7 +120,11 @@
                     <div class="loader-card hidden w-6 h-6 border-4 border-t-4 border-gray-200 rounded-full animate-spin"></div>
                 </div>
                 <h2 class="text-xl font-bold text-slate-800" data-cliente></h2> 
-                <p class="text-slate-600 mb-4" data-total></p>
+                <p class="text-slate-600" data-total></p>
+                <div class="my-4">
+                    <p class="font-semibold text-slate-700 mb-2">Productos:</p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-600" data-productos></ul>
+                </div>
                 <div class="border-t border-slate-200 pt-4 space-y-3">
                     <a data-direccion-link href="#" target="_blank" class="flex items-center gap-3 group">
                         <i class="ph ph-map-pin text-2xl text-slate-500 group-hover:text-blue-600 transition"></i>
@@ -93,7 +145,7 @@
                         <i class="ph-fill ph-truck text-xl"></i>Marcar En Camino
                     </button>
                     <button data-accion="Confirmar" class="btn-accion bg-green-500 hover:bg-green-600 text-white font-bold py-3 transition flex items-center justify-center gap-2">
-                        <i class="ph-fill ph-check-circle text-xl"></i>Confirmar Entrega (Venta)
+                        <i class="ph-fill ph-check-circle text-xl"></i>Confirmar Entrega
                     </button>
                     <button data-accion="Cancelar" class="btn-accion bg-red-500 hover:bg-red-600 text-white font-bold py-3 transition flex items-center justify-center gap-2">
                         <i class="ph-fill ph-x-circle text-xl"></i>Cancelar Pedido
@@ -106,8 +158,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Asegúrate de que esta URL apunte a tu API en Fly.io
     const API_BASE_URL = 'https://mi-primera-app.fly.dev'; 
+    const loginContainer = document.getElementById('login-container');
+    const appContainer = document.getElementById('app-container');
+    const loginForm = document.getElementById('login-form');
+    const errorMessage = document.getElementById('error-message');
+    const logoutButton = document.getElementById('logoutButton');
     const listaEntregasContainer = document.getElementById('lista-entregas');
     const tarjetaTemplate = document.getElementById('tarjeta-entrega-template');
     const loaderGlobal = document.getElementById('loader-global');
@@ -115,19 +171,110 @@ document.addEventListener('DOMContentLoaded', () => {
     const navItems = document.querySelectorAll('.nav-item');
     const refreshButton = document.getElementById('refreshButton');
     const headerTitle = document.getElementById('header-title');
+    
     let allEntregas = []; 
     let currentVista = 'Pendiente';
+
+    function showApp() {
+        loginContainer.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+    }
+
+    function showLogin() {
+        appContainer.classList.add('hidden');
+        loginContainer.classList.remove('hidden');
+    }
+
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (token) {
+        showApp();
+        fetchAllEntregas();
+    } else {
+        showLogin();
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const rememberMe = document.getElementById('remember-me').checked;
+        errorMessage.textContent = '';
+
+        // --- PASO 3: OBTENER Y VALIDAR LA RESPUESTA DEL RECAPTCHA ---
+        const recaptchaResponse = grecaptcha.getResponse();
+        if (recaptchaResponse.length === 0) {
+            errorMessage.textContent = 'Por favor, completa el reCAPTCHA.';
+            return; // Detener el envío si no está completo
+        }
+        
+        try {
+            const formData = new URLSearchParams();
+            formData.append('username', username);
+            formData.append('password', password);
+            formData.append('g-recaptcha-response', recaptchaResponse);
+            
+            const response = await fetch(`${API_BASE_URL}/login`, {
+                method: 'POST',
+                body: formData 
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.detail || 'Usuario o contraseña incorrectos.');
+            }
+
+            const data = await response.json();
+            
+            if (rememberMe) {
+                localStorage.setItem('authToken', data.access_token);
+            } else {
+                sessionStorage.setItem('authToken', data.access_token);
+            }
+
+            showApp();
+            fetchAllEntregas();
+
+        } catch (error) {
+            errorMessage.textContent = error.message;
+        }
+    });
+
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
+        showLogin();
+    });
+
+    function getAuthHeaders() {
+        const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+        };
+    }
+
+    async function fetchApi(url, options = {}) {
+        const response = await fetch(url, {
+            ...options,
+            headers: getAuthHeaders()
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            showLogin();
+            throw new Error('Sesión expirada. Por favor, inicie sesión de nuevo.');
+        }
+        return response;
+    }
 
     async function fetchAllEntregas() {
         showLoader(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/entregas`);
+            const response = await fetchApi(`${API_BASE_URL}/entregas`);
             if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
             allEntregas = await response.json();
             renderVista(currentVista);
         } catch (error) {
             console.error('ERROR FATAL al cargar los pedidos:', error);
-            alert('ERROR AL CONECTAR CON LA API. Revisa la consola del desarrollador (F12) para más detalles.');
         } finally {
             showLoader(false);
         }
@@ -158,37 +305,56 @@ document.addEventListener('DOMContentLoaded', () => {
         card.querySelector('[data-telefono]').textContent = entrega.customer_phone || 'Teléfono no disponible';
         card.querySelector('[data-direccion-link]').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.customer_address)}`;
         
-        // --- Lógica de Botones Dinámica REFORZADA ---
+        // --- CORRECCIÓN IMPORTANTE ---
+        const productosContainer = card.querySelector('[data-productos]');
+        productosContainer.innerHTML = '';
+        
+        let products = [];
+        if (typeof entrega.products === 'string') {
+            try {
+                products = JSON.parse(entrega.products);
+            } catch (e) {
+                console.error("Error al parsear los productos JSON para el pedido ID " + entrega.id, e);
+            }
+        } else {
+            products = entrega.products || [];
+        }
+
+        if (products && products.length > 0) {
+            products.forEach(product => {
+                const li = document.createElement('li');
+                li.textContent = `${product.quantity}x ${product.name}`;
+                productosContainer.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.textContent = 'No se especificaron productos.';
+            productosContainer.appendChild(li);
+        }
+
         const btnsContainer = card.querySelector('.btns-container .grid');
         const btnEnCamino = card.querySelector('[data-accion="En Camino"]');
         const btnConfirmar = card.querySelector('[data-accion="Confirmar"]');
         const btnCancelar = card.querySelector('[data-accion="Cancelar"]');
         
-        // 1. Ocultar todos los botones primero para evitar estados residuales
         btnEnCamino.style.display = 'none';
         btnConfirmar.style.display = 'none';
         btnCancelar.style.display = 'none';
 
-        // 2. Usar trim() para eliminar espacios en blanco accidentales en el estado
         const estadoActual = entrega.status ? entrega.status.trim().toLowerCase() : '';
 
-        // 3. Mostrar solo los botones correctos según el estado
         if (estadoActual === 'pendiente') {
-            btnsContainer.classList.remove('grid-cols-1');
             btnsContainer.classList.add('grid-cols-2');
             btnEnCamino.style.display = 'flex';
             btnCancelar.style.display = 'flex';
         } else if (estadoActual === 'en camino') {
-            btnsContainer.classList.remove('grid-cols-1');
             btnsContainer.classList.add('grid-cols-2');
             btnConfirmar.style.display = 'flex';
             btnCancelar.style.display = 'flex';
         } else {
-            // Si el estado es "Entregado" o "Cancelado", no mostrar ningún botón.
             card.querySelector('.btns-container').remove();
         }
 
-        // --- Lógica de Eventos ---
         card.querySelectorAll('[data-accion]').forEach(button => {
             button.addEventListener('click', () => {
                 handleAction(button.dataset.accion, entrega, card);
@@ -206,16 +372,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let endpoint = '';
         let method = 'POST';
+        let options = { method };
 
         try {
             if (accion === 'En Camino') {
                 endpoint = `${API_BASE_URL}/entregas/${entrega.id}/estado?nuevo_estado=En Camino`;
-                method = 'PATCH';
+                options.method = 'PATCH';
             } else if (accion === 'Confirmar') {
                 endpoint = `${API_BASE_URL}/orders/${entrega.id}/confirm`;
             } else if (accion === 'Cancelar') {
-                const confirmacion = confirm(`¿Está seguro de que desea CANCELAR el Pedido #${entrega.id}?\n\nEsta acción devolverá los productos al stock.`);
-                if (!confirmacion) {
+                // Usaremos un modal custom en el futuro, por ahora un confirm
+                if (!confirm(`¿Está seguro de que desea CANCELAR el Pedido #${entrega.id}?`)) {
                     loaderCard.classList.add('hidden');
                     buttons.forEach(b => b.disabled = false);
                     return;
@@ -223,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 endpoint = `${API_BASE_URL}/orders/${entrega.id}/cancel`;
             }
 
-            const response = await fetch(endpoint, { method: method });
+            const response = await fetchApi(endpoint, options);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ detail: 'Error desconocido.' }));
@@ -255,8 +422,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderVista(currentVista);
         });
     });
-
-    fetchAllEntregas();
 });
 </script>
 </body>

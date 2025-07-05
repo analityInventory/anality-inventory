@@ -539,11 +539,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // --- DEPURACIÓN: Muestra si los botones se encuentran ---
         console.log(`Pedido ID: ${entrega.id}`);
-        console.log('btnsContainer:', btnsContainer); // Added for debugging
+        console.log('btnsContainer:', btnsContainer); 
         console.log('btnEnviado:', btnEnviado);
         console.log('btnEntregado:', btnEntregado);
         console.log('btnCancelar:', btnCancelar);
-        console.log('Card outerHTML:', card.outerHTML); // DEBUG: Log the full HTML of the cloned card
+        console.log('Card outerHTML:', card.outerHTML); 
 
         // Oculta todos los botones inicialmente (con verificación de nulidad)
         [btnEnviado, btnEntregado, btnCancelar].forEach(btn => {
@@ -621,7 +621,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function sendStatusUpdate(orderId, statusToSend, cardElement, loaderElement, buttonElements) {
             try {
-                const payload = { new_status: statusToSend };
+                // CORRECCIÓN CLAVE: Cambiar 'new_status' a 'status' para que coincida con el backend
+                const payload = { status: statusToSend }; 
                 console.log(`Enviando actualización de estado para Pedido #${orderId}:`, payload); 
                 
                 const response = await fetchApi(`${API_BASE_URL}/orders/${orderId}/status`, {

@@ -83,7 +83,8 @@
                 <div>
                     <a href="ventas.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Nueva Venta">
                         <i class="ph ph-storefront text-3xl"></i>
-                    </a> <button id="refreshButton" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4">
+                    </a>
+                    <button id="refreshButton" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4">
                         <i class="ph ph-arrow-clockwise text-3xl"></i>
                     </button>
                     <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90">
@@ -189,7 +190,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Selectores de Elementos ---
     // IMPORTANTE: Asegúrate de que esta URL apunte a tu backend desplegado.
-    const API_BASE_URL = 'https://mi-primera-app.fly.dev'; 
+    const API_BASE_URL = 'https://mi-primera-app.fly.dev'; // <--- URL de tu API desplegada
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     const loginForm = document.getElementById('login-form');
@@ -345,9 +346,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new URLSearchParams();
             formData.append('username', username);
             formData.append('password', password);
-            formData.append('g-recaptcha-response', recaptchaResponse);
+            // formData.append('g-recaptcha-response', recaptchaResponse); // <--- Línea eliminada para el endpoint /token
             
-            const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', body: formData });
+            // <--- CAMBIO CLAVE: Apuntar al endpoint /token
+            const response = await fetch(`${API_BASE_URL}/token`, { 
+                method: 'POST', 
+                body: formData 
+                // No es necesario especificar 'Content-Type' aquí para URLSearchParams,
+                // ya que 'fetch' lo establece automáticamente a 'application/x-www-form-urlencoded'
+                // cuando el 'body' es una instancia de URLSearchParams, que es lo que espera /token.
+            });
             if (!response.ok) {
                 const errorData = await response.json().catch(() => null);
                 throw new Error(errorData?.detail || 'Usuario o contraseña incorrectos.');
@@ -393,7 +401,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showLoader(true);
         }
         try {
-            const response = await fetchApi(`${API_BASE_URL}/deliveries`);
+            // Asegúrate de que este endpoint exista en tu main.py y esté protegido
+            const response = await fetchApi(`${API_BASE_URL}/deliveries`); 
             if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
             allEntregas = await response.json();
             
@@ -503,8 +512,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 if (accion === 'En Camino') {
-                    endpoint = `${API_BASE_URL}/entregas/${entrega.id}/estado?nuevo_estado=En Camino`;
-                    options.method = 'PATCH';
+                    // Endpoint corregido para coincidir con main.py: PUT /deliveries/{delivery_id}/status
+                    endpoint = `${API_BASE_URL}/deliveries/${entrega.id}/status`;
+                    options.method = 'PUT'; // Cambiado a PUT
+                    options.body = JSON.stringify({ status: 'En Camino' }); // Cuerpo JSON
+                    options.headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' }; // Asegurar Content-Type
                 } else if (accion === 'Confirmar') {
                     endpoint = `${API_BASE_URL}/orders/${entrega.id}/confirm`;
                 } else if (accion === 'Cancelar') {

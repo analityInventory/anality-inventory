@@ -393,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showLoader(true);
         }
         try {
-            const response = await fetchApi(`${API_BASE_URL}/entregas`);
+            const response = await fetchApi(`${API_BASE_URL}/deliveries`);
             if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
             allEntregas = await response.json();
             

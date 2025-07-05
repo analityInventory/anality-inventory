@@ -313,33 +313,47 @@ document.addEventListener('DOMContentLoaded', () => {
         showLogin();
     }
 
-    loginForm.addEventListener('submit', async (e) => {
+     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         const rememberMe = document.getElementById('remember-me').checked;
         errorMessage.textContent = '';
         const recaptchaResponse = grecaptcha.getResponse();
+        
         if (recaptchaResponse.length === 0) {
             errorMessage.textContent = 'Por favor, completa el reCAPTCHA.';
             return;
         }
         
         try {
+            // CAMBIO PRINCIPAL: Usar /token en lugar de /login
             const formData = new URLSearchParams();
             formData.append('username', username);
             formData.append('password', password);
-            formData.append('g-recaptcha-response', recaptchaResponse);
+            formData.append('grant_type', 'password');  // Necesario para el flujo OAuth2
+            formData.append('scope', '')  // Puedes dejarlo vacío o definir scopes
             
-            const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', body: formData });
+            const response = await fetch(`${API_BASE_URL}/token`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: formData
+            });
+            
             if (!response.ok) {
                 const errorData = await response.json().catch(() => null);
                 throw new Error(errorData?.detail || 'Usuario o contraseña incorrectos.');
             }
+            
             const data = await response.json();
             
-            if (rememberMe) localStorage.setItem('authToken', data.access_token);
-            else sessionStorage.setItem('authToken', data.access_token);
+            if (rememberMe) {
+                localStorage.setItem('authToken', data.access_token);
+            } else {
+                sessionStorage.setItem('authToken', data.access_token);
+            }
 
             showApp();
             await fetchAllEntregas();
@@ -347,6 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             errorMessage.textContent = error.message;
+            console.error('Error en login:', error);
         }
     });
 

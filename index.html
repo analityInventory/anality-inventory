@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.querySelector('[data-direccion]').textContent = entrega.customer_address || 'Dirección no disponible';
         card.querySelector('[data-telefono]').textContent = entrega.customer_phone || 'Teléfono no disponible';
         // CAMBIO: Corrección de URL de Google Maps y uso de template string
-        card.querySelector('[data-direccion-link]').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.customer_address)}`;
+        card.querySelector('[data-direccion-link]').href = `https://www.google.com/maps/search/${encodeURIComponent(entrega.customer_address)}`;
         
         const productosContainer = card.querySelector('[data-productos]');
         productosContainer.innerHTML = '';

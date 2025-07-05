@@ -16,7 +16,6 @@
         .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .nav-item.active i, .nav-item.active span { color: #3b82f6; }
-        /* .btn-accion { display: none; } <-- Eliminado, se maneja con flex ahora */
 
         /* --- NUEVO: Estilos para el Modal de Notificación y Confirmación --- */
         .modal-overlay {
@@ -26,7 +25,7 @@
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
     </style>
-     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -61,7 +60,7 @@
                 </button>
                 <p id="error-message" class="text-red-500 text-sm mt-4 text-center h-4"></p>
             </form>
-             <div class="text-center mt-6">
+            <div class="text-center mt-6">
                 <p class="text-slate-600">
                     ¿No tienes una cuenta?
                     <a href="register.html" class="font-semibold text-blue-500 hover:underline">
@@ -125,7 +124,7 @@
     <div id="modal-container" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center modal-container opacity-0 scale-95">
             <div id="modal-content">
-                </div>
+            </div>
         </div>
     </div>
 
@@ -157,7 +156,7 @@
                 </div>
             </div>
             <div class="btns-container">
-                 <div class="grid">
+                <div class="grid">
                     <button data-accion="Enviado" class="btn-accion bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 transition flex items-center justify-center gap-2"> <i class="ph-fill ph-truck text-xl"></i>Marcar Enviado </button>
                     <button data-accion="Entregado" class="btn-accion bg-green-500 hover:bg-green-600 text-white font-bold py-3 transition flex items-center justify-center gap-2"> <i class="ph-fill ph-check-circle text-xl"></i>Marcar Entregado
                     </button>
@@ -208,14 +207,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Notification.permission === 'default') {
             notificationPermissionBanner.classList.remove('hidden');
         }
-        enableNotificationsBtn.addEventListener('click', () => {
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    notificationPermissionBanner.classList.add('hidden');
-                    showNotification('¡Gracias!', 'Ahora recibirás notificaciones de nuevos pedidos.');
-                }
+        if (enableNotificationsBtn) { // Added null check
+            enableNotificationsBtn.addEventListener('click', () => {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        notificationPermissionBanner.classList.add('hidden');
+                        showNotification('¡Gracias!', 'Ahora recibirás notificaciones de nuevos pedidos.');
+                    }
+                });
             });
-        });
+        }
     }
 
     function playNotificationSound() {
@@ -245,16 +246,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Lógica de Modales ---
     function showModal(htmlContent) {
+        if (!modalContent || !modalContainer) { // Added null check
+            console.error('Modal elements not found.');
+            return;
+        }
         modalContent.innerHTML = htmlContent;
         modalContainer.classList.remove('hidden');
         modalContainer.offsetHeight; // Forzar reflow para que la transición funcione
         modalContainer.classList.remove('opacity-0');
-        modalContainer.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
+        const innerModalContainer = modalContainer.querySelector('.modal-container');
+        if (innerModalContainer) { // Added null check
+            innerModalContainer.classList.remove('opacity-0', 'scale-95');
+        }
     }
 
     function hideModal() {
+        if (!modalContainer) return; // Added null check
         modalContainer.classList.add('opacity-0');
-        modalContainer.querySelector('.modal-container').classList.add('opacity-0', 'scale-95');
+        const innerModalContainer = modalContainer.querySelector('.modal-container');
+        if (innerModalContainer) { // Added null check
+            innerModalContainer.classList.add('opacity-0', 'scale-95');
+        }
         setTimeout(() => modalContainer.classList.add('hidden'), 300);
     }
 
@@ -269,7 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </button>
         `;
         showModal(modalHTML);
-        document.getElementById('close-modal-btn').addEventListener('click', hideModal);
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        if (closeModalBtn) { // Added null check
+            closeModalBtn.addEventListener('click', hideModal);
+        }
     }
 
     function showConfirmationModal(message, onConfirm) {
@@ -282,23 +297,29 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         showModal(modalHTML);
-        document.getElementById('confirm-cancel-btn').addEventListener('click', hideModal);
-        document.getElementById('confirm-action-btn').addEventListener('click', () => {
-            hideModal();
-            onConfirm();
-        });
+        const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+        const confirmActionBtn = document.getElementById('confirm-action-btn');
+        if (confirmCancelBtn) { // Added null check
+            confirmCancelBtn.addEventListener('click', hideModal);
+        }
+        if (confirmActionBtn) { // Added null check
+            confirmActionBtn.addEventListener('click', () => {
+                hideModal();
+                onConfirm();
+            });
+        }
     }
 
     // --- Lógica Principal de la App ---
     function showApp() {
-        loginContainer.classList.add('hidden');
-        appContainer.classList.remove('hidden');
+        if (loginContainer) loginContainer.classList.add('hidden');
+        if (appContainer) appContainer.classList.remove('hidden');
         setupNotifications();
     }
 
     function showLogin() {
-        appContainer.classList.add('hidden');
-        loginContainer.classList.remove('hidden');
+        if (appContainer) appContainer.classList.add('hidden');
+        if (loginContainer) loginContainer.classList.remove('hidden');
         if (window.orderPollingInterval) {
             clearInterval(window.orderPollingInterval);
         }
@@ -313,63 +334,66 @@ document.addEventListener('DOMContentLoaded', () => {
         showLogin();
     }
 
-     loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const rememberMe = document.getElementById('remember-me').checked;
-        errorMessage.textContent = '';
-        const recaptchaResponse = grecaptcha.getResponse();
-        
-        if (recaptchaResponse.length === 0) {
-            errorMessage.textContent = 'Por favor, completa el reCAPTCHA.';
-            return;
-        }
-        
-        try {
-            // CAMBIO PRINCIPAL: Usar /token en lugar de /login
-            const formData = new URLSearchParams();
-            formData.append('username', username);
-            formData.append('password', password);
-            formData.append('grant_type', 'password');  // Necesario para el flujo OAuth2
-            formData.append('scope', '')  // Puedes dejarlo vacío o definir scopes
+    if (loginForm) { // Added null check
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username')?.value; // Optional chaining for safety
+            const password = document.getElementById('password')?.value; // Optional chaining for safety
+            const rememberMe = document.getElementById('remember-me')?.checked; // Optional chaining for safety
+            if (errorMessage) errorMessage.textContent = ''; // Added null check
+            const recaptchaResponse = grecaptcha.getResponse();
             
-            const response = await fetch(`${API_BASE_URL}/token`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: formData
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.detail || 'Usuario o contraseña incorrectos.');
+            if (recaptchaResponse.length === 0) {
+                if (errorMessage) errorMessage.textContent = 'Por favor, completa el reCAPTCHA.';
+                return;
             }
             
-            const data = await response.json();
-            
-            if (rememberMe) {
-                localStorage.setItem('authToken', data.access_token);
-            } else {
-                sessionStorage.setItem('authToken', data.access_token);
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+                formData.append('grant_type', 'password');
+                formData.append('scope', '')
+                
+                const response = await fetch(`${API_BASE_URL}/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    throw new Error(errorData?.detail || 'Usuario o contraseña incorrectos.');
+                }
+                
+                const data = await response.json();
+                
+                if (rememberMe) {
+                    localStorage.setItem('authToken', data.access_token);
+                } else {
+                    sessionStorage.setItem('authToken', data.access_token);
+                }
+
+                showApp();
+                await fetchAllEntregas();
+                window.orderPollingInterval = setInterval(fetchAllEntregas, 30000);
+
+            } catch (error) {
+                if (errorMessage) errorMessage.textContent = error.message;
+                console.error('Error en login:', error);
             }
+        });
+    }
 
-            showApp();
-            await fetchAllEntregas();
-            window.orderPollingInterval = setInterval(fetchAllEntregas, 30000);
-
-        } catch (error) {
-            errorMessage.textContent = error.message;
-            console.error('Error en login:', error);
-        }
-    });
-
-    logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('authToken');
-        sessionStorage.removeItem('authToken');
-        showLogin();
-    });
+    if (logoutButton) { // Added null check
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('authToken');
+            sessionStorage.removeItem('authToken');
+            showLogin();
+        });
+    }
 
     function getAuthHeaders() {
         const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -385,14 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return response;
     }
 
-    // --- FUNCIÓN CORREGIDA: Ahora llama a /orders ---
     async function fetchAllEntregas() {
         const isFirstRun = !initialFetchDone;
         if (isFirstRun) {
             showLoader(true);
         }
         try {
-            // CAMBIO: Llama a /orders en lugar de /entregas
             const response = await fetchApi(`${API_BASE_URL}/orders`); 
             if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
             allEntregas = await response.json();
@@ -409,9 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FUNCIÓN CORREGIDA ---
     function checkForNewOrders() {
-        // CAMBIO: Asegúrate de que el filtro de estado coincida con lo que el backend envía
         const currentPendingOrders = allEntregas.filter(e => e.status && e.status.toLowerCase() === 'pendiente'); 
         
         if (!initialFetchDone) {
@@ -431,33 +451,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function renderVista(vista) {
-        listaEntregasContainer.innerHTML = ''; 
-        mensajeVacio.classList.add('hidden');
-        headerTitle.textContent = `Pedidos ${vista}s`;
+        if (listaEntregasContainer) listaEntregasContainer.innerHTML = ''; // Added null check
+        if (mensajeVacio) mensajeVacio.classList.add('hidden'); // Added null check
+        if (headerTitle) headerTitle.textContent = `Pedidos ${vista}s`; // Added null check
         
-        // CAMBIO: El filtro de estado debe ser más flexible ya que el backend puede enviar 'Pendiente', 'Confirmado', etc.
         const entregasFiltradas = allEntregas.filter(entrega => 
             entrega.status && entrega.status.toLowerCase() === vista.toLowerCase()
         );
         
         if (entregasFiltradas.length === 0) {
-            mensajeVacio.classList.remove('hidden');
-             // CAMBIO: Icono y texto cambian según la vista
+            if (mensajeVacio) mensajeVacio.classList.remove('hidden'); // Added null check
             const iconElement = document.getElementById('mensaje-vacio-icono');
             const textElement = document.getElementById('mensaje-vacio-texto');
-            iconElement.className = 'text-6xl text-slate-400'; // Reset class
+            if (iconElement) iconElement.className = 'text-6xl text-slate-400'; // Added null check
             if (vista.toLowerCase() === 'pendiente') {
-                iconElement.classList.add('ph', 'ph-package');
-                textElement.textContent = 'No hay pedidos pendientes en este momento.';
-            } else if (vista.toLowerCase() === 'enviado') { // CAMBIO: 'en camino' a 'enviado'
-                iconElement.classList.add('ph', 'ph-truck');
-                textElement.textContent = 'No hay pedidos en envío en este momento.';
+                if (iconElement) iconElement.classList.add('ph', 'ph-package');
+                if (textElement) textElement.textContent = 'No hay pedidos pendientes en este momento.';
+            } else if (vista.toLowerCase() === 'enviado') {
+                if (iconElement) iconElement.classList.add('ph', 'ph-truck');
+                if (textElement) textElement.textContent = 'No hay pedidos en envío en este momento.';
             } else if (vista.toLowerCase() === 'entregado') {
-                iconElement.classList.add('ph', 'ph-check-circle');
-                textElement.textContent = 'No hay pedidos entregados.';
+                if (iconElement) iconElement.classList.add('ph', 'ph-check-circle');
+                if (textElement) textElement.textContent = 'No hay pedidos entregados.';
             } else if (vista.toLowerCase() === 'cancelado') {
-                iconElement.classList.add('ph', 'ph-x-circle');
-                textElement.textContent = 'No hay pedidos cancelados.';
+                if (iconElement) iconElement.classList.add('ph', 'ph-x-circle');
+                if (textElement) textElement.textContent = 'No hay pedidos cancelados.';
             }
         } else {
             entregasFiltradas.forEach(crearTarjetaEntrega);
@@ -465,72 +483,115 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function crearTarjetaEntrega(entrega) {
+        if (!tarjetaTemplate) {
+            console.error('Error: Template de tarjeta de entrega no encontrado.');
+            return;
+        }
         const card = tarjetaTemplate.content.cloneNode(true).firstElementChild;
-        card.querySelector('[data-id]').textContent = entrega.id;
-        card.querySelector('[data-cliente]').textContent = entrega.customer_name;
-        card.querySelector('[data-total]').textContent = `Total a cobrar: R$${parseFloat(entrega.total).toFixed(2)}`;
-        card.querySelector('[data-direccion]').textContent = entrega.customer_address || 'Dirección no disponible';
-        card.querySelector('[data-telefono]').textContent = entrega.customer_phone || 'Teléfono no disponible';
-        // CAMBIO: Corrección de URL de Google Maps y uso de template string
-        card.querySelector('[data-direccion-link]').href = `https://www.google.com/maps/search/${encodeURIComponent(entrega.customer_address)}`;
+        if (!card) {
+            console.error('Error: No se pudo clonar el elemento de la tarjeta.');
+            return;
+        }
+
+        // --- Asignación de datos a la tarjeta ---
+        const dataId = card.querySelector('[data-id]');
+        if (dataId) dataId.textContent = entrega.id;
+
+        const dataCliente = card.querySelector('[data-cliente]');
+        if (dataCliente) dataCliente.textContent = entrega.customer_name;
+
+        const dataTotal = card.querySelector('[data-total]');
+        if (dataTotal) dataTotal.textContent = `Total a cobrar: R$${parseFloat(entrega.total).toFixed(2)}`;
+
+        const dataDireccion = card.querySelector('[data-direccion]');
+        if (dataDireccion) dataDireccion.textContent = entrega.customer_address || 'Dirección no disponible';
+
+        const dataTelefono = card.querySelector('[data-telefono]');
+        if (dataTelefono) dataTelefono.textContent = entrega.customer_phone || 'Teléfono no disponible';
+
+        const dataDireccionLink = card.querySelector('[data-direccion-link]');
+        if (dataDireccionLink) {
+            dataDireccionLink.href = `https://www.google.com/maps/search/${encodeURIComponent(entrega.customer_address)}`;
+        }
         
         const productosContainer = card.querySelector('[data-productos]');
-        productosContainer.innerHTML = '';
-        // CAMBIO: Usar entrega.items directamente, ya es un array de objetos
-        const items = entrega.items || []; 
+        if (productosContainer) { // Added null check
+            productosContainer.innerHTML = '';
+            const items = entrega.items || []; 
 
-        if (items.length > 0) {
-            items.forEach(p => { 
+            if (items.length > 0) {
+                items.forEach(p => { 
+                    const li = document.createElement('li'); 
+                    li.textContent = `${p.quantity}x ${p.product_name} (R$${parseFloat(p.unit_price).toFixed(2)} c/u)`;
+                    productosContainer.appendChild(li); 
+                });
+            } else { 
                 const li = document.createElement('li'); 
-                li.textContent = `${p.quantity}x ${p.product_name} (R$${parseFloat(p.unit_price).toFixed(2)} c/u)`; // CAMBIO: Mostrar nombre y precio unitario
+                li.textContent = 'No se especificaron productos.'; 
                 productosContainer.appendChild(li); 
-            });
-        } else { 
-            const li = document.createElement('li'); 
-            li.textContent = 'No se especificaron productos.'; 
-            productosContainer.appendChild(li); 
+            }
         }
 
         const btnsContainer = card.querySelector('.btns-container .grid');
-        const btnEnviado = card.querySelector('[data-accion="Enviado"]'); // CAMBIO: 'En Camino' a 'Enviado'
-        const btnEntregado = card.querySelector('[data-accion="Entregado"]'); // CAMBIO: 'Confirmar' a 'Entregado'
-        const btnCancelar = card.querySelector('[data-accion="Cancelar"]');
+        const btnEnviado = card.querySelector('[data-accion="Enviado"]');
+        const btnEntregado = card.querySelector('[data-accion="Entregado"]');
+        const btnCancelar = card.querySelector('[data-accion="Cancelado"]');
         
-        // Oculta todos los botones inicialmente
-        [btnEnviado, btnEntregado, btnCancelar].forEach(btn => btn.style.display = 'none');
+        // --- DEPURACIÓN: Muestra si los botones se encuentran ---
+        console.log(`Pedido ID: ${entrega.id}`);
+        console.log('btnEnviado:', btnEnviado);
+        console.log('btnEntregado:', btnEntregado);
+        console.log('btnCancelar:', btnCancelar);
+
+        // Oculta todos los botones inicialmente (con verificación de nulidad)
+        [btnEnviado, btnEntregado, btnCancelar].forEach(btn => {
+            if (btn) { // <--- CORRECCIÓN CLAVE AQUÍ
+                btn.style.display = 'none';
+            } else {
+                console.warn(`Advertencia: Botón no encontrado en la tarjeta para la acción. Revisar template.`, btn);
+            }
+        });
 
         const estadoActual = entrega.status ? entrega.status.trim().toLowerCase() : '';
         if (estadoActual === 'pendiente') {
-            btnsContainer.classList.add('grid-cols-2'); // Puedes ajustar las columnas si solo hay 2 botones visibles
-            btnEnviado.style.display = 'flex';
-            btnCancelar.style.display = 'flex';
-        } else if (estadoActual === 'enviado') { // CAMBIO: 'en camino' a 'enviado'
-            btnsContainer.classList.add('grid-cols-2');
-            btnEntregado.style.display = 'flex';
-            btnCancelar.style.display = 'flex';
+            if (btnsContainer) btnsContainer.classList.add('grid-cols-2');
+            if (btnEnviado) btnEnviado.style.display = 'flex';
+            if (btnCancelar) btnCancelar.style.display = 'flex';
+        } else if (estadoActual === 'enviado') {
+            if (btnsContainer) btnsContainer.classList.add('grid-cols-2');
+            if (btnEntregado) btnEntregado.style.display = 'flex';
+            if (btnCancelar) btnCancelar.style.display = 'flex';
         } else {
             // Si el pedido ya está Entregado o Cancelado, los botones de acción se ocultan
-            card.querySelector('.btns-container').remove(); 
+            const btnsContainerElement = card.querySelector('.btns-container');
+            if (btnsContainerElement) {
+                btnsContainerElement.remove(); 
+            }
         }
 
         card.querySelectorAll('[data-accion]').forEach(button => {
-            button.addEventListener('click', () => handleAction(button.dataset.accion, entrega, card));
+            if (button) { // Added null check
+                button.addEventListener('click', () => handleAction(button.dataset.accion, entrega, card));
+            }
         });
         
-        listaEntregasContainer.appendChild(card);
+        if (listaEntregasContainer) { // Added null check
+            listaEntregasContainer.appendChild(card);
+        }
     }
 
     async function handleAction(accion, entrega, card) {
         const performAction = async () => {
             const loaderCard = card.querySelector('.loader-card');
-            const buttons = card.querySelectorAll('button');
-            loaderCard.classList.remove('hidden');
-            buttons.forEach(b => b.disabled = true);
+            const buttons = card.querySelectorAll('button'); // This gets ALL buttons in the card
+            if (loaderCard) loaderCard.classList.remove('hidden'); // Added null check
+            buttons.forEach(b => { // Added null check
+                if (b) b.disabled = true;
+            });
 
             let newStatus = '';
             let confirmationMessage = '';
 
-            // CAMBIO: Mapeo de acciones a estados
             if (accion === 'Enviado') {
                 newStatus = 'Enviado';
                 confirmationMessage = `¿Marcar el Pedido #${entrega.id} como "${newStatus}"?`;
@@ -541,31 +602,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 newStatus = 'Cancelado';
                 confirmationMessage = `¿Seguro que quieres CANCELAR el Pedido #${entrega.id}? ¡Esta acción es irreversible!`;
             } else {
-                alert('Acción desconocida.');
-                loaderCard.classList.add('hidden');
-                buttons.forEach(b => b.disabled = false);
+                // Replaced alert with showConfirmationModal or a custom notification
+                showConfirmationModal('Acción desconocida.', () => { /* No action on confirm for this case */ });
+                if (loaderCard) loaderCard.classList.add('hidden');
+                buttons.forEach(b => { if (b) b.disabled = false; });
                 return;
             }
 
-            // Si la acción es Cancelar, usamos el modal de confirmación
             if (accion === 'Cancelado') {
                 showConfirmationModal(confirmationMessage, async () => {
                     await sendStatusUpdate(entrega.id, newStatus, card, loaderCard, buttons);
                 });
             } else {
-                // Para las demás acciones (Enviado, Entregado), se ejecuta directamente
                 await sendStatusUpdate(entrega.id, newStatus, card, loaderCard, buttons);
             }
         };
 
-        // Función auxiliar para enviar la actualización de estado
         async function sendStatusUpdate(orderId, statusToSend, cardElement, loaderElement, buttonElements) {
             try {
-                // CAMBIO: Usar el endpoint PUT /orders/{order_id}/status
                 const response = await fetchApi(`${API_BASE_URL}/orders/${orderId}/status`, {
                     method: 'PUT',
                     body: JSON.stringify({ new_status: statusToSend }),
-                    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' } // Asegurar Content-Type
+                    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }
                 });
 
                 if (!response.ok) {
@@ -573,36 +631,65 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(errorData.detail);
                 }
 
-                alert(`Estado del Pedido #${orderId} actualizado a "${statusToSend}" exitosamente.`);
-                cardElement.classList.add('card-exit', 'card-exit-active');
-                // CAMBIO: Al finalizar la transición, refresca los pedidos
-                cardElement.addEventListener('transitionend', () => fetchAllEntregas()); 
+                // Replaced alert with showConfirmationModal or a custom notification
+                showModal(`
+                    <i class="ph ph-check-circle text-6xl text-green-500 mb-4"></i>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Éxito!</h2>
+                    <p class="text-lg text-slate-600 mb-4">Estado del Pedido #${orderId} actualizado a "${statusToSend}" exitosamente.</p>
+                    <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">
+                        Cerrar
+                    </button>
+                `);
+                const closeModalBtn = document.getElementById('close-modal-btn');
+                if (closeModalBtn) closeModalBtn.addEventListener('click', hideModal);
+
+
+                if (cardElement) { // Added null check
+                    cardElement.classList.add('card-exit', 'card-exit-active');
+                    cardElement.addEventListener('transitionend', () => fetchAllEntregas()); 
+                }
 
             } catch (error) {
                 console.error(`Error al ejecutar la acción para estado '${statusToSend}':`, error);
-                alert(`No se pudo completar la acción: ${error.message}`);
-                loaderElement.classList.add('hidden');
-                buttonElements.forEach(b => b.disabled = false);
+                // Replaced alert with showConfirmationModal or a custom notification
+                showModal(`
+                    <i class="ph ph-x-circle text-6xl text-red-500 mb-4"></i>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Error!</h2>
+                    <p class="text-lg text-slate-600 mb-4">No se pudo completar la acción: ${error.message}</p>
+                    <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">
+                        Cerrar
+                    </button>
+                `);
+                const closeModalBtn = document.getElementById('close-modal-btn');
+                if (closeModalBtn) closeModalBtn.addEventListener('click', hideModal);
+
+                if (loaderElement) loaderElement.classList.add('hidden');
+                buttonElements.forEach(b => { if (b) b.disabled = false; });
             }
         }
         
-        // Inicia el proceso de la acción
         performAction();
     }
     
     function showLoader(visible) {
-        loaderGlobal.classList.toggle('hidden', !visible);
+        if (loaderGlobal) loaderGlobal.classList.toggle('hidden', !visible); // Added null check
     }
 
-    refreshButton.addEventListener('click', fetchAllEntregas);
+    if (refreshButton) { // Added null check
+        refreshButton.addEventListener('click', fetchAllEntregas);
+    }
 
     navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            currentVista = item.dataset.vista;
-            navItems.forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
-            renderVista(currentVista);
-        });
+        if (item) { // Added null check
+            item.addEventListener('click', () => {
+                currentVista = item.dataset.vista;
+                navItems.forEach(i => { // Added null check
+                    if (i) i.classList.remove('active');
+                });
+                item.classList.add('active');
+                renderVista(currentVista);
+            });
+        }
     });
 });
 </script>

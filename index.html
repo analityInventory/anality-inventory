@@ -543,6 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('btnEnviado:', btnEnviado);
         console.log('btnEntregado:', btnEntregado);
         console.log('btnCancelar:', btnCancelar);
+        console.log('Card outerHTML:', card.outerHTML); // DEBUG: Log the full HTML of the cloned card
 
         // Oculta todos los botones inicialmente (con verificación de nulidad)
         [btnEnviado, btnEntregado, btnCancelar].forEach(btn => {
@@ -621,19 +622,24 @@ document.addEventListener('DOMContentLoaded', () => {
         async function sendStatusUpdate(orderId, statusToSend, cardElement, loaderElement, buttonElements) {
             try {
                 const payload = { new_status: statusToSend };
-                console.log(`Enviando actualización de estado para Pedido #${orderId}:`, payload); // DEBUG: Log the payload
+                console.log(`Enviando actualización de estado para Pedido #${orderId}:`, payload); 
                 
                 const response = await fetchApi(`${API_BASE_URL}/orders/${orderId}/status`, {
                     method: 'PUT',
-                    body: JSON.stringify(payload), // Ensure payload is stringified JSON
+                    body: JSON.stringify(payload), 
                     headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' } 
                 });
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ detail: 'Error desconocido o respuesta no JSON.' }));
                     let detailMessage = errorData.detail;
+                    // Intentar formatear el mensaje de error si es un objeto o array
                     if (typeof detailMessage === 'object' && detailMessage !== null) {
-                        detailMessage = JSON.stringify(detailMessage); // Stringify complex error details
+                        try {
+                            detailMessage = JSON.stringify(detailMessage, null, 2); // Pretty print JSON
+                        } catch (e) {
+                            detailMessage = String(detailMessage); // Fallback to string conversion
+                        }
                     }
                     throw new Error(detailMessage || `Error del servidor: ${response.status}`);
                 }
@@ -698,7 +704,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
-</body>
-</html>
 </body>
 </html>

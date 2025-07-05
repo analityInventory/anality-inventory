@@ -535,7 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnsContainer = card.querySelector('.btns-container .grid');
         const btnEnviado = card.querySelector('[data-accion="Enviado"]');
         const btnEntregado = card.querySelector('[data-accion="Entregado"]');
-        const btnCancelar = card.querySelector('[data-accion="Cancelado"]');
+        const btnCancelar = card.querySelector('[data-accion="Cancelar"]');
         
         // --- DEPURACIÓN: Muestra si los botones se encuentran ---
         console.log(`Pedido ID: ${entrega.id}`);
@@ -622,16 +622,18 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetchApi(`${API_BASE_URL}/orders/${orderId}/status`, {
                     method: 'PUT',
+                    // CORRECCIÓN CLAVE: Asegurarse de que el Content-Type sea 'application/json'
+                    // y que el body sea un JSON stringificado.
                     body: JSON.stringify({ new_status: statusToSend }),
-                    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }
+                    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' } 
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ detail: 'Error desconocido.' }));
-                    throw new Error(errorData.detail);
+                    // Mejorar el manejo de errores para mostrar el detalle del backend
+                    const errorData = await response.json().catch(() => ({ detail: 'Error desconocido o respuesta no JSON.' }));
+                    throw new Error(errorData.detail || `Error del servidor: ${response.status}`);
                 }
 
-                // Replaced alert with showConfirmationModal or a custom notification
                 showModal(`
                     <i class="ph ph-check-circle text-6xl text-green-500 mb-4"></i>
                     <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Éxito!</h2>
@@ -644,14 +646,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (closeModalBtn) closeModalBtn.addEventListener('click', hideModal);
 
 
-                if (cardElement) { // Added null check
+                if (cardElement) { 
                     cardElement.classList.add('card-exit', 'card-exit-active');
                     cardElement.addEventListener('transitionend', () => fetchAllEntregas()); 
                 }
 
             } catch (error) {
                 console.error(`Error al ejecutar la acción para estado '${statusToSend}':`, error);
-                // Replaced alert with showConfirmationModal or a custom notification
                 showModal(`
                     <i class="ph ph-x-circle text-6xl text-red-500 mb-4"></i>
                     <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Error!</h2>
@@ -672,18 +673,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function showLoader(visible) {
-        if (loaderGlobal) loaderGlobal.classList.toggle('hidden', !visible); // Added null check
+        if (loaderGlobal) loaderGlobal.classList.toggle('hidden', !visible); 
     }
 
-    if (refreshButton) { // Added null check
+    if (refreshButton) { 
         refreshButton.addEventListener('click', fetchAllEntregas);
     }
 
     navItems.forEach(item => {
-        if (item) { // Added null check
+        if (item) { 
             item.addEventListener('click', () => {
                 currentVista = item.dataset.vista;
-                navItems.forEach(i => { // Added null check
+                navItems.forEach(i => { 
                     if (i) i.classList.remove('active');
                 });
                 item.classList.add('active');
@@ -693,5 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
+</body>
+</html>
 </body>
 </html>

@@ -451,19 +451,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function renderVista(vista) {
-        if (listaEntregasContainer) listaEntregasContainer.innerHTML = ''; // Added null check
-        if (mensajeVacio) mensajeVacio.classList.add('hidden'); // Added null check
-        if (headerTitle) headerTitle.textContent = `Pedidos ${vista}s`; // Added null check
+        if (listaEntregasContainer) listaEntregasContainer.innerHTML = ''; 
+        if (mensajeVacio) mensajeVacio.classList.add('hidden'); 
+        if (headerTitle) headerTitle.textContent = `Pedidos ${vista}s`; 
         
         const entregasFiltradas = allEntregas.filter(entrega => 
             entrega.status && entrega.status.toLowerCase() === vista.toLowerCase()
         );
         
         if (entregasFiltradas.length === 0) {
-            if (mensajeVacio) mensajeVacio.classList.remove('hidden'); // Added null check
+            if (mensajeVacio) mensajeVacio.classList.remove('hidden'); 
             const iconElement = document.getElementById('mensaje-vacio-icono');
             const textElement = document.getElementById('mensaje-vacio-texto');
-            if (iconElement) iconElement.className = 'text-6xl text-slate-400'; // Added null check
+            if (iconElement) iconElement.className = 'text-6xl text-slate-400'; 
             if (vista.toLowerCase() === 'pendiente') {
                 if (iconElement) iconElement.classList.add('ph', 'ph-package');
                 if (textElement) textElement.textContent = 'No hay pedidos pendientes en este momento.';
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const productosContainer = card.querySelector('[data-productos]');
-        if (productosContainer) { // Added null check
+        if (productosContainer) { 
             productosContainer.innerHTML = '';
             const items = entrega.items || []; 
 
@@ -535,17 +535,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnsContainer = card.querySelector('.btns-container .grid');
         const btnEnviado = card.querySelector('[data-accion="Enviado"]');
         const btnEntregado = card.querySelector('[data-accion="Entregado"]');
-        const btnCancelar = card.querySelector('[data-accion="Cancelar"]');
+        const btnCancelar = card.querySelector('[data-accion="Cancelado"]');
         
         // --- DEPURACIÓN: Muestra si los botones se encuentran ---
         console.log(`Pedido ID: ${entrega.id}`);
+        console.log('btnsContainer:', btnsContainer); // Added for debugging
         console.log('btnEnviado:', btnEnviado);
         console.log('btnEntregado:', btnEntregado);
         console.log('btnCancelar:', btnCancelar);
 
         // Oculta todos los botones inicialmente (con verificación de nulidad)
         [btnEnviado, btnEntregado, btnCancelar].forEach(btn => {
-            if (btn) { // <--- CORRECCIÓN CLAVE AQUÍ
+            if (btn) { 
                 btn.style.display = 'none';
             } else {
                 console.warn(`Advertencia: Botón no encontrado en la tarjeta para la acción. Revisar template.`, btn);
@@ -570,12 +571,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         card.querySelectorAll('[data-accion]').forEach(button => {
-            if (button) { // Added null check
+            if (button) { 
                 button.addEventListener('click', () => handleAction(button.dataset.accion, entrega, card));
             }
         });
         
-        if (listaEntregasContainer) { // Added null check
+        if (listaEntregasContainer) { 
             listaEntregasContainer.appendChild(card);
         }
     }
@@ -583,9 +584,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleAction(accion, entrega, card) {
         const performAction = async () => {
             const loaderCard = card.querySelector('.loader-card');
-            const buttons = card.querySelectorAll('button'); // This gets ALL buttons in the card
-            if (loaderCard) loaderCard.classList.remove('hidden'); // Added null check
-            buttons.forEach(b => { // Added null check
+            const buttons = card.querySelectorAll('button'); 
+            if (loaderCard) loaderCard.classList.remove('hidden'); 
+            buttons.forEach(b => { 
                 if (b) b.disabled = true;
             });
 
@@ -602,7 +603,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 newStatus = 'Cancelado';
                 confirmationMessage = `¿Seguro que quieres CANCELAR el Pedido #${entrega.id}? ¡Esta acción es irreversible!`;
             } else {
-                // Replaced alert with showConfirmationModal or a custom notification
                 showConfirmationModal('Acción desconocida.', () => { /* No action on confirm for this case */ });
                 if (loaderCard) loaderCard.classList.add('hidden');
                 buttons.forEach(b => { if (b) b.disabled = false; });
@@ -620,18 +620,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function sendStatusUpdate(orderId, statusToSend, cardElement, loaderElement, buttonElements) {
             try {
+                const payload = { new_status: statusToSend };
+                console.log(`Enviando actualización de estado para Pedido #${orderId}:`, payload); // DEBUG: Log the payload
+                
                 const response = await fetchApi(`${API_BASE_URL}/orders/${orderId}/status`, {
                     method: 'PUT',
-                    // CORRECCIÓN CLAVE: Asegurarse de que el Content-Type sea 'application/json'
-                    // y que el body sea un JSON stringificado.
-                    body: JSON.stringify({ new_status: statusToSend }),
+                    body: JSON.stringify(payload), // Ensure payload is stringified JSON
                     headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' } 
                 });
 
                 if (!response.ok) {
-                    // Mejorar el manejo de errores para mostrar el detalle del backend
                     const errorData = await response.json().catch(() => ({ detail: 'Error desconocido o respuesta no JSON.' }));
-                    throw new Error(errorData.detail || `Error del servidor: ${response.status}`);
+                    let detailMessage = errorData.detail;
+                    if (typeof detailMessage === 'object' && detailMessage !== null) {
+                        detailMessage = JSON.stringify(detailMessage); // Stringify complex error details
+                    }
+                    throw new Error(detailMessage || `Error del servidor: ${response.status}`);
                 }
 
                 showModal(`

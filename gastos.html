@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gestão de Despesas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            transition: ring 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            --tw-ring-color: #3b82f6;
+            --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+            --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+            box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+        }
+        /* Estilos para a barra de rolagem */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Estilos para o seletor de cor */
+        input[type="color"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;    /* Para Firefox */
+            appearance: none;
+            width: 40px;
+            height: 40px;
+            border: none;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="font-sans">
+
+    <header class="bg-white shadow-md sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-slate-800">Gestão de Despesas</h1>
+            <div>
+                 <a href="index.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Voltar aos Pedidos">
+                    <i class="ph ph-arrow-u-left-up text-3xl"></i>
+                 </a>
+                 <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
+                     <i class="ph ph-sign-out text-3xl"></i>
+                 </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Coluna da Lista de Despesas -->
+        <div class="lg:col-span-2">
+            <div class="bg-white p-5 rounded-xl shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 items-center">
+                    <input type="text" id="search-input" placeholder="Buscar por descrição..." class="form-input md:col-span-2">
+                    <div class="flex gap-2">
+                        <select id="category-filter" class="form-input flex-grow">
+                            <option value="Todos">Todas as Categorias</option>
+                        </select>
+                        <button id="manage-categories-btn" class="p-3 bg-slate-200 hover:bg-slate-300 rounded-lg transition" title="Gerenciar Categorias">
+                            <i class="ph ph-gear-six"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="h-[calc(100vh-250px)] overflow-y-auto pr-2">
+                    <table class="w-full text-left">
+                        <thead class="sticky top-0 bg-slate-50 z-10">
+                            <tr>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Descrição</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Valor</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Categoria</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Data</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenses-list-body"></tbody>
+                    </table>
+                     <p id="no-expenses-message" class="hidden text-center text-slate-500 py-16">Nenhuma despesa encontrada.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna do Formulário -->
+        <div class="lg:col-span-1">
+            <div class="bg-white p-5 rounded-xl shadow-lg sticky top-[88px]">
+                <h3 id="form-title" class="text-xl font-bold text-slate-800 mb-4 border-b pb-3">Adicionar Nova Despesa</h3>
+                <form id="expense-form" class="space-y-4">
+                    <input type="hidden" id="expense-id">
+                    <div>
+                        <label for="expense-description" class="block text-sm font-medium text-slate-700">Descrição *</label>
+                        <input type="text" id="expense-description" class="form-input mt-1" required>
+                    </div>
+                    <div>
+                        <label for="expense-value" class="block text-sm font-medium text-slate-700">Valor (R$) *</label>
+                        <input type="number" id="expense-value" min="0.01" step="0.01" class="form-input mt-1" required>
+                    </div>
+                    <div>
+                        <label for="expense-category" class="block text-sm font-medium text-slate-700">Categoria *</label>
+                        <select id="expense-category" class="form-input mt-1" required></select>
+                    </div>
+                    <div>
+                        <label for="expense-date" class="block text-sm font-medium text-slate-700">Data *</label>
+                        <input type="date" id="expense-date" class="form-input mt-1" required>
+                    </div>
+                     <div>
+                        <label for="expense-obs" class="block text-sm font-medium text-slate-700">Observações</label>
+                        <textarea id="expense-obs" rows="3" class="form-input mt-1"></textarea>
+                    </div>
+                    <div class="flex gap-4 pt-2">
+                        <button type="submit" id="save-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">Salvar Despesa</button>
+                        <button type="button" id="clear-button" class="w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Limpar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Modal de Gestão de Categorias -->
+    <div id="category-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-800">Gerenciar Categorias de Despesa</h2>
+                <button id="close-category-modal" class="text-slate-500 hover:text-slate-800">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="category-list-container" class="space-y-2 max-h-60 overflow-y-auto mb-6 pr-2">
+                    <!-- Lista de categorias será inserida aqui -->
+                </div>
+                <form id="add-category-form" class="space-y-3 border-t pt-4">
+                    <h4 class="font-semibold">Adicionar Nova Categoria</h4>
+                    <div class="flex items-center gap-3">
+                        <input type="text" id="new-category-name" placeholder="Nome da categoria" class="form-input flex-grow" required>
+                        <input type="color" id="new-category-color" value="#475569" class="form-input p-1 h-12 w-12">
+                    </div>
+                    <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition">Adicionar Categoria</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates -->
+    <template id="expense-row-template">
+        <tr class="border-b border-slate-200 hover:bg-slate-50">
+            <td class="p-3" data-description></td>
+            <td class="p-3 font-semibold text-red-600" data-value></td>
+            <td class="p-3">
+                <span class="px-2 py-1 text-xs font-semibold rounded-full" data-category></span>
+            </td>
+            <td class="p-3 text-slate-500" data-date></td>
+            <td class="p-3">
+                <div class="flex gap-2">
+                    <button data-action="edit" class="text-blue-600 hover:text-blue-800" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                    <button data-action="delete" class="text-red-600 hover:text-red-800" title="Excluir"><i class="ph ph-trash"></i></button>
+                </div>
+            </td>
+        </tr>
+    </template>
+    <template id="category-list-item-template">
+        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-100">
+            <div class="flex items-center gap-3">
+                <span class="w-4 h-4 rounded-full" data-color-indicator></span>
+                <span class="font-medium" data-name></span>
+            </div>
+            <button data-action="delete-category" class="text-slate-400 hover:text-red-600" title="Excluir Categoria"><i class="ph ph-trash"></i></button>
+        </div>
+    </template>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- CONFIGURAÇÃO E ESTADO ---
+    const API_BASE_URL = 'https://mi-primera-app.fly.dev';
+    let allExpenses = [];
+    let allCategories = [];
+    let editingExpenseId = null;
+
+    // --- SELECTORES DE ELEMENTOS ---
+    const expenseListBody = document.getElementById('expenses-list-body');
+    const noExpensesMessage = document.getElementById('no-expenses-message');
+    const searchInput = document.getElementById('search-input');
+    const categoryFilter = document.getElementById('category-filter');
+    const expenseForm = document.getElementById('expense-form');
+    const formTitle = document.getElementById('form-title');
+    const saveButton = document.getElementById('save-button');
+    const clearButton = document.getElementById('clear-button');
+    const logoutButton = document.getElementById('logoutButton');
+    const manageCategoriesBtn = document.getElementById('manage-categories-btn');
+    const categoryModal = document.getElementById('category-modal');
+    const closeCategoryModalBtn = document.getElementById('close-category-modal');
+    const categoryListContainer = document.getElementById('category-list-container');
+    const addCategoryForm = document.getElementById('add-category-form');
+
+    // --- LÓGICA DA API ---
+    function getAuthHeaders() {
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        if (!token) {
+            window.location.href = 'index.html';
+            return null;
+        }
+        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    }
+
+    async function fetchApi(endpoint, options = {}) {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido.' }));
+            throw new Error(errorData.detail);
+        }
+        // Para DELETE, que pode não ter corpo
+        if (response.status === 204) return null;
+        return response.json();
+    }
+
+    // --- FUNÇÕES DE CARREGAMENTO DE DADOS ---
+    async function loadInitialData() {
+        try {
+            await Promise.all([fetchCategories(), fetchExpenses()]);
+        } catch (error) {
+            alert(`Erro ao carregar dados iniciais: ${error.message}`);
+        }
+    }
+
+    async function fetchCategories() {
+        allCategories = await fetchApi('/gastos/categorias');
+        populateCategorySelects();
+    }
+    
+    function populateCategorySelects() {
+        const categorySelects = [document.getElementById('expense-category'), categoryFilter];
+        categorySelects.forEach(select => {
+            const firstOptionValue = select.options[0]?.value;
+            select.innerHTML = '';
+            
+            if (select.id === 'category-filter') {
+                 const allOption = document.createElement('option');
+                 allOption.value = 'Todos';
+                 allOption.textContent = 'Todas as Categorias';
+                 select.appendChild(allOption);
+            }
+
+            allCategories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.nombre;
+                option.textContent = cat.nombre;
+                select.appendChild(option);
+            });
+            
+            if (firstOptionValue) {
+                select.value = firstOptionValue;
+            }
+        });
+    }
+
+    async function fetchExpenses() {
+        allExpenses = await fetchApi('/gastos');
+        renderExpenses();
+    }
+
+    // --- LÓGICA DE RENDERIZAÇÃO ---
+    function renderExpenses() {
+        expenseListBody.innerHTML = '';
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedCategory = categoryFilter.value;
+
+        const filteredExpenses = allExpenses.filter(expense => {
+            const matchesSearch = expense.descripcion.toLowerCase().includes(searchTerm);
+            const matchesCategory = selectedCategory === 'Todos' || expense.categoria === selectedCategory;
+            return matchesSearch && matchesCategory;
+        });
+
+        if (filteredExpenses.length === 0) {
+            noExpensesMessage.classList.remove('hidden');
+        } else {
+            noExpensesMessage.classList.add('hidden');
+            const template = document.getElementById('expense-row-template');
+            filteredExpenses.forEach(expense => {
+                const row = template.content.cloneNode(true).firstElementChild;
+                row.dataset.id = expense.id;
+                row.querySelector('[data-description]').textContent = expense.descripcion;
+                row.querySelector('[data-value]').textContent = `R$${parseFloat(expense.valor).toFixed(2)}`;
+                
+                const categoryEl = row.querySelector('[data-category]');
+                categoryEl.textContent = expense.categoria;
+                const categoryData = allCategories.find(c => c.nombre === expense.categoria);
+                if (categoryData && categoryData.color) {
+                    categoryEl.style.backgroundColor = categoryData.color;
+                    categoryEl.style.color = '#fff';
+                } else {
+                    categoryEl.classList.add('bg-slate-200', 'text-slate-700');
+                }
+
+                row.querySelector('[data-date]').textContent = new Date(expense.fecha + 'T00:00:00').toLocaleDateString('pt-BR');
+                
+                row.querySelector('[data-action="edit"]').addEventListener('click', () => prepareEditForm(expense));
+                row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteExpense(expense.id, expense.descripcion));
+                
+                expenseListBody.appendChild(row);
+            });
+        }
+    }
+
+    // --- LÓGICA DO FORMULÁRIO DE DESPESAS ---
+    function prepareEditForm(expense) {
+        editingExpenseId = expense.id;
+        formTitle.textContent = 'Editar Despesa';
+        saveButton.textContent = 'Atualizar Despesa';
+        document.getElementById('expense-id').value = expense.id;
+        document.getElementById('expense-description').value = expense.descripcion;
+        document.getElementById('expense-value').value = expense.valor;
+        document.getElementById('expense-category').value = expense.categoria;
+        document.getElementById('expense-date').value = expense.fecha;
+        document.getElementById('expense-obs').value = expense.observaciones || '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function clearForm() {
+        editingExpenseId = null;
+        expenseForm.reset();
+        formTitle.textContent = 'Adicionar Nova Despesa';
+        saveButton.textContent = 'Salvar Despesa';
+        document.getElementById('expense-id').value = '';
+        document.getElementById('expense-date').valueAsDate = new Date();
+    }
+
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        const expenseData = {
+            descripcion: document.getElementById('expense-description').value,
+            valor: parseFloat(document.getElementById('expense-value').value),
+            categoria: document.getElementById('expense-category').value,
+            fecha: document.getElementById('expense-date').value,
+            observaciones: document.getElementById('expense-obs').value
+        };
+
+        try {
+            if (editingExpenseId) {
+                await fetchApi(`/gastos/${editingExpenseId}`, { method: 'PUT', body: JSON.stringify(expenseData) });
+                alert('Despesa atualizada com sucesso!');
+            } else {
+                await fetchApi('/gastos', { method: 'POST', body: JSON.stringify(expenseData) });
+                alert('Despesa adicionada com sucesso!');
+            }
+            clearForm();
+            fetchExpenses();
+        } catch (error) {
+            alert(`Erro ao salvar despesa: ${error.message}`);
+        }
+    }
+
+    async function deleteExpense(id, description) {
+        if (!confirm(`Tem certeza que deseja excluir a despesa "${description}"?`)) return;
+        try {
+            await fetchApi(`/gastos/${id}`, { method: 'DELETE' });
+            alert('Despesa excluída com sucesso!');
+            fetchExpenses();
+        } catch (error) {
+            alert(`Erro ao excluir despesa: ${error.message}`);
+        }
+    }
+    
+    // --- LÓGICA DO MODAL DE CATEGORIAS ---
+    function openCategoryManager() {
+        renderCategoryList();
+        categoryModal.classList.remove('hidden');
+    }
+
+    function closeCategoryManager() {
+        categoryModal.classList.add('hidden');
+    }
+
+    function renderCategoryList() {
+        categoryListContainer.innerHTML = '';
+        const template = document.getElementById('category-list-item-template');
+        if (allCategories.length === 0) {
+            categoryListContainer.innerHTML = '<p class="text-slate-500 text-center">Nenhuma categoria cadastrada.</p>';
+            return;
+        }
+        allCategories.forEach(cat => {
+            const item = template.content.cloneNode(true).firstElementChild;
+            item.querySelector('[data-name]').textContent = cat.nombre;
+            item.querySelector('[data-color-indicator]').style.backgroundColor = cat.color;
+            item.querySelector('[data-action="delete-category"]').addEventListener('click', () => handleDeleteCategory(cat.id, cat.nombre));
+            categoryListContainer.appendChild(item);
+        });
+    }
+
+    async function handleAddNewCategory(e) {
+        e.preventDefault();
+        const nameInput = document.getElementById('new-category-name');
+        const colorInput = document.getElementById('new-category-color');
+        const name = nameInput.value.trim();
+        const color = colorInput.value;
+
+        if (!name) {
+            alert('O nome da categoria é obrigatório.');
+            return;
+        }
+
+        try {
+            await fetchApi('/gastos/categorias', {
+                method: 'POST',
+                body: JSON.stringify({ nombre: name, color: color })
+            });
+            nameInput.value = '';
+            await fetchCategories(); // Recarrega todas as categorias
+            renderCategoryList(); // Re-renderiza a lista no modal
+        } catch (error) {
+            alert(`Erro ao adicionar categoria: ${error.message}`);
+        }
+    }
+
+    async function handleDeleteCategory(id, name) {
+        if (!confirm(`Tem certeza que deseja excluir a categoria "${name}"? Isso não será possível se ela estiver em uso.`)) return;
+
+        try {
+            await fetchApi(`/gastos/categorias/${id}`, { method: 'DELETE' });
+            await fetchCategories();
+            renderCategoryList();
+        } catch (error) {
+            alert(`Erro ao excluir categoria: ${error.message}`);
+        }
+    }
+    
+    // --- EVENT LISTENERS ---
+    searchInput.addEventListener('input', renderExpenses);
+    categoryFilter.addEventListener('change', renderExpenses);
+    expenseForm.addEventListener('submit', handleFormSubmit);
+    clearButton.addEventListener('click', clearForm);
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
+        window.location.href = 'index.html';
+    });
+    manageCategoriesBtn.addEventListener('click', openCategoryManager);
+    closeCategoryModalBtn.addEventListener('click', closeCategoryManager);
+    addCategoryForm.addEventListener('submit', handleAddNewCategory);
+
+    // --- INICIALIZAÇÃO ---
+    clearForm();
+    loadInitialData();
+});
+</script>
+</body>
+</html>

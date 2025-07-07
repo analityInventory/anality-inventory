@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Gestión de Pedidos</title>
+    <title>Gestão de Pedidos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
@@ -16,14 +16,8 @@
         .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .nav-item.active i, .nav-item.active span { color: #3b82f6; }
-
-        /* --- NUEVO: Estilos para el Modal de Notificación y Confirmación --- */
-        .modal-overlay {
-            transition: opacity 0.3s ease;
-        }
-        .modal-container {
-            transition: transform 0.3s ease, opacity 0.3s ease;
-        }
+        .modal-overlay { transition: opacity 0.3s ease; }
+        .modal-container { transition: transform 0.3s ease, opacity 0.3s ease; }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,14 +28,14 @@
 
     <div id="login-container" class="flex items-center justify-center h-screen">
         <div class="w-full max-w-md bg-white p-8 rounded-lg shadow-md mx-4">
-            <h1 class="text-2xl font-bold mb-6 text-center text-slate-800">Iniciar Sesión</h1>
+            <h1 class="text-2xl font-bold mb-6 text-center text-slate-800">Fazer Login</h1>
             <form id="login-form">
                 <div class="mb-4">
-                    <label class="block text-slate-700 mb-2" for="username">Usuario</label>
+                    <label class="block text-slate-700 mb-2" for="username">Usuário</label>
                     <input class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" type="text" id="username" required>
                 </div>
                 <div class="mb-6">
-                    <label class="block text-slate-700 mb-2" for="password">Contraseña</label>
+                    <label class="block text-slate-700 mb-2" for="password">Senha</label>
                     <input class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" type="password" id="password" required>
                 </div>
                 
@@ -52,7 +46,7 @@
                 <div class="flex items-center justify-between mb-6">
                     <label class="flex items-center text-sm text-slate-600">
                         <input type="checkbox" id="remember-me" class="form-checkbox h-4 w-4 text-blue-600 rounded">
-                        <span class="ml-2">Recordar usuario</span>
+                        <span class="ml-2">Lembrar usuário</span>
                     </label>
                 </div>
                 <button class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition" type="submit">
@@ -62,9 +56,9 @@
             </form>
             <div class="text-center mt-6">
                 <p class="text-slate-600">
-                    ¿No tienes una cuenta?
+                    Não tem uma conta?
                     <a href="register.html" class="font-semibold text-blue-500 hover:underline">
-                        Regístrate aquí
+                        Cadastre-se aqui
                     </a>
                 </p>
             </div>
@@ -74,15 +68,15 @@
     <div id="app-container" class="hidden">
         <header class="bg-white shadow-md sticky top-0 z-10">
             <div class="max-w-4xl mx-auto px-5 py-4 flex justify-between items-center">
-                <h1 id="header-title" class="text-2xl font-bold text-slate-800">Pedidos Pendientes</h1>
+                <h1 id="header-title" class="text-2xl font-bold text-slate-800">Pedidos Pendentes</h1>
                 <div>
-                    <a href="ventas.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Nueva Venta">
+                    <a href="ventas.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Nova Venda">
                         <i class="ph ph-storefront text-3xl"></i>
                     </a>
-                    <button id="refreshButton" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4">
+                    <button id="refreshButton" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Atualizar">
                         <i class="ph ph-arrow-clockwise text-3xl"></i>
                     </button>
-                    <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90">
+                    <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
                         <i class="ph ph-sign-out text-3xl"></i>
                     </button>
                 </div>
@@ -93,17 +87,17 @@
 
         <div id="mensaje-vacio" class="hidden text-center mt-16 px-4">
             <i id="mensaje-vacio-icono" class="ph ph-package text-6xl text-slate-400"></i>
-            <p id="mensaje-vacio-texto" class="text-slate-500 mt-4 text-lg">No hay pedidos en esta sección.</p>
+            <p id="mensaje-vacio-texto" class="text-slate-500 mt-4 text-lg">Não há pedidos nesta seção.</p>
         </div>
 
         <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-t-md border-t border-slate-200 h-[80px] z-20">
             <div class="max-w-4xl mx-auto h-full grid grid-cols-4">
                 <button data-vista="Pendiente" class="nav-item flex flex-col items-center justify-center text-slate-500 active">
-                    <i class="ph ph-clock-countdown text-3xl"></i><span class="text-xs font-medium">Pendientes</span>
+                    <i class="ph ph-clock-countdown text-3xl"></i><span class="text-xs font-medium">Pendentes</span>
                 </button>
                 <button data-vista="Enviado" class="nav-item flex flex-col items-center justify-center text-slate-500"> <i class="ph ph-truck text-3xl"></i><span class="text-xs font-medium">Enviados</span> </button>
                 <button data-vista="Entregado" class="nav-item flex flex-col items-center justify-center text-slate-500">
-                    <i class="ph ph-check-circle text-3xl"></i><span class="text-xs font-medium">Entregados</span>
+                    <i class="ph ph-check-circle text-3xl"></i><span class="text-xs font-medium">Entregues</span>
                 </button>
                 <button data-vista="Cancelado" class="nav-item flex flex-col items-center justify-center text-slate-500">
                     <i class="ph ph-x-circle text-3xl"></i><span class="text-xs font-medium">Cancelados</span>
@@ -117,8 +111,8 @@
     </div>
 
     <div id="notification-permission-banner" class="hidden fixed bottom-[90px] left-0 right-0 bg-slate-800 text-white p-4 z-20 flex justify-between items-center">
-        <span>¿Quieres recibir notificaciones de nuevos pedidos?</span>
-        <button id="enable-notifications-btn" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg font-semibold">Activar</button>
+        <span>Deseja receber notificações de novos pedidos?</span>
+        <button id="enable-notifications-btn" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg font-semibold">Ativar</button>
     </div>
     
     <div id="modal-container" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
@@ -138,7 +132,7 @@
                 <h2 class="text-xl font-bold text-slate-800" data-cliente></h2> 
                 <p class="text-slate-600" data-total></p>
                 <div class="my-4">
-                    <p class="font-semibold text-slate-700 mb-2">Productos:</p>
+                    <p class="font-semibold text-slate-700 mb-2">Produtos:</p>
                     <ul class="list-disc list-inside space-y-1 text-slate-600" data-productos></ul>
                 </div>
                 <div class="border-t border-slate-200 pt-4 space-y-3">
@@ -146,7 +140,7 @@
                         <i class="ph ph-map-pin text-2xl text-slate-500 group-hover:text-blue-600 transition"></i>
                         <div>
                             <p class="font-semibold text-slate-700 group-hover:text-blue-600 transition" data-direccion></p>
-                            <span class="text-sm text-blue-500">Tocar para abrir en el mapa</span>
+                            <span class="text-sm text-blue-500">Toque para abrir no mapa</span>
                         </div>
                     </a>
                     <div class="flex items-center gap-3">
@@ -157,8 +151,8 @@
             </div>
             <div class="btns-container">
                 <div class="grid">
-                    <button data-accion="Enviado" class="btn-accion bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 transition flex items-center justify-center gap-2"> <i class="ph-fill ph-truck text-xl"></i>Marcar Enviado </button>
-                    <button data-accion="Entregado" class="btn-accion bg-green-500 hover:bg-green-600 text-white font-bold py-3 transition flex items-center justify-center gap-2"> <i class="ph-fill ph-check-circle text-xl"></i>Marcar Entregado
+                    <button data-accion="Enviado" class="btn-accion bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 transition flex items-center justify-center gap-2"> <i class="ph-fill ph-truck text-xl"></i>Marcar como Enviado </button>
+                    <button data-accion="Entregado" class="btn-accion bg-green-500 hover:bg-green-600 text-white font-bold py-3 transition flex items-center justify-center gap-2"> <i class="ph-fill ph-check-circle text-xl"></i>Marcar como Entregue
                     </button>
                     <button data-accion="Cancelado" class="btn-accion bg-red-500 hover:bg-red-600 text-white font-bold py-3 transition flex items-center justify-center gap-2">
                         <i class="ph-fill ph-x-circle text-xl"></i>Cancelar Pedido
@@ -171,7 +165,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- Selectores de Elementos ---
-    // IMPORTANTE: Asegúrate de que esta URL apunte a tu backend desplegado.
     const API_BASE_URL = 'https://mi-primera-app.fly.dev'; 
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
@@ -201,22 +194,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Lógica de Notificaciones ---
     function setupNotifications() {
         if (!('Notification' in window)) {
-            console.log("Este navegador no soporta notificaciones de escritorio.");
+            console.log("Este navegador não suporta notificações de desktop.");
             return;
         }
         if (Notification.permission === 'default') {
             notificationPermissionBanner.classList.remove('hidden');
         }
-        if (enableNotificationsBtn) { // Added null check
-            enableNotificationsBtn.addEventListener('click', () => {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        notificationPermissionBanner.classList.add('hidden');
-                        showNotification('¡Gracias!', 'Ahora recibirás notificaciones de nuevos pedidos.');
-                    }
-                });
+        enableNotificationsBtn.addEventListener('click', () => {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    notificationPermissionBanner.classList.add('hidden');
+                    showNotification('Obrigado!', 'Agora você receberá notificações de novos pedidos.');
+                }
             });
-        }
+        });
     }
 
     function playNotificationSound() {
@@ -246,34 +237,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Lógica de Modales ---
     function showModal(htmlContent) {
-        if (!modalContent || !modalContainer) { // Added null check
-            console.error('Modal elements not found.');
-            return;
-        }
         modalContent.innerHTML = htmlContent;
         modalContainer.classList.remove('hidden');
-        modalContainer.offsetHeight; // Forzar reflow para que la transición funcione
+        modalContainer.offsetHeight;
         modalContainer.classList.remove('opacity-0');
-        const innerModalContainer = modalContainer.querySelector('.modal-container');
-        if (innerModalContainer) { // Added null check
-            innerModalContainer.classList.remove('opacity-0', 'scale-95');
-        }
+        modalContainer.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
     }
 
     function hideModal() {
-        if (!modalContainer) return; // Added null check
         modalContainer.classList.add('opacity-0');
-        const innerModalContainer = modalContainer.querySelector('.modal-container');
-        if (innerModalContainer) { // Added null check
-            innerModalContainer.classList.add('opacity-0', 'scale-95');
-        }
+        modalContainer.querySelector('.modal-container').classList.add('opacity-0', 'scale-95');
         setTimeout(() => modalContainer.classList.add('hidden'), 300);
     }
 
     function showNewOrderModal(order) {
         const modalHTML = `
             <i class="ph ph-bell-ringing text-6xl text-blue-500 mb-4"></i>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Nuevo Pedido!</h2>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Novo Pedido!</h2>
             <p class="text-lg text-slate-600 mb-1">Cliente: <span class="font-bold">${order.customer_name}</span></p>
             <p class="text-lg text-slate-600 mb-4">Total: <span class="font-bold">R$${parseFloat(order.total).toFixed(2)}</span></p>
             <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">
@@ -281,10 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </button>
         `;
         showModal(modalHTML);
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        if (closeModalBtn) { // Added null check
-            closeModalBtn.addEventListener('click', hideModal);
-        }
+        document.getElementById('close-modal-btn').addEventListener('click', hideModal);
     }
 
     function showConfirmationModal(message, onConfirm) {
@@ -297,29 +274,23 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         showModal(modalHTML);
-        const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
-        const confirmActionBtn = document.getElementById('confirm-action-btn');
-        if (confirmCancelBtn) { // Added null check
-            confirmCancelBtn.addEventListener('click', hideModal);
-        }
-        if (confirmActionBtn) { // Added null check
-            confirmActionBtn.addEventListener('click', () => {
-                hideModal();
-                onConfirm();
-            });
-        }
+        document.getElementById('confirm-cancel-btn').addEventListener('click', hideModal);
+        document.getElementById('confirm-action-btn').addEventListener('click', () => {
+            hideModal();
+            onConfirm();
+        });
     }
 
     // --- Lógica Principal de la App ---
     function showApp() {
-        if (loginContainer) loginContainer.classList.add('hidden');
-        if (appContainer) appContainer.classList.remove('hidden');
+        loginContainer.classList.add('hidden');
+        appContainer.classList.remove('hidden');
         setupNotifications();
     }
 
     function showLogin() {
-        if (appContainer) appContainer.classList.add('hidden');
-        if (loginContainer) loginContainer.classList.remove('hidden');
+        appContainer.classList.add('hidden');
+        loginContainer.classList.remove('hidden');
         if (window.orderPollingInterval) {
             clearInterval(window.orderPollingInterval);
         }
@@ -334,66 +305,58 @@ document.addEventListener('DOMContentLoaded', () => {
         showLogin();
     }
 
-    if (loginForm) { // Added null check
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username')?.value; // Optional chaining for safety
-            const password = document.getElementById('password')?.value; // Optional chaining for safety
-            const rememberMe = document.getElementById('remember-me')?.checked; // Optional chaining for safety
-            if (errorMessage) errorMessage.textContent = ''; // Added null check
-            const recaptchaResponse = grecaptcha.getResponse();
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const rememberMe = document.getElementById('remember-me').checked;
+        errorMessage.textContent = '';
+        const recaptchaResponse = grecaptcha.getResponse();
+        
+        if (recaptchaResponse.length === 0) {
+            errorMessage.textContent = 'Por favor, complete o reCAPTCHA.';
+            return;
+        }
+        
+        try {
+            const formData = new URLSearchParams();
+            formData.append('username', username);
+            formData.append('password', password);
             
-            if (recaptchaResponse.length === 0) {
-                if (errorMessage) errorMessage.textContent = 'Por favor, completa el reCAPTCHA.';
-                return;
+            const response = await fetch(`${API_BASE_URL}/token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.detail || 'Usuário ou senha incorretos.');
             }
             
-            try {
-                const formData = new URLSearchParams();
-                formData.append('username', username);
-                formData.append('password', password);
-                formData.append('grant_type', 'password');
-                formData.append('scope', '')
-                
-                const response = await fetch(`${API_BASE_URL}/token`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: formData
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => null);
-                    throw new Error(errorData?.detail || 'Usuario o contraseña incorrectos.');
-                }
-                
-                const data = await response.json();
-                
-                if (rememberMe) {
-                    localStorage.setItem('authToken', data.access_token);
-                } else {
-                    sessionStorage.setItem('authToken', data.access_token);
-                }
-
-                showApp();
-                await fetchAllEntregas();
-                window.orderPollingInterval = setInterval(fetchAllEntregas, 30000);
-
-            } catch (error) {
-                if (errorMessage) errorMessage.textContent = error.message;
-                console.error('Error en login:', error);
+            const data = await response.json();
+            
+            if (rememberMe) {
+                localStorage.setItem('authToken', data.access_token);
+            } else {
+                sessionStorage.setItem('authToken', data.access_token);
             }
-        });
-    }
 
-    if (logoutButton) { // Added null check
-        logoutButton.addEventListener('click', () => {
-            localStorage.removeItem('authToken');
-            sessionStorage.removeItem('authToken');
-            showLogin();
-        });
-    }
+            showApp();
+            await fetchAllEntregas();
+            window.orderPollingInterval = setInterval(fetchAllEntregas, 30000);
+
+        } catch (error) {
+            errorMessage.textContent = error.message;
+            console.error('Erro no login:', error);
+        }
+    });
+
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
+        showLogin();
+    });
 
     function getAuthHeaders() {
         const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -404,25 +367,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const response = await fetch(url, { ...options, headers: getAuthHeaders() });
         if (response.status === 401 || response.status === 403) {
             showLogin();
-            throw new Error('Sesión expirada. Por favor, inicie sesión de nuevo.');
+            throw new Error('Sessão expirada. Por favor, faça o login novamente.');
         }
         return response;
     }
 
     async function fetchAllEntregas() {
         const isFirstRun = !initialFetchDone;
-        if (isFirstRun) {
-            showLoader(true);
-        }
+        if (isFirstRun) showLoader(true);
+        
         try {
             const response = await fetchApi(`${API_BASE_URL}/orders`); 
-            if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
+            if (!response.ok) throw new Error(`Erro de rede: ${response.statusText}`);
             allEntregas = await response.json();
             
             checkForNewOrders();
             renderVista(currentVista);
         } catch (error) {
-            console.error('ERROR al cargar los pedidos:', error);
+            console.error('ERRO ao carregar os pedidos:', error);
         } finally {
             if (isFirstRun) {
                 showLoader(false);
@@ -439,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             currentPendingOrders.forEach(order => {
                 if (!knownPendingIds.has(order.id)) {
-                    showNotification(`Nuevo Pedido #${order.id}`, `Cliente: ${order.customer_name}`, order.id);
+                    showNotification(`Novo Pedido #${order.id}`, `Cliente: ${order.customer_name}`, order.id);
                     showNewOrderModal(order);
                     knownPendingIds.add(order.id);
                 }
@@ -449,33 +411,32 @@ document.addEventListener('DOMContentLoaded', () => {
         knownPendingIds = new Set([...knownPendingIds].filter(id => currentPendingIdsSet.has(id)));
     }
 
-
     function renderVista(vista) {
-        if (listaEntregasContainer) listaEntregasContainer.innerHTML = ''; 
-        if (mensajeVacio) mensajeVacio.classList.add('hidden'); 
-        if (headerTitle) headerTitle.textContent = `Pedidos ${vista}s`; 
+        listaEntregasContainer.innerHTML = ''; 
+        mensajeVacio.classList.add('hidden'); 
+        headerTitle.textContent = `Pedidos ${vista}s`; 
         
         const entregasFiltradas = allEntregas.filter(entrega => 
             entrega.status && entrega.status.toLowerCase() === vista.toLowerCase()
         );
         
         if (entregasFiltradas.length === 0) {
-            if (mensajeVacio) mensajeVacio.classList.remove('hidden'); 
+            mensajeVacio.classList.remove('hidden'); 
             const iconElement = document.getElementById('mensaje-vacio-icono');
             const textElement = document.getElementById('mensaje-vacio-texto');
-            if (iconElement) iconElement.className = 'text-6xl text-slate-400'; 
+            iconElement.className = 'text-6xl text-slate-400'; 
             if (vista.toLowerCase() === 'pendiente') {
-                if (iconElement) iconElement.classList.add('ph', 'ph-package');
-                if (textElement) textElement.textContent = 'No hay pedidos pendientes en este momento.';
+                iconElement.classList.add('ph', 'ph-package');
+                textElement.textContent = 'Não há pedidos pendentes no momento.';
             } else if (vista.toLowerCase() === 'enviado') {
-                if (iconElement) iconElement.classList.add('ph', 'ph-truck');
-                if (textElement) textElement.textContent = 'No hay pedidos en envío en este momento.';
+                iconElement.classList.add('ph', 'ph-truck');
+                textElement.textContent = 'Não há pedidos em trânsito no momento.';
             } else if (vista.toLowerCase() === 'entregado') {
-                if (iconElement) iconElement.classList.add('ph', 'ph-check-circle');
-                if (textElement) textElement.textContent = 'No hay pedidos entregados.';
+                iconElement.classList.add('ph', 'ph-check-circle');
+                textElement.textContent = 'Não há pedidos entregues.';
             } else if (vista.toLowerCase() === 'cancelado') {
-                if (iconElement) iconElement.classList.add('ph', 'ph-x-circle');
-                if (textElement) textElement.textContent = 'No hay pedidos cancelados.';
+                iconElement.classList.add('ph', 'ph-x-circle');
+                textElement.textContent = 'Não há pedidos cancelados.';
             }
         } else {
             entregasFiltradas.forEach(crearTarjetaEntrega);
@@ -483,226 +444,134 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function crearTarjetaEntrega(entrega) {
-        if (!tarjetaTemplate) {
-            console.error('Error: Template de tarjeta de entrega no encontrado.');
-            return;
-        }
         const card = tarjetaTemplate.content.cloneNode(true).firstElementChild;
-        if (!card) {
-            console.error('Error: No se pudo clonar el elemento de la tarjeta.');
-            return;
-        }
 
-        // --- Asignación de datos a la tarjeta ---
-        const dataId = card.querySelector('[data-id]');
-        if (dataId) dataId.textContent = entrega.id;
-
-        const dataCliente = card.querySelector('[data-cliente]');
-        if (dataCliente) dataCliente.textContent = entrega.customer_name;
-
-        const dataTotal = card.querySelector('[data-total]');
-        if (dataTotal) dataTotal.textContent = `Total a cobrar: R$${parseFloat(entrega.total).toFixed(2)}`;
-
-        const dataDireccion = card.querySelector('[data-direccion]');
-        if (dataDireccion) dataDireccion.textContent = entrega.customer_address || 'Dirección no disponible';
-
-        const dataTelefono = card.querySelector('[data-telefono]');
-        if (dataTelefono) dataTelefono.textContent = entrega.customer_phone || 'Teléfono no disponible';
-
-        const dataDireccionLink = card.querySelector('[data-direccion-link]');
-        if (dataDireccionLink) {
-            dataDireccionLink.href = `https://www.google.com/maps/search/${encodeURIComponent(entrega.customer_address)}`;
-        }
+        card.querySelector('[data-id]').textContent = entrega.id;
+        card.querySelector('[data-cliente]').textContent = entrega.customer_name;
+        card.querySelector('[data-total]').textContent = `Total a cobrar: R$${parseFloat(entrega.total).toFixed(2)}`;
+        card.querySelector('[data-direccion]').textContent = entrega.customer_address || 'Endereço não disponível';
+        card.querySelector('[data-telefono]').textContent = entrega.customer_phone || 'Telefone não disponível';
+        // CORREGIDO: Formato de URL para Google Maps
+        card.querySelector('[data-direccion-link]').href = `https://www.google.com/maps?q=${encodeURIComponent(entrega.customer_address)}`;
         
         const productosContainer = card.querySelector('[data-productos]');
-        if (productosContainer) { 
-            productosContainer.innerHTML = '';
-            const items = entrega.items || []; 
+        productosContainer.innerHTML = '';
+        const items = entrega.items || []; 
 
-            if (items.length > 0) {
-                items.forEach(p => { 
-                    const li = document.createElement('li'); 
-                    li.textContent = `${p.quantity}x ${p.product_name} (R$${parseFloat(p.unit_price).toFixed(2)} c/u)`;
-                    productosContainer.appendChild(li); 
-                });
-            } else { 
+        if (items.length > 0) {
+            items.forEach(p => { 
                 const li = document.createElement('li'); 
-                li.textContent = 'No se especificaron productos.'; 
+                li.textContent = `${p.quantity}x ${p.product_name} (R$${parseFloat(p.unit_price).toFixed(2)} cada)`;
                 productosContainer.appendChild(li); 
-            }
+            });
+        } else { 
+            const li = document.createElement('li'); 
+            li.textContent = 'Produtos não especificados.'; 
+            productosContainer.appendChild(li); 
         }
 
-        const btnsContainer = card.querySelector('.btns-container .grid');
+        // Lógica de botones corregida
+        const btnsContainer = card.querySelector('.btns-container');
         const btnEnviado = card.querySelector('[data-accion="Enviado"]');
         const btnEntregado = card.querySelector('[data-accion="Entregado"]');
         const btnCancelar = card.querySelector('[data-accion="Cancelado"]');
-        
-        // --- DEPURACIÓN: Muestra si los botones se encuentran ---
-        console.log(`Pedido ID: ${entrega.id}`);
-        console.log('btnsContainer:', btnsContainer); 
-        console.log('btnEnviado:', btnEnviado);
-        console.log('btnEntregado:', btnEntregado);
-        console.log('btnCancelar:', btnCancelar);
-        console.log('Card outerHTML:', card.outerHTML); 
 
-        // Oculta todos los botones inicialmente (con verificación de nulidad)
-        [btnEnviado, btnEntregado, btnCancelar].forEach(btn => {
-            if (btn) { 
-                btn.style.display = 'none';
-            } else {
-                console.warn(`Advertencia: Botón no encontrado en la tarjeta para la acción. Revisar template.`, btn);
-            }
-        });
+        btnEnviado.style.display = 'none';
+        btnEntregado.style.display = 'none';
+        btnCancelar.style.display = 'none';
 
-        const estadoActual = entrega.status ? entrega.status.trim().toLowerCase() : '';
+        const estadoActual = (entrega.status || '').toLowerCase();
+
         if (estadoActual === 'pendiente') {
-            if (btnsContainer) btnsContainer.classList.add('grid-cols-2');
-            if (btnEnviado) btnEnviado.style.display = 'flex';
-            if (btnCancelar) btnCancelar.style.display = 'flex';
+            btnEnviado.style.display = 'flex';
+            btnCancelar.style.display = 'flex';
         } else if (estadoActual === 'enviado') {
-            if (btnsContainer) btnsContainer.classList.add('grid-cols-2');
-            if (btnEntregado) btnEntregado.style.display = 'flex';
-            if (btnCancelar) btnCancelar.style.display = 'flex';
+            btnEntregado.style.display = 'flex';
+            btnCancelar.style.display = 'flex';
         } else {
-            // Si el pedido ya está Entregado o Cancelado, los botones de acción se ocultan
-            const btnsContainerElement = card.querySelector('.btns-container');
-            if (btnsContainerElement) {
-                btnsContainerElement.remove(); 
-            }
+            btnsContainer.remove();
         }
 
-        card.querySelectorAll('[data-accion]').forEach(button => {
-            if (button) { 
-                button.addEventListener('click', () => handleAction(button.dataset.accion, entrega, card));
-            }
-        });
+        btnEnviado.addEventListener('click', () => handleAction(btnEnviado.dataset.accion, entrega, card));
+        btnEntregado.addEventListener('click', () => handleAction(btnEntregado.dataset.accion, entrega, card));
+        btnCancelar.addEventListener('click', () => handleAction(btnCancelar.dataset.accion, entrega, card));
         
-        if (listaEntregasContainer) { 
-            listaEntregasContainer.appendChild(card);
-        }
+        listaEntregasContainer.appendChild(card);
     }
 
     async function handleAction(accion, entrega, card) {
         const performAction = async () => {
             const loaderCard = card.querySelector('.loader-card');
             const buttons = card.querySelectorAll('button'); 
-            if (loaderCard) loaderCard.classList.remove('hidden'); 
-            buttons.forEach(b => { 
-                if (b) b.disabled = true;
-            });
+            loaderCard.classList.remove('hidden'); 
+            buttons.forEach(b => b.disabled = true);
 
             let newStatus = '';
-            let confirmationMessage = '';
-
-            if (accion === 'Enviado') {
-                newStatus = 'Enviado';
-                confirmationMessage = `¿Marcar el Pedido #${entrega.id} como "${newStatus}"?`;
-            } else if (accion === 'Entregado') {
-                newStatus = 'Entregado';
-                confirmationMessage = `¿Marcar el Pedido #${entrega.id} como "${newStatus}"? ¡Esto completará la venta!`;
-            } else if (accion === 'Cancelado') {
-                newStatus = 'Cancelado';
-                confirmationMessage = `¿Seguro que quieres CANCELAR el Pedido #${entrega.id}? ¡Esta acción es irreversible!`;
-            } else {
-                showConfirmationModal('Acción desconocida.', () => { /* No action on confirm for this case */ });
-                if (loaderCard) loaderCard.classList.add('hidden');
-                buttons.forEach(b => { if (b) b.disabled = false; });
-                return;
-            }
-
-            if (accion === 'Cancelado') {
-                showConfirmationModal(confirmationMessage, async () => {
-                    await sendStatusUpdate(entrega.id, newStatus, card, loaderCard, buttons);
-                });
-            } else {
-                await sendStatusUpdate(entrega.id, newStatus, card, loaderCard, buttons);
-            }
-        };
-
-        async function sendStatusUpdate(orderId, statusToSend, cardElement, loaderElement, buttonElements) {
+            if (accion === 'Enviado') newStatus = 'Enviado';
+            else if (accion === 'Entregado') newStatus = 'Entregado';
+            else if (accion === 'Cancelado') newStatus = 'Cancelado';
+            
             try {
-                // CORRECCIÓN CLAVE: Cambiar 'new_status' a 'status' para que coincida con el backend
-                const payload = { status: statusToSend }; 
-                console.log(`Enviando actualización de estado para Pedido #${orderId}:`, payload); 
-                
-                const response = await fetchApi(`${API_BASE_URL}/orders/${orderId}/status`, {
+                const payload = { status: newStatus }; 
+                const response = await fetchApi(`${API_BASE_URL}/orders/${entrega.id}/status`, {
                     method: 'PUT',
-                    body: JSON.stringify(payload), 
-                    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' } 
+                    body: JSON.stringify(payload)
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ detail: 'Error desconocido o respuesta no JSON.' }));
-                    let detailMessage = errorData.detail;
-                    // Intentar formatear el mensaje de error si es un objeto o array
-                    if (typeof detailMessage === 'object' && detailMessage !== null) {
-                        try {
-                            detailMessage = JSON.stringify(detailMessage, null, 2); // Pretty print JSON
-                        } catch (e) {
-                            detailMessage = String(detailMessage); // Fallback to string conversion
-                        }
-                    }
-                    throw new Error(detailMessage || `Error del servidor: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `Erro do servidor: ${response.status}`);
                 }
 
                 showModal(`
                     <i class="ph ph-check-circle text-6xl text-green-500 mb-4"></i>
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Éxito!</h2>
-                    <p class="text-lg text-slate-600 mb-4">Estado del Pedido #${orderId} actualizado a "${statusToSend}" exitosamente.</p>
-                    <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">
-                        Cerrar
-                    </button>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Sucesso!</h2>
+                    <p class="text-lg text-slate-600 mb-4">Status do Pedido #${entrega.id} atualizado para "${newStatus}".</p>
+                    <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Fechar</button>
                 `);
-                const closeModalBtn = document.getElementById('close-modal-btn');
-                if (closeModalBtn) closeModalBtn.addEventListener('click', hideModal);
+                document.getElementById('close-modal-btn').addEventListener('click', hideModal);
 
-
-                if (cardElement) { 
-                    cardElement.classList.add('card-exit', 'card-exit-active');
-                    cardElement.addEventListener('transitionend', () => fetchAllEntregas()); 
-                }
+                card.classList.add('card-exit', 'card-exit-active');
+                card.addEventListener('transitionend', () => fetchAllEntregas()); 
 
             } catch (error) {
-                console.error(`Error al ejecutar la acción para estado '${statusToSend}':`, error);
+                console.error(`Erro ao executar ação para estado '${newStatus}':`, error);
                 showModal(`
                     <i class="ph ph-x-circle text-6xl text-red-500 mb-4"></i>
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Error!</h2>
-                    <p class="text-lg text-slate-600 mb-4">No se pudo completar la acción: ${error.message}</p>
-                    <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">
-                        Cerrar
-                    </button>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Erro!</h2>
+                    <p class="text-lg text-slate-600 mb-4">Não foi possível completar a ação: ${error.message}</p>
+                    <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Fechar</button>
                 `);
-                const closeModalBtn = document.getElementById('close-modal-btn');
-                if (closeModalBtn) closeModalBtn.addEventListener('click', hideModal);
+                document.getElementById('close-modal-btn').addEventListener('click', hideModal);
 
-                if (loaderElement) loaderElement.classList.add('hidden');
-                buttonElements.forEach(b => { if (b) b.disabled = false; });
+                loaderCard.classList.add('hidden');
+                buttons.forEach(b => b.disabled = false);
             }
-        }
+        };
         
-        performAction();
+        if (accion === 'Cancelado') {
+            showConfirmationModal(`Tem certeza que deseja CANCELAR o Pedido #${entrega.id}? Esta ação é irreversível!`, performAction);
+        } else {
+            performAction();
+        }
     }
     
     function showLoader(visible) {
-        if (loaderGlobal) loaderGlobal.classList.toggle('hidden', !visible); 
+        loaderGlobal.classList.toggle('hidden', !visible); 
     }
 
-    if (refreshButton) { 
-        refreshButton.addEventListener('click', fetchAllEntregas);
-    }
+    refreshButton.addEventListener('click', fetchAllEntregas);
 
     navItems.forEach(item => {
-        if (item) { 
-            item.addEventListener('click', () => {
-                currentVista = item.dataset.vista;
-                navItems.forEach(i => { 
-                    if (i) i.classList.remove('active');
-                });
-                item.classList.add('active');
-                renderVista(currentVista);
-            });
-        }
+        item.addEventListener('click', () => {
+            currentVista = item.dataset.vista;
+            navItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            renderVista(currentVista);
+        });
     });
+    
+    // Cierre del addEventListener principal
 });
 </script>
 </body>

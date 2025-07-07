@@ -70,9 +70,15 @@
             <div class="max-w-4xl mx-auto px-5 py-4 flex justify-between items-center">
                 <h1 id="header-title" class="text-2xl font-bold text-slate-800">Pedidos Pendentes</h1>
                 <div>
+                    <!-- BOTÓN PARA VENTAS -->
                     <a href="ventas.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Nova Venda">
                         <i class="ph ph-storefront text-3xl"></i>
                     </a>
+                    <!-- BOTÓN NUEVO PARA GASTOS -->
+                    <a href="gastos.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Gestão de Despesas">
+                        <i class="ph ph-receipt text-3xl"></i>
+                    </a>
+                    <!-- BOTONES EXISTENTES -->
                     <button id="refreshButton" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Atualizar">
                         <i class="ph ph-arrow-clockwise text-3xl"></i>
                     </button>
@@ -451,7 +457,6 @@ document.addEventListener('DOMContentLoaded', () => {
         card.querySelector('[data-total]').textContent = `Total a cobrar: R$${parseFloat(entrega.total).toFixed(2)}`;
         card.querySelector('[data-direccion]').textContent = entrega.customer_address || 'Endereço não disponível';
         card.querySelector('[data-telefono]').textContent = entrega.customer_phone || 'Telefone não disponível';
-        // CORREGIDO: Formato de URL para Google Maps
         card.querySelector('[data-direccion-link]').href = `https://www.google.com/maps?q=${encodeURIComponent(entrega.customer_address)}`;
         
         const productosContainer = card.querySelector('[data-productos]');
@@ -470,7 +475,6 @@ document.addEventListener('DOMContentLoaded', () => {
             productosContainer.appendChild(li); 
         }
 
-        // Lógica de botones corregida
         const btnsContainer = card.querySelector('.btns-container');
         const btnEnviado = card.querySelector('[data-accion="Enviado"]');
         const btnEntregado = card.querySelector('[data-accion="Entregado"]');
@@ -571,7 +575,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Cierre del addEventListener principal
 });
 </script>
 </body>

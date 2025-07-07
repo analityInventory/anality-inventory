@@ -75,7 +75,6 @@
         <!-- Coluna da Lista de Despesas -->
         <div class="lg:col-span-2">
             
-            <!-- 2. SECCIÓN DE RESUMEN Y GRÁFICO AÑADIDA -->
             <div class="bg-white p-5 rounded-xl shadow-lg mb-6">
                 <h3 class="text-xl font-bold text-slate-800 mb-4">Resumen de Gastos (Filtro Actual)</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -90,8 +89,12 @@
             </div>
 
             <div class="bg-white p-5 rounded-xl shadow-lg">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 items-center">
-                    <input type="text" id="search-input" placeholder="Buscar por descrição..." class="form-input md:col-span-2">
+                <!-- SECCIÓN DE FILTROS MODIFICADA -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4 items-center">
+                    <input type="text" id="search-input" placeholder="Buscar por descrição..." class="form-input lg:col-span-1">
+                    <select id="month-filter" class="form-input">
+                        <option value="Todos">Todos os Meses</option>
+                    </select>
                     <div class="flex gap-2">
                         <select id="category-filter" class="form-input flex-grow">
                             <option value="Todos">Todas as Categorias</option>
@@ -210,13 +213,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let allExpenses = [];
     let allCategories = [];
     let editingExpenseId = null;
-    let expenseChart = null; // 3. VARIABLE PARA EL GRÁFICO
+    let expenseChart = null;
 
     // --- SELECTORES DE ELEMENTOS ---
     const expenseListBody = document.getElementById('expenses-list-body');
     const noExpensesMessage = document.getElementById('no-expenses-message');
     const searchInput = document.getElementById('search-input');
     const categoryFilter = document.getElementById('category-filter');
+    const monthFilter = document.getElementById('month-filter'); // NUEVO SELECTOR
     const expenseForm = document.getElementById('expense-form');
     const formTitle = document.getElementById('form-title');
     const saveButton = document.getElementById('save-button');
@@ -263,20 +267,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function populateCategorySelects() {
-        const categorySelects = [document.getElementById('expense-category'), categoryFilter];
-        categorySelects.forEach(select => {
-            const firstOptionValue = select.options[0]?.value;
-            select.innerHTML = '';
-            if (select.id === 'category-filter') {
-                 select.appendChild(new Option('Todas as Categorias', 'Todos'));
-            }
-            allCategories.forEach(cat => select.appendChild(new Option(cat.nombre, cat.nombre)));
-            if (firstOptionValue) select.value = firstOptionValue;
+        const firstOptionValue = categoryFilter.options[0]?.value;
+        categoryFilter.innerHTML = '';
+        categoryFilter.appendChild(new Option('Todas as Categorias', 'Todos'));
+        allCategories.forEach(cat => categoryFilter.appendChild(new Option(cat.nombre, cat.nombre)));
+        if (firstOptionValue) categoryFilter.value = firstOptionValue;
+        
+        // También popular el select del formulario
+        const expenseCategorySelect = document.getElementById('expense-category');
+        expenseCategorySelect.innerHTML = '';
+        allCategories.forEach(cat => expenseCategorySelect.appendChild(new Option(cat.nombre, cat.nombre)));
+    }
+
+    // NUEVA FUNCIÓN PARA POBLAR EL FILTRO DE MES
+    function populateMonthFilter() {
+        const months = [...new Set(allExpenses.map(exp => exp.fecha.substring(0, 7)))]; // Extrai YYYY-MM
+        months.sort().reverse(); // Ordena do mais recente para o mais antigo
+
+        const firstOptionValue = monthFilter.options[0]?.value;
+        monthFilter.innerHTML = '';
+        monthFilter.appendChild(new Option('Todos os Meses', 'Todos'));
+
+        months.forEach(monthStr => {
+            const [year, month] = monthStr.split('-');
+            const date = new Date(year, month - 1, 1);
+            const monthName = date.toLocaleString('pt-BR', { month: 'long' });
+            const optionText = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+            monthFilter.appendChild(new Option(optionText, monthStr));
         });
+
+        if (firstOptionValue) monthFilter.value = firstOptionValue;
     }
 
     async function fetchExpenses() {
         allExpenses = await fetchApi('/gastos');
+        populateMonthFilter(); // Llama a la nueva función después de obtener los gastos
         renderExpenses();
     }
 
@@ -284,14 +309,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderExpenses() {
         const searchTerm = searchInput.value.toLowerCase();
         const selectedCategory = categoryFilter.value;
+        const selectedMonth = monthFilter.value; // NUEVA VARIABLE PARA EL MES
 
         const filteredExpenses = allExpenses.filter(expense => {
             const matchesSearch = expense.descripcion.toLowerCase().includes(searchTerm);
             const matchesCategory = selectedCategory === 'Todos' || expense.categoria === selectedCategory;
-            return matchesSearch && matchesCategory;
+            const matchesMonth = selectedMonth === 'Todos' || expense.fecha.startsWith(selectedMonth); // NUEVA CONDICIÓN
+            return matchesSearch && matchesCategory && matchesMonth;
         });
         
-        // 4. ACTUALIZAR TOTAL Y GRÁFICO
         const totalGastado = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.valor), 0);
         totalExpensesValueEl.textContent = `R$${totalGastado.toFixed(2)}`;
         renderExpenseChart(filteredExpenses);
@@ -326,14 +352,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // 5. NUEVA FUNCIÓN PARA RENDERIZAR EL GRÁFICO
     function renderExpenseChart(expenses) {
         const ctx = document.getElementById('expense-chart').getContext('2d');
-
         const categoryTotals = expenses.reduce((acc, expense) => {
             const categoryName = expense.categoria || 'Sem Categoria';
             if (!acc[categoryName]) {
-                acc[categoryName] = { total: 0, color: '#94a3b8' }; // Cor padrão
+                acc[categoryName] = { total: 0, color: '#94a3b8' };
                 const categoryData = allCategories.find(c => c.nombre === categoryName);
                 if (categoryData) acc[categoryName].color = categoryData.color;
             }
@@ -501,6 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- EVENT LISTENERS ---
     searchInput.addEventListener('input', renderExpenses);
     categoryFilter.addEventListener('change', renderExpenses);
+    monthFilter.addEventListener('change', renderExpenses); // NUEVO EVENT LISTENER
     expenseForm.addEventListener('submit', handleFormSubmit);
     clearButton.addEventListener('click', clearForm);
     logoutButton.addEventListener('click', () => {

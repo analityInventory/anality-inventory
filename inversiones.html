@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gestão de Inversiones</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        #app-container { padding-bottom: 90px; }
+        .nav-item.active i, .nav-item.active span { color: #3b82f6; }
+        .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="font-sans">
+    <div id="app-container">
+        <header class="bg-white shadow-md sticky top-0 z-10">
+            <div class="max-w-4xl mx-auto px-5 py-4 flex justify-between items-center">
+                <h1 id="header-title" class="text-2xl font-bold text-slate-800">Inversiones</h1>
+                <div>
+                    <button id="addInversionButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition active:scale-90 mr-4" title="Nueva Inversión">
+                        <i class="ph ph-plus text-xl"></i> <span class="hidden sm:inline">Nueva Inversión</span>
+                    </button>
+                    <button id="refreshButton" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Actualizar">
+                        <i class="ph ph-arrow-clockwise text-3xl"></i>
+                    </button>
+                    <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
+                        <i class="ph ph-sign-out text-3xl"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main id="lista-inversiones" class="max-w-4xl mx-auto p-4"></main>
+
+        <div id="mensaje-vacio" class="hidden text-center mt-16 px-4">
+            <i id="mensaje-vacio-icono" class="ph ph-wallet text-6xl text-slate-400"></i>
+            <p id="mensaje-vacio-texto" class="text-slate-500 mt-4 text-lg">No hay inversiones en esta sección.</p>
+        </div>
+
+        <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-t-md border-t border-slate-200 h-[80px] z-20">
+            <div class="max-w-4xl mx-auto h-full grid grid-cols-3">
+                <button data-vista="En Camino" class="nav-item flex flex-col items-center justify-center text-slate-500 active">
+                    <i class="ph ph-truck text-3xl"></i><span class="text-xs font-medium">En Camino</span>
+                </button>
+                <button data-vista="Recibido" class="nav-item flex flex-col items-center justify-center text-slate-500">
+                    <i class="ph ph-check-circle text-3xl"></i><span class="text-xs font-medium">Recibidas</span>
+                </button>
+                <button data-vista="Retenido" class="nav-item flex flex-col items-center justify-center text-slate-500">
+                    <i class="ph ph-x-circle text-3xl"></i><span class="text-xs font-medium">Retenidas</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <div id="loader-global" class="hidden fixed inset-0 bg-white bg-opacity-75 flex justify-center items-center z-50">
+        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
+    </div>
+    <div id="modal-container" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center modal-container opacity-0 scale-95">
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // Aquí irá tu JavaScript para gestionar inversiones
+        const API_BASE_URL = "https://mi-primera-app.fly.dev"; // Cambia esto por la URL de tu API
+        const listaInversiones = document.getElementById('lista-inversiones');
+        const mensajeVacio = document.getElementById('mensaje-vacio');
+        const loaderGlobal = document.getElementById('loader-global');
+        const refreshButton = document.getElementById('refreshButton');
+        const logoutButton = document.getElementById('logoutButton');
+        const navItems = document.querySelectorAll('.nav-item');
+        const addInversionButton = document.getElementById('addInversionButton'); // Nuevo botón
+        let currentVista = 'En Camino'; // Estado inicial
+
+        // Funciones auxiliares (showLoader, showModal, hideModal, etc. - copiar de index.html)
+        function showLoader(visible) {
+            loaderGlobal.classList.toggle('hidden', !visible);
+        }
+
+        function showModal(contentHtml) {
+            const modalContainer = document.getElementById('modal-container');
+            const modalContent = document.getElementById('modal-content');
+            modalContent.innerHTML = contentHtml;
+            modalContainer.classList.remove('hidden');
+            setTimeout(() => {
+                modalContainer.classList.add('opacity-100');
+                modalContainer.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
+                modalContainer.querySelector('.modal-container').classList.add('opacity-100', 'scale-100');
+            }, 10);
+        }
+
+        function hideModal() {
+            const modalContainer = document.getElementById('modal-container');
+            modalContainer.classList.remove('opacity-100');
+            modalContainer.querySelector('.modal-container').classList.remove('opacity-100', 'scale-100');
+            modalContainer.querySelector('.modal-container').classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                modalContainer.classList.add('hidden');
+            }, 300); // Coincide con la duración de la transición CSS
+        }
+
+        function showConfirmationModal(message, onConfirm) {
+            showModal(`
+                <i class="ph ph-question text-6xl text-blue-500 mb-4"></i>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Confirmar Acción</h2>
+                <p class="text-lg text-slate-600 mb-4">${message}</p>
+                <div class="flex justify-center space-x-4">
+                    <button id="confirm-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Confirmar</button>
+                    <button id="cancel-btn" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Cancelar</button>
+                </div>
+            `);
+            document.getElementById('confirm-btn').addEventListener('click', () => {
+                hideModal();
+                onConfirm();
+            });
+            document.getElementById('cancel-btn').addEventListener('click', hideModal);
+        }
+
+
+        // Funciones para la API
+        async function fetchAPI(endpoint, method = 'GET', data = null) {
+            const token = localStorage.getItem('access_token');
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+
+            const config = { method, headers };
+            if (data) {
+                config.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+                if (response.status === 401) {
+                    window.location.href = 'index.html'; // Redirigir al login si no autorizado
+                    return null;
+                }
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Algo salió mal');
+                }
+                if (method === 'DELETE' || response.status === 204) {
+                    return {}; // No content for DELETE or 204
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching from API:', error);
+                showModal(`
+                    <i class="ph ph-x-circle text-6xl text-red-500 mb-4"></i>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Erro!</h2>
+                    <p class="text-lg text-slate-600 mb-4">Não foi possível completar a ação: ${error.message}</p>
+                    <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Fechar</button>
+                `);
+                document.getElementById('close-modal-btn').addEventListener('click', hideModal);
+                return null;
+            }
+        }
+
+        // Función para cargar inversiones
+        async function fetchAllInversiones() {
+            showLoader(true);
+            listaInversiones.innerHTML = '';
+            try {
+                const inversiones = await fetchAPI(`/inversiones?estado=${currentVista}`);
+                if (inversiones && inversiones.length > 0) {
+                    mensajeVacio.classList.add('hidden');
+                    inversiones.forEach(inversion => {
+                        listaInversiones.appendChild(createInversionCard(inversion));
+                    });
+                } else {
+                    mensajeVacio.classList.remove('hidden');
+                    document.getElementById('mensaje-vacio-icono').className = 'ph ph-wallet text-6xl text-slate-400';
+                    document.getElementById('mensaje-vacio-texto').textContent = `No hay inversiones en estado "${currentVista}".`;
+                }
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        // Función para crear la tarjeta de inversión (adaptar de tarjeta-entrega-template)
+        function createInversionCard(inversion) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-lg shadow-md mb-4 overflow-hidden';
+            card.dataset.inversionId = inversion.id;
+
+            let itemsListHtml = inversion.items.map(item => `
+                <p class="text-sm text-slate-600 ml-4">- ${item.name} (x${item.quantity}) - R$ ${item.unit_cost.toFixed(2)} c/u</p>
+            `).join('');
+
+
+            card.innerHTML = `
+                <div class="p-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-xl font-semibold text-slate-800">Inversión #${inversion.id}</h2>
+                        <span class="text-sm font-medium px-3 py-1 rounded-full ${inversion.estado === 'Recibido' ? 'bg-green-100 text-green-800' : inversion.estado === 'En Camino' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">
+                            ${inversion.estado}
+                        </span>
+                    </div>
+                    <p class="text-slate-700 mb-2">Descripción: ${inversion.descripcion}</p>
+                    <p class="text-slate-700 mb-2">Costo Total: R$ ${inversion.total_costo.toFixed(2)}</p>
+                    ${inversion.tracking ? `<p class="text-slate-700 mb-2">Tracking: ${inversion.tracking}</p>` : ''}
+                    ${inversion.fecha_envio ? `<p class="text-slate-700 mb-2">Fecha Envío: ${new Date(inversion.fecha_envio).toLocaleDateString()}</p>` : ''}
+                    ${inversion.fecha_llegada ? `<p class="text-slate-700 mb-2">Fecha Llegada: ${new Date(inversion.fecha_llegada).toLocaleDateString()}</p>` : ''}
+                    <div class="mt-3">
+                        <h3 class="text-md font-semibold text-slate-700">Productos:</h3>
+                        ${itemsListHtml || '<p class="text-sm text-slate-600 ml-4">Sin productos asociados.</p>'}
+                    </div>
+
+                    <div class="flex justify-end space-x-2 mt-4">
+                        <button class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-lg text-sm edit-btn" data-id="${inversion.id}">
+                            <i class="ph ph-pencil-simple"></i> Editar
+                        </button>
+                        ${inversion.estado !== 'Recibido' ? `
+                        <button class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-3 rounded-lg text-sm mark-received-btn" data-id="${inversion.id}">
+                            <i class="ph ph-check"></i> Recibido
+                        </button>` : ''}
+                        <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg text-sm delete-btn" data-id="${inversion.id}">
+                            <i class="ph ph-trash"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            card.querySelector('.edit-btn').addEventListener('click', () => openInversionForm(inversion.id));
+            if (inversion.estado !== 'Recibido') {
+                card.querySelector('.mark-received-btn').addEventListener('click', () => markInversionReceived(inversion.id));
+            }
+            card.querySelector('.delete-btn').addEventListener('click', () => deleteInversion(inversion.id));
+
+            return card;
+        }
+
+        // Función para abrir el formulario de inversión (crear o editar)
+        async function openInversionForm(inversionId = null) {
+            let inversion = null;
+            let formTitle = "Nueva Inversión";
+            let productsInForm = []; // Para almacenar los productos de la inversión editada
+
+            if (inversionId) {
+                showLoader(true);
+                inversion = await fetchAPI(`/inversiones/${inversionId}`);
+                showLoader(false);
+                if (!inversion) return;
+                formTitle = `Editar Inversión #${inversion.id}`;
+                productsInForm = inversion.items.map(item => ({
+                    id: item.product_id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    unit_cost: item.unit_cost
+                }));
+            }
+
+            let formHtml = `
+                <h2 class="text-2xl font-bold text-slate-800 mb-4">${formTitle}</h2>
+                <form id="inversion-form" class="text-left">
+                    <div class="mb-3">
+                        <label class="block text-slate-700 mb-1" for="descripcion">Descripción:</label>
+                        <input type="text" id="descripcion" class="w-full px-3 py-2 border rounded-lg" value="${inversion ? inversion.descripcion : ''}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-slate-700 mb-1" for="estado">Estado:</label>
+                        <select id="estado" class="w-full px-3 py-2 border rounded-lg">
+                            <option value="En Camino" ${inversion && inversion.estado === 'En Camino' ? 'selected' : ''}>En Camino</option>
+                            <option value="Recibido" ${inversion && inversion.estado === 'Recibido' ? 'selected' : ''}>Recibido</option>
+                            <option value="Retenido" ${inversion && inversion.estado === 'Retenido' ? 'selected' : ''}>Retenido</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-slate-700 mb-1" for="fecha_envio">Fecha Envío:</label>
+                        <input type="date" id="fecha_envio" class="w-full px-3 py-2 border rounded-lg" value="${inversion && inversion.fecha_envio ? inversion.fecha_envio.split('T')[0] : ''}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-slate-700 mb-1" for="fecha_llegada">Fecha Llegada:</label>
+                        <input type="date" id="fecha_llegada" class="w-full px-3 py-2 border rounded-lg" value="${inversion && inversion.fecha_llegada ? inversion.fecha_llegada.split('T')[0] : ''}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-slate-700 mb-1" for="tracking">Tracking:</label>
+                        <input type="text" id="tracking" class="w-full px-3 py-2 border rounded-lg" value="${inversion ? inversion.tracking : ''}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-slate-700 mb-1" for="costo_envio">Costo Envío (R$):</label>
+                        <input type="number" step="0.01" id="costo_envio" class="w-full px-3 py-2 border rounded-lg" value="${inversion ? inversion.costo_envio : '0.00'}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-slate-700 mb-1" for="observaciones">Observaciones:</label>
+                        <textarea id="observaciones" class="w-full px-3 py-2 border rounded-lg h-24">${inversion ? inversion.observaciones : ''}</textarea>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-slate-800 mt-6 mb-3">Productos</h3>
+                    <div id="product-items-container" class="border p-4 rounded-lg mb-4">
+                        </div>
+                    <button type="button" id="addProductBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded-lg text-sm mb-4">
+                        Añadir Producto
+                    </button>
+                    <p class="text-right text-lg font-bold text-slate-800">Costo Total Productos: R$ <span id="total-productos">0.00</span></p>
+
+                    <div class="flex justify-end space-x-4 mt-6">
+                        <button type="button" id="cancel-form-btn" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Cancelar</button>
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">
+                            ${inversionId ? 'Actualizar Inversión' : 'Guardar Inversión'}
+                        </button>
+                    </div>
+                </form>
+            `;
+            showModal(formHtml);
+
+            const inversionForm = document.getElementById('inversion-form');
+            const productItemsContainer = document.getElementById('product-items-container');
+            const addProductBtn = document.getElementById('addProductBtn');
+            const totalProductosSpan = document.getElementById('total-productos');
+            let currentProducts = productsInForm; // Usar el array local
+
+            function updateTotalProducts() {
+                const total = currentProducts.reduce((sum, item) => sum + (item.quantity * item.unit_cost), 0);
+                totalProductosSpan.textContent = total.toFixed(2);
+            }
+
+            function renderProductItems() {
+                productItemsContainer.innerHTML = '';
+                currentProducts.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex items-center space-x-2 mb-2 p-2 bg-slate-50 rounded-lg';
+                    itemDiv.innerHTML = `
+                        <p class="flex-1 text-slate-700">${item.name}</p>
+                        <input type="number" value="${item.quantity}" min="1" class="w-20 px-2 py-1 border rounded quantity-input" data-index="${index}">
+                        <input type="number" step="0.01" value="${item.unit_cost}" min="0" class="w-24 px-2 py-1 border rounded cost-input" data-index="${index}">
+                        <button type="button" class="text-red-500 hover:text-red-700 remove-product-btn" data-index="${index}">
+                            <i class="ph ph-minus-circle text-xl"></i>
+                        </button>
+                    `;
+                    productItemsContainer.appendChild(itemDiv);
+                });
+                attachProductItemListeners();
+                updateTotalProducts();
+            }
+
+            function attachProductItemListeners() {
+                productItemsContainer.querySelectorAll('.quantity-input').forEach(input => {
+                    input.addEventListener('change', (e) => {
+                        const index = e.target.dataset.index;
+                        currentProducts[index].quantity = parseInt(e.target.value);
+                        updateTotalProducts();
+                    });
+                });
+                productItemsContainer.querySelectorAll('.cost-input').forEach(input => {
+                    input.addEventListener('change', (e) => {
+                        const index = e.target.dataset.index;
+                        currentProducts[index].unit_cost = parseFloat(e.target.value);
+                        updateTotalProducts();
+                    });
+                });
+                productItemsContainer.querySelectorAll('.remove-product-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const index = e.target.closest('button').dataset.index;
+                        currentProducts.splice(index, 1);
+                        renderProductItems();
+                    });
+                });
+            }
+
+            // Diálogo de selección de producto (simplificado para web)
+            async function selectProductModal() {
+                const products = await fetchAPI('/products'); // Asume que tienes un endpoint /products
+                if (!products) return;
+
+                let productSelectionHtml = `
+                    <h3 class="text-xl font-bold text-slate-800 mb-3">Seleccionar Producto</h3>
+                    <input type="text" id="product-search" class="w-full px-3 py-2 border rounded-lg mb-3" placeholder="Buscar producto...">
+                    <div id="product-list-modal" class="max-h-60 overflow-y-auto border rounded-lg mb-4">
+                        </div>
+                    <div class="flex justify-end space-x-4">
+                        <button id="cancel-select-product-btn" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-3 rounded-lg">Cancelar</button>
+                    </div>
+                `;
+                showModal(productSelectionHtml);
+
+                const productSearchInput = document.getElementById('product-search');
+                const productListModal = document.getElementById('product-list-modal');
+
+                function renderFilteredProducts(filterText = '') {
+                    productListModal.innerHTML = '';
+                    const filtered = products.filter(p =>
+                        p.name.toLowerCase().includes(filterText.toLowerCase()) ||
+                        (p.brand && p.brand.toLowerCase().includes(filterText.toLowerCase()))
+                    );
+                    filtered.forEach(p => {
+                        const productItem = document.createElement('div');
+                        productItem.className = 'p-3 hover:bg-blue-100 cursor-pointer border-b last:border-b-0 flex justify-between items-center';
+                        productItem.innerHTML = `
+                            <span>${p.name} (${p.brand || 'N/A'}) - Stock: ${p.stock}</span>
+                            <button type="button" class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-2 py-1 rounded select-product-item-btn"
+                                data-id="${p.id}" data-name="${p.name}" data-cost="${p.costo || 0}">Seleccionar</button>
+                        `;
+                        productListModal.appendChild(productItem);
+                    });
+                    productListModal.querySelectorAll('.select-product-item-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const productId = parseInt(e.target.dataset.id);
+                            const productName = e.target.dataset.name;
+                            const productCost = parseFloat(e.target.dataset.cost);
+
+                            // Si el producto ya está en la lista, incrementar cantidad
+                            const existingItem = currentProducts.find(item => item.id === productId);
+                            if (existingItem) {
+                                existingItem.quantity += 1;
+                            } else {
+                                currentProducts.push({
+                                    product_id: productId,
+                                    name: productName,
+                                    quantity: 1,
+                                    unit_cost: productCost
+                                });
+                            }
+                            renderProductItems();
+                            hideModal(); // Cerrar el modal de selección
+                            // Reabrir el modal de inversión (opcional, si el flujo lo requiere)
+                            // openInversionForm(inversionId); // Para que el usuario pueda seguir añadiendo o editando
+                        });
+                    });
+                }
+
+                productSearchInput.addEventListener('input', (e) => renderFilteredProducts(e.target.value));
+                document.getElementById('cancel-select-product-btn').addEventListener('click', hideModal);
+
+                renderFilteredProducts(); // Renderizar al abrir
+            }
+
+
+            addProductBtn.addEventListener('click', selectProductModal);
+            document.getElementById('cancel-form-btn').addEventListener('click', hideModal);
+
+            inversionForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                showLoader(true);
+
+                const inversionData = {
+                    descripcion: document.getElementById('descripcion').value,
+                    estado: document.getElementById('estado').value,
+                    fecha_envio: document.getElementById('fecha_envio').value || null,
+                    fecha_llegada: document.getElementById('fecha_llegada').value || null,
+                    tracking: document.getElementById('tracking').value || null,
+                    costo_envio: parseFloat(document.getElementById('costo_envio').value),
+                    observaciones: document.getElementById('observaciones').value || null,
+                    total_costo: parseFloat(totalProductosSpan.textContent) + parseFloat(document.getElementById('costo_envio').value) // Suma de items + costo_envio
+                };
+
+                const items = currentProducts.map(item => ({
+                    product_id: item.product_id, // Usar product_id
+                    name: item.name,
+                    quantity: item.quantity,
+                    unit_cost: item.unit_cost
+                }));
+
+                const payload = {
+                    inversion_data: inversionData,
+                    items: items
+                };
+
+                let response;
+                if (inversionId) {
+                    response = await fetchAPI(`/inversiones/${inversionId}`, 'PUT', payload);
+                } else {
+                    response = await fetchAPI('/inversiones', 'POST', payload);
+                }
+
+                showLoader(false);
+                if (response) {
+                    hideModal();
+                    await fetchAllInversiones(); // Recargar la lista después de guardar
+                    showModal(`
+                        <i class="ph ph-check-circle text-6xl text-green-500 mb-4"></i>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Éxito!</h2>
+                        <p class="text-lg text-slate-600 mb-4">Inversión ${inversionId ? 'actualizada' : 'creada'} correctamente.</p>
+                        <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Cerrar</button>
+                    `);
+                    document.getElementById('close-modal-btn').addEventListener('click', hideModal);
+                }
+            });
+
+            renderProductItems(); // Renderizar productos iniciales si es una edición
+        }
+
+        async function markInversionReceived(inversionId) {
+            showConfirmationModal("¿Desea marcar esta inversión como 'Recibida'? Esto actualizará el stock de los productos.", async () => {
+                showLoader(true);
+                const payload = {
+                    estado: 'Recibido',
+                    fecha_llegada: new Date().toISOString().split('T')[0] // Fecha actual
+                };
+                const response = await fetchAPI(`/inversiones/${inversionId}/status`, 'PUT', payload);
+                showLoader(false);
+                if (response) {
+                    await fetchAllInversiones();
+                    showModal(`
+                        <i class="ph ph-check-circle text-6xl text-green-500 mb-4"></i>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Éxito!</h2>
+                        <p class="text-lg text-slate-600 mb-4">Inversión marcada como Recibida. El stock ha sido actualizado.</p>
+                        <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Cerrar</button>
+                    `);
+                    document.getElementById('close-modal-btn').addEventListener('click', hideModal);
+                }
+            });
+        }
+
+        async function deleteInversion(inversionId) {
+            showConfirmationModal("¿Está seguro de que desea ELIMINAR esta inversión? Esta acción es irreversible.", async () => {
+                showLoader(true);
+                const response = await fetchAPI(`/inversiones/${inversionId}`, 'DELETE');
+                showLoader(false);
+                if (response !== null) { // DELETE returns empty object on success, or null on API error
+                    await fetchAllInversiones();
+                    showModal(`
+                        <i class="ph ph-check-circle text-6xl text-green-500 mb-4"></i>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Éxito!</h2>
+                        <p class="text-lg text-slate-600 mb-4">Inversión eliminada correctamente.</p>
+                        <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Cerrar</button>
+                    `);
+                    document.getElementById('close-modal-btn').addEventListener('click', hideModal);
+                }
+            });
+        }
+
+
+        // Event Listeners
+        refreshButton.addEventListener('click', fetchAllInversiones);
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('access_token');
+            window.location.href = 'index.html';
+        });
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                currentVista = item.dataset.vista;
+                document.getElementById('header-title').textContent = `Inversiones ${currentVista}`;
+                fetchAllInversiones();
+            });
+        });
+        addInversionButton.addEventListener('click', () => openInversionForm()); // Abre el formulario para nueva inversión
+
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = 'index.html'; // Redirigir al login si no hay token
+                return;
+            }
+            fetchAllInversiones();
+        });
+
+    </script>
+</body>
+</html>

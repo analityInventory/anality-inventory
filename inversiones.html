@@ -291,7 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (inv.estado === 'En Camino') statusEl.className += ' bg-blue-500';
         else if (inv.estado === 'Retenido') statusEl.className += ' bg-yellow-500';
 
-        const itemsValue = inv.items.reduce((sum, item) => sum + (item.quantity * item.unit_cost), 0);
+        const items = Array.isArray(inv.items) ? inv.items : [];
+        const itemsValue = items.reduce((sum, item) => sum + (item.quantity * item.unit_cost), 0);
         const totalValue = itemsValue + (inv.costo_envio || 0);
         
         card.querySelector('[data-items-value]').textContent = `R$${itemsValue.toFixed(2)}`;

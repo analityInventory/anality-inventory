@@ -419,21 +419,49 @@ document.addEventListener('DOMContentLoaded', () => {
         loadProductsForModal('');
     }
 
-    async function loadProductsForModal(searchText) {
-        try {
-            const products = await fetchApi(`/products?filter_text=${searchText}`);
-            productListContainer.innerHTML = '';
-            products.forEach(p => {
-                const div = document.createElement('div');
-                div.className = 'p-3 hover:bg-slate-100 cursor-pointer border-b';
-                div.textContent = `${p.name} (Marca: ${p.brand || 'N/A'})`;
-                div.addEventListener('click', () => selectProduct(p));
-                productListContainer.appendChild(div);
-            });
-        } catch (error) {
-            alert(`Erro ao carregar produtos: ${error.message}`);
+      async function loadProductsForModal(searchText) {
+    try {
+        // Se añade ?include_all=true para obtener todos los productos
+        const products = await fetchApi(`/products?include_all=true&filter_text=${searchText}`);
+        productListContainer.innerHTML = ''; // Limpia la lista
+
+        if (products.length === 0) {
+            productListContainer.innerHTML = '<p class="p-4 text-center text-slate-500">Nenhum produto encontrado.</p>';
+            return;
         }
+
+        products.forEach(p => {
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center p-3 hover:bg-slate-100 cursor-pointer border-b';
+
+            // Lógica para los colores del stock
+            let stockColorClass = 'bg-green-500'; // Verde por defecto
+            if (p.stock <= 0) {
+                stockColorClass = 'bg-red-500'; // Rojo para agotados
+            } else if (p.stock <= 5) {
+                stockColorClass = 'bg-yellow-500'; // Amarillo para stock bajo
+            }
+
+            div.innerHTML = `
+                <div>
+                    <p class="font-semibold text-slate-800">${p.name}</p>
+                    <p class="text-sm text-slate-500">Marca: ${p.brand || 'N/A'}</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold text-slate-700">${p.stock}</p>
+                    <div class="flex justify-end items-center mt-1">
+                        <span class="text-xs text-slate-500 mr-2">Stock</span>
+                        <span class="w-3 h-3 rounded-full ${stockColorClass}"></span>
+                    </div>
+                </div>
+            `;
+            div.addEventListener('click', () => selectProduct(p));
+            productListContainer.appendChild(div);
+        });
+    } catch (error) {
+        alert(`Erro ao carregar produtos: ${error.message}`);
     }
+}
 
     function selectProduct(product) {
         const quantity = parseInt(prompt(`Quantidade para "${product.name}":`, '1'), 10);

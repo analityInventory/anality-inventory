@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AnalityInventory - Gestão de Pedidos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        .form-input {
+            width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1;
+            border-radius: 0.5rem; transition: ring 0.2s;
+        }
+        .form-input:focus {
+            outline: none; --tw-ring-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+            border-color: #3b82f6;
+        }
+        .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="font-sans">
+
+    <!-- Encabezado Principal con Navegación -->
+    <header class="bg-white shadow-md sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-slate-800">Gestão de Pedidos</h1>
+            <div class="flex items-center gap-4">
+                 <a href="productos.html" class="text-slate-600 hover:text-blue-600 transition" title="Produtos"><i class="ph ph-cube text-3xl"></i></a>
+                 <a href="inversiones.html" class="text-slate-600 hover:text-blue-600 transition" title="Investimentos"><i class="ph ph-package text-3xl"></i></a>
+                 <a href="gastos.html" class="text-slate-600 hover:text-blue-600 transition" title="Despesas"><i class="ph ph-receipt text-3xl"></i></a>
+                 <a href="graficos.html" class="text-slate-600 hover:text-blue-600 transition" title="Análise Gráfica"><i class="ph ph-chart-bar text-3xl"></i></a>
+                 <div class="border-l h-8 border-slate-300 mx-2"></div>
+                 <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
+                     <i class="ph ph-sign-out text-3xl"></i>
+                 </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 lg:p-6">
+        <!-- Filtros -->
+        <div class="mb-6 bg-white p-4 rounded-xl shadow-lg flex flex-wrap gap-4 items-center">
+            <div class="flex-grow">
+                <label class="text-sm font-medium text-slate-600">Filtrar por Status:</label>
+                <select id="status-filter" class="form-input mt-1">
+                    <option value="Todos">Todos</option>
+                    <option value="Pendiente" selected>Pendiente</option>
+                    <option value="Enviado">Enviado</option>
+                    <option value="Entregado">Entregado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+            </div>
+            <button id="refresh-button" class="bg-blue-500 text-white p-3 rounded-lg self-end hover:bg-blue-600 transition"><i class="ph ph-arrow-clockwise"></i></button>
+        </div>
+
+        <!-- Lista de Pedidos -->
+        <div id="orders-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Las tarjetas de pedido se insertarán aquí -->
+        </div>
+        <div id="loader-global" class="hidden text-center py-10">
+            <div class="loader inline-block w-12 h-12 border-4 rounded-full"></div>
+            <p class="mt-2 text-slate-500">Carregando pedidos...</p>
+        </div>
+        <p id="no-orders-message" class="hidden text-center text-slate-500 py-16 text-xl">Nenhum pedido encontrado para este filtro.</p>
+    </main>
+    
+    <!-- Template para Tarjeta de Pedido -->
+    <template id="order-card-template">
+        <div class="bg-white rounded-xl shadow-lg flex flex-col">
+            <div class="p-5 flex-grow">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <p class="font-bold text-lg text-slate-800" data-customer-name></p>
+                        <p class="text-sm text-slate-500">Pedido #<span data-order-id></span> - <span data-order-date></span></p>
+                    </div>
+                    <span class="px-3 py-1 text-xs font-bold rounded-full text-white" data-status></span>
+                </div>
+                <div class="text-sm text-slate-600 space-y-1 mb-4">
+                    <p><i class="ph ph-phone mr-2"></i><span data-customer-phone></span></p>
+                    <p><i class="ph ph-map-pin mr-2"></i><span data-customer-address></span></p>
+                </div>
+                <div class="border-t pt-3">
+                    <h4 class="font-semibold mb-2">Produtos:</h4>
+                    <ul class="text-sm space-y-1 text-slate-700" data-products-list></ul>
+                </div>
+            </div>
+            <div class="bg-slate-50 p-4 border-t rounded-b-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-sm text-slate-500">Taxa de Entrega: <span data-delivery-fee></span></span>
+                    <span class="text-xl font-bold text-slate-800" data-total></span>
+                </div>
+                <div class="flex gap-2" data-actions>
+                    <!-- Botones de acción se insertarán aquí -->
+                </div>
+                <div class="loader-card hidden w-6 h-6 border-2 rounded-full animate-spin mx-auto"></div>
+            </div>
+        </div>
+    </template>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- CONFIG & STATE ---
+    const API_BASE_URL = 'https://mi-primera-app.fly.dev';
+
+    // --- SELECTORS ---
+    const statusFilter = document.getElementById('status-filter');
+    const ordersContainer = document.getElementById('orders-container');
+    const loaderGlobal = document.getElementById('loader-global');
+    const noOrdersMessage = document.getElementById('no-orders-message');
+    const refreshButton = document.getElementById('refresh-button');
+    const logoutButton = document.getElementById('logoutButton');
+
+    // --- AUTHENTICATION ---
+    function getAuthHeaders() {
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        if (!token) {
+            window.location.href = 'index.html';
+            return null;
+        }
+        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    }
+
+    // --- API LOGIC ---
+    async function fetchApi(endpoint, options = {}) {
+        const headers = getAuthHeaders();
+        if (!headers) return; // Detiene si no hay token
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ detail: 'Erro de comunicação.' }));
+                throw new Error(errorData.detail);
+            }
+            if (response.status === 204) return null;
+            return response.json();
+        } catch (error) {
+            alert(`Erro na API: ${error.message}`);
+            throw error; // Propaga el error para que la función que llama pueda manejarlo
+        }
+    }
+
+    // --- ORDER MANAGEMENT ---
+    async function fetchAllOrders() {
+        loaderGlobal.classList.remove('hidden');
+        noOrdersMessage.classList.add('hidden');
+        ordersContainer.innerHTML = '';
+        
+        try {
+            const status = statusFilter.value;
+            const endpoint = status === 'Todos' ? '/orders' : `/orders?status_filter=${status}`;
+            const orders = await fetchApi(endpoint);
+            
+            noOrdersMessage.classList.toggle('hidden', orders.length > 0);
+            orders.forEach(createOrderCard);
+        } catch (error) {
+            console.error("Falha ao buscar pedidos:", error);
+            noOrdersMessage.textContent = "Não foi possível carregar os pedidos.";
+            noOrdersMessage.classList.remove('hidden');
+        } finally {
+            loaderGlobal.classList.add('hidden');
+        }
+    }
+
+    function createOrderCard(order) {
+        const template = document.getElementById('order-card-template');
+        const card = template.content.cloneNode(true).firstElementChild;
+
+        // Rellenar datos básicos
+        card.querySelector('[data-customer-name]').textContent = order.customer_name || 'Cliente não informado';
+        card.querySelector('[data-order-id]').textContent = order.id;
+        card.querySelector('[data-order-date]').textContent = new Date(order.order_date.replace(' ', 'T')).toLocaleString('pt-BR');
+        card.querySelector('[data-customer-phone]').textContent = order.customer_phone || 'Não informado';
+        card.querySelector('[data-customer-address]').textContent = order.customer_address || 'Não informado';
+        card.querySelector('[data-delivery-fee]').textContent = `R$${(order.delivery_fee || 0).toFixed(2)}`;
+        card.querySelector('[data-total]').textContent = `R$${(order.total || 0).toFixed(2)}`;
+
+        // Rellenar lista de productos
+        const productsList = card.querySelector('[data-products-list]');
+        if (order.products && order.products.length > 0) {
+            order.products.forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = `${p.quantity}x ${p.name}`;
+                productsList.appendChild(li);
+            });
+        } else {
+            productsList.innerHTML = '<li>Nenhum produto listado.</li>';
+        }
+
+        // Configurar status
+        const statusEl = card.querySelector('[data-status]');
+        statusEl.textContent = order.status;
+        const statusColors = {
+            'Pendiente': 'bg-yellow-500', 'Enviado': 'bg-blue-500',
+            'Entregado': 'bg-green-500', 'Cancelado': 'bg-red-500'
+        };
+        statusEl.classList.add(statusColors[order.status] || 'bg-slate-500');
+
+        // Configurar botones de acción
+        const actionsContainer = card.querySelector('[data-actions]');
+        const loaderCard = card.querySelector('.loader-card');
+        const actions = {
+            'Pendiente': [{ text: 'Marcar como Enviado', status: 'Enviado', color: 'bg-blue-500' }, { text: 'Cancelar', status: 'Cancelado', color: 'bg-red-500' }],
+            'Enviado': [{ text: 'Marcar como Entregado', status: 'Entregado', color: 'bg-green-500' }, { text: 'Cancelar', status: 'Cancelado', color: 'bg-red-500' }]
+        };
+
+        if (actions[order.status]) {
+            actions[order.status].forEach(action => {
+                const button = document.createElement('button');
+                button.textContent = action.text;
+                button.className = `flex-1 text-white font-semibold py-2 px-4 rounded-lg transition ${action.color} hover:opacity-90`;
+                button.addEventListener('click', () => handleStatusChange(order.id, action.status, card));
+                actionsContainer.appendChild(button);
+            });
+        }
+
+        ordersContainer.appendChild(card);
+    }
+    
+    async function handleStatusChange(orderId, newStatus, card) {
+        const loader = card.querySelector('.loader-card');
+        const buttons = card.querySelectorAll('[data-actions] button');
+        
+        const performAction = async () => {
+            loader.classList.remove('hidden');
+            buttons.forEach(b => b.disabled = true);
+            try {
+                await fetchApi(`/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                // Animar y remover la tarjeta en lugar de recargar todo
+                card.style.transition = 'opacity 0.5s, transform 0.5s';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.95)';
+                setTimeout(() => card.remove(), 500);
+            } catch (error) {
+                alert(`Erro ao atualizar status: ${error.message}`);
+                loader.classList.add('hidden');
+                buttons.forEach(b => b.disabled = false);
+            }
+        };
+        
+        if (newStatus === 'Cancelado') {
+            if (confirm(`Tem certeza que deseja CANCELAR o Pedido #${orderId}? Esta ação é irreversível!`)) {
+                performAction();
+            }
+        } else {
+            performAction();
+        }
+    }
+
+    // --- EVENT LISTENERS ---
+    statusFilter.addEventListener('change', fetchAllOrders);
+    refreshButton.addEventListener('click', fetchAllOrders);
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
+        window.location.href = 'index.html';
+    });
+
+    // --- INITIALIZATION ---
+    fetchAllOrders();
+});
+</script>
+
+</body>
+</html>

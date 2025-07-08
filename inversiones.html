@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.querySelector('[data-shipping-date]').textContent = inv.fecha_envio || 'N/A';
         
         const itemsList = card.querySelector('[data-items]');
-        inv.items.forEach(item => {
+        items.forEach(item => {
             const li = document.createElement('li');
             li.textContent = `${item.quantity}x ${item.name} @ R$${item.unit_cost.toFixed(2)}`;
             itemsList.appendChild(li);
@@ -325,7 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateSummary() {
         let totalInvested = 0, totalOnTheWay = 0, totalReceived = 0, totalRetained = 0;
         allInvestments.forEach(inv => {
-            const totalValue = inv.items.reduce((s, i) => s + (i.quantity * i.unit_cost), 0) + (inv.costo_envio || 0);
+            const items = Array.isArray(inv.items) ? inv.items : [];
+            const totalValue = items.reduce((s, i) => s + (i.quantity * i.unit_cost), 0) + (inv.costo_envio || 0);
             totalInvested += totalValue;
             if (inv.estado === 'En Camino') totalOnTheWay += totalValue;
             else if (inv.estado === 'Recibido') totalReceived += totalValue;

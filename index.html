@@ -6,6 +6,8 @@
     <title>AnalityInventory - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- 1. SCRIPT DE RECAPTCHA AÑADIDO -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -89,6 +91,12 @@
             display: inline-block;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        /* Centrar el reCAPTCHA */
+        .g-recaptcha {
+            display: flex;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
     </style>
 </head>
 <body>
@@ -97,20 +105,19 @@
         <h1 class="logo">AnalityInventory</h1>
         <form id="loginForm">
             <div class="mb-4">
-                <label for="username" class="form-label">Email</label>
-                <input type="email" id="username" class="form-input" placeholder="seuemail@exemplo.com" required>
+                <!-- 2. CAMPO DE USUARIO VUELVE A SER GENÉRICO -->
+                <label for="username" class="form-label">Usuário</label>
+                <input type="text" id="username" class="form-input" placeholder="Seu nome de usuário" required>
             </div>
             <div>
                 <label for="password" class="form-label">Senha</label>
                 <input type="password" id="password" class="form-input" required>
             </div>
-            <div class="flex items-center justify-between mt-4">
-                <label class="flex items-center text-sm text-slate-400">
-                    <input type="checkbox" id="remember-me" class="form-checkbox h-4 w-4 bg-slate-700 border-slate-600 text-blue-600 rounded focus:ring-blue-500">
-                    <span class="ml-2">Lembrar usuário</span>
-                </label>
-                <a href="#" class="text-sm text-slate-400 hover:text-white">Esqueceu a senha?</a>
-            </div>
+            
+            <!-- 3. WIDGET DE RECAPTCHA AÑADIDO -->
+            <div class="g-recaptcha" data-sitekey="YOUR_RECAPTCHA_SITE_KEY_HERE"></div>
+            <!-- ¡IMPORTANTE! Reemplaza YOUR_RECAPTCHA_SITE_KEY_HERE con tu clave real de Google. -->
+
             <button type="submit" id="login-button" class="btn-primary flex items-center justify-center">
                 <span id="login-text">Entrar</span>
                 <div id="login-spinner" class="spinner hidden"></div>
@@ -119,7 +126,7 @@
     </div>
 
     <div class="footer">
-        <span id="copyright"></span>. Todos os direitos reservados. Versão 5.0.1
+        <span id="copyright"></span>. Todos os direitos reservados. Versão 5.1.0
     </div>
 
 <script>
@@ -127,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Redirección si ya está logueado ---
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     if (token) {
-        window.location.href = 'pedidos.html'; // Redirige al panel de pedidos
+        window.location.href = 'pedidos.html';
         return;
     }
 
@@ -141,12 +148,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Lógica de Login ---
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const username = document.getElementById('username').value; // El campo de usuario ahora es el email
+        
+        // 4. VERIFICACIÓN DE RECAPTCHA
+        const recaptchaResponse = grecaptcha.getResponse();
+        if (!recaptchaResponse) {
+            alert("Por favor, complete o reCAPTCHA.");
+            return;
+        }
+
+        const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-        const rememberMe = document.getElementById('remember-me').checked;
+        // El checkbox de "Lembrar usuário" fue removido para simplificar, puedes añadirlo de nuevo si lo necesitas.
         const API_BASE_URL = 'https://mi-primera-app.fly.dev';
         
-        // Muestra el spinner y deshabilita el botón
         loginText.classList.add('hidden');
         loginSpinner.classList.remove('hidden');
         loginButton.disabled = true;
@@ -160,17 +174,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const data = await response.json();
-                const storage = rememberMe ? localStorage : sessionStorage;
-                storage.setItem('authToken', data.access_token);
-                window.location.href = 'pedidos.html'; // Redirige al panel de pedidos
+                // Por defecto, guardamos en sessionStorage (se borra al cerrar la pestaña).
+                sessionStorage.setItem('authToken', data.access_token);
+                window.location.href = 'pedidos.html';
             } else {
                 const errorData = await response.json().catch(() => ({ detail: 'Erro de comunicação com o servidor.' }));
                 alert(`Erro ao iniciar sessão: ${errorData.detail}`);
+                grecaptcha.reset(); // Resetea el reCAPTCHA si el login falla
             }
         } catch (error) {
             alert(`Erro de rede: Não foi possível conectar à API.`);
+            grecaptcha.reset();
         } finally {
-            // Oculta el spinner y habilita el botón
             loginText.classList.remove('hidden');
             loginSpinner.classList.add('hidden');
             loginButton.disabled = false;

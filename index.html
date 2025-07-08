@@ -3,585 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Gestão de Pedidos</title>
+    <title>AnalityInventory - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
-        #app-container { padding-bottom: 90px; }
-        .card-exit { transition: opacity 0.5s, transform 0.5s; }
-        .card-exit-active { opacity: 0; transform: scale(0.9); }
-        .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Azul oscuro de la industria */
+            background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.1) 1px, transparent 0);
+            background-size: 20px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .login-container {
+            background-color: #1e293b; /* Un tono más claro de azul */
+            border-radius: 1rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid #334155;
+        }
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #ffffff;
+            letter-spacing: -1px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            background-color: #334155;
+            color: #f1f5f9;
+            transition: all 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            margin-top: 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            background-color: #3b82f6; /* Azul vibrante */
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            color: #475569;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .nav-item.active i, .nav-item.active span { color: #3b82f6; }
-        .modal-overlay { transition: opacity 0.3s ease; }
-        .modal-container { transition: transform 0.3s ease, opacity 0.3s ease; }
     </style>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
+<body>
 
-<body class="font-sans">
-
-    <div id="login-container" class="flex items-center justify-center h-screen">
-        <div class="w-full max-w-md bg-white p-8 rounded-lg shadow-md mx-4">
-            <h1 class="text-2xl font-bold mb-6 text-center text-slate-800">Fazer Login</h1>
-            <form id="login-form">
-                <div class="mb-4">
-                    <label class="block text-slate-700 mb-2" for="username">Usuário</label>
-                    <input class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" type="text" id="username" required>
-                </div>
-                <div class="mb-6">
-                    <label class="block text-slate-700 mb-2" for="password">Senha</label>
-                    <input class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" type="password" id="password" required>
-                </div>
-                
-                <div class="mb-6 flex justify-center">
-                    <div class="g-recaptcha" data-sitekey="6LdVrXcrAAAAAC41CuesKaE1vj-xPO9JhCc2iQvU"></div>
-                </div>
-                
-                <div class="flex items-center justify-between mb-6">
-                    <label class="flex items-center text-sm text-slate-600">
-                        <input type="checkbox" id="remember-me" class="form-checkbox h-4 w-4 text-blue-600 rounded">
-                        <span class="ml-2">Lembrar usuário</span>
-                    </label>
-                </div>
-                <button class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition" type="submit">
-                    Entrar
-                </button>
-                <p id="error-message" class="text-red-500 text-sm mt-4 text-center h-4"></p>
-            </form>
-            <div class="text-center mt-6">
-                <p class="text-slate-600">
-                    Não tem uma conta?
-                    <a href="register.html" class="font-semibold text-blue-500 hover:underline">
-                        Cadastre-se aqui
-                    </a>
-                </p>
+    <div class="login-container">
+        <h1 class="logo">AnalityInventory</h1>
+        <form id="loginForm">
+            <div class="mb-4">
+                <label for="username" class="form-label">Email</label>
+                <input type="email" id="username" class="form-input" placeholder="seuemail@exemplo.com" required>
             </div>
-        </div>
+            <div>
+                <label for="password" class="form-label">Senha</label>
+                <input type="password" id="password" class="form-input" required>
+            </div>
+            <div class="flex items-center justify-between mt-4">
+                <label class="flex items-center text-sm text-slate-400">
+                    <input type="checkbox" id="remember-me" class="form-checkbox h-4 w-4 bg-slate-700 border-slate-600 text-blue-600 rounded focus:ring-blue-500">
+                    <span class="ml-2">Lembrar usuário</span>
+                </label>
+                <a href="#" class="text-sm text-slate-400 hover:text-white">Esqueceu a senha?</a>
+            </div>
+            <button type="submit" id="login-button" class="btn-primary flex items-center justify-center">
+                <span id="login-text">Entrar</span>
+                <div id="login-spinner" class="spinner hidden"></div>
+            </button>
+        </form>
     </div>
 
-    <div id="app-container" class="hidden">
-        <header class="bg-white shadow-md sticky top-0 z-10">
-            <div class="max-w-4xl mx-auto px-5 py-4 flex justify-between items-center">
-                <h1 id="header-title" class="text-2xl font-bold text-slate-800">Pedidos Pendentes</h1>
-                <div>
-                    <a href="ventas.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Nova Venda">
-                        <i class="ph ph-storefront text-3xl"></i> 
-                    </a>
-                     <a href="graficos.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Análise Gráfica">
-                         <i class="ph ph-chart-bar text-3xl"></i>
-                    </a>
-                    <a href="productos.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Gestão de Produtos">
-                         <i class="ph ph-cube text-3xl"></i>
-                     </a>
-                    <a href="gastos.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Gestão de Despesas">
-                        <i class="ph ph-receipt text-3xl"></i>
-                    </a>
-                    <a href="inversiones.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Gestão de Inversões">
-                        <i class="ph ph-wallet text-3xl"></i>
-                    </a>
-                    <button id="refreshButton" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Atualizar">
-                        <i class="ph ph-arrow-clockwise text-3xl"></i>
-                    </button>
-                    <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
-                        <i class="ph ph-sign-out text-3xl"></i>
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <main id="lista-entregas" class="max-w-4xl mx-auto p-4"></main>
-
-        <div id="mensaje-vacio" class="hidden text-center mt-16 px-4">
-            <i id="mensaje-vacio-icono" class="ph ph-package text-6xl text-slate-400"></i>
-            <p id="mensaje-vacio-texto" class="text-slate-500 mt-4 text-lg">Não há pedidos nesta seção.</p>
-        </div>
-
-        <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-t-md border-t border-slate-200 h-[80px] z-20">
-            <div class="max-w-4xl mx-auto h-full grid grid-cols-4">
-                <button data-vista="Pendiente" class="nav-item flex flex-col items-center justify-center text-slate-500 active">
-                    <i class="ph ph-clock-countdown text-3xl"></i><span class="text-xs font-medium">Pendentes</span>
-                </button>
-                <button data-vista="Enviado" class="nav-item flex flex-col items-center justify-center text-slate-500"> <i class="ph ph-truck text-3xl"></i><span class="text-xs font-medium">Enviados</span> </button>
-                <button data-vista="Entregado" class="nav-item flex flex-col items-center justify-center text-slate-500">
-                    <i class="ph ph-check-circle text-3xl"></i><span class="text-xs font-medium">Entregues</span>
-                </button>
-                <button data-vista="Cancelado" class="nav-item flex flex-col items-center justify-center text-slate-500">
-                    <i class="ph ph-x-circle text-3xl"></i><span class="text-xs font-medium">Cancelados</span>
-                </button>
-            </div>
-        </nav>
+    <div class="footer">
+        <span id="copyright"></span>. Todos os direitos reservados. Versão 5.0.1
     </div>
-
-    <div id="loader-global" class="hidden fixed inset-0 bg-white bg-opacity-75 flex justify-center items-center z-50">
-        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
-    </div>
-
-    <div id="notification-permission-banner" class="hidden fixed bottom-[90px] left-0 right-0 bg-slate-800 text-white p-4 z-20 flex justify-between items-center">
-        <span>Deseja receber notificações de novos pedidos?</span>
-        <button id="enable-notifications-btn" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg font-semibold">Ativar</button>
-    </div>
-    
-    <div id="modal-container" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center modal-container opacity-0 scale-95">
-            <div id="modal-content">
-            </div>
-        </div>
-    </div>
-
-    <template id="tarjeta-entrega-template">
-        <div class="bg-white rounded-lg shadow-md mb-4 overflow-hidden">
-            <div class="p-5">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-sm font-semibold bg-blue-100 text-blue-800 px-3 py-1 rounded-full">Pedido ID: <span class="font-bold" data-id></span></span>
-                    <div class="loader-card hidden w-6 h-6 border-4 border-t-4 border-gray-200 rounded-full animate-spin"></div>
-                </div>
-                <h2 class="text-xl font-bold text-slate-800" data-cliente></h2> 
-                <p class="text-slate-600" data-total></p>
-                <div class="my-4">
-                    <p class="font-semibold text-slate-700 mb-2">Produtos:</p>
-                    <ul class="list-disc list-inside space-y-1 text-slate-600" data-productos></ul>
-                </div>
-                <div class="border-t border-slate-200 pt-4 space-y-3">
-                    <a data-direccion-link href="#" target="_blank" class="flex items-center gap-3 group">
-                        <i class="ph ph-map-pin text-2xl text-slate-500 group-hover:text-blue-600 transition"></i>
-                        <div>
-                            <p class="font-semibold text-slate-700 group-hover:text-blue-600 transition" data-direccion></p>
-                            <span class="text-sm text-blue-500">Toque para abrir no mapa</span>
-                        </div>
-                    </a>
-                    <div class="flex items-center gap-3">
-                        <i class="ph ph-phone text-2xl text-slate-500"></i>
-                        <p class="font-semibold text-slate-700" data-telefono></p>
-                    </div>
-                </div>
-            </div>
-            <div class="btns-container">
-                <div class="grid">
-                    <button data-accion="Enviado" class="btn-accion bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 transition flex items-center justify-center gap-2"> <i class="ph-fill ph-truck text-xl"></i>Marcar como Enviado </button>
-                    <button data-accion="Entregado" class="btn-accion bg-green-500 hover:bg-green-600 text-white font-bold py-3 transition flex items-center justify-center gap-2"> <i class="ph-fill ph-check-circle text-xl"></i>Marcar como Entregue
-                    </button>
-                    <button data-accion="Cancelado" class="btn-accion bg-red-500 hover:bg-red-600 text-white font-bold py-3 transition flex items-center justify-center gap-2">
-                        <i class="ph-fill ph-x-circle text-xl"></i>Cancelar Pedido
-                    </button>
-                </div>
-            </div>
-        </div>
-    </template>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Selectores de Elementos ---
-    const API_BASE_URL = 'https://mi-primera-app.fly.dev'; 
-    const loginContainer = document.getElementById('login-container');
-    const appContainer = document.getElementById('app-container');
-    const loginForm = document.getElementById('login-form');
-    const errorMessage = document.getElementById('error-message');
-    const logoutButton = document.getElementById('logoutButton');
-    const listaEntregasContainer = document.getElementById('lista-entregas');
-    const tarjetaTemplate = document.getElementById('tarjeta-entrega-template');
-    const loaderGlobal = document.getElementById('loader-global');
-    const mensajeVacio = document.getElementById('mensaje-vacio');
-    const navItems = document.querySelectorAll('.nav-item');
-    const refreshButton = document.getElementById('refreshButton');
-    const headerTitle = document.getElementById('header-title');
-    
-    const notificationPermissionBanner = document.getElementById('notification-permission-banner');
-    const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
-    const modalContainer = document.getElementById('modal-container');
-    const modalContent = document.getElementById('modal-content');
-
-    // --- Estado de la Aplicación ---
-    let allEntregas = []; 
-    let currentVista = 'Pendiente';
-    let initialFetchDone = false;
-    let knownPendingIds = new Set();
-    let notificationSynth; 
-
-    // --- Lógica de Notificaciones ---
-    function setupNotifications() {
-        if (!('Notification' in window)) {
-            console.log("Este navegador não suporta notificações de desktop.");
-            return;
-        }
-        if (Notification.permission === 'default') {
-            notificationPermissionBanner.classList.remove('hidden');
-        }
-        enableNotificationsBtn.addEventListener('click', () => {
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    notificationPermissionBanner.classList.add('hidden');
-                    showNotification('Obrigado!', 'Agora você receberá notificações de novos pedidos.');
-                }
-            });
-        });
-    }
-
-    function playNotificationSound() {
-        if (typeof Tone !== 'undefined') {
-            Tone.start();
-            if (!notificationSynth) {
-                notificationSynth = new Tone.Synth({
-                    oscillator: { type: 'sine' },
-                    envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
-                }).toDestination();
-            }
-            notificationSynth.triggerAttackRelease('C5', '8n', Tone.now());
-            notificationSynth.triggerAttackRelease('G5', '8n', Tone.now() + 0.2);
-        }
-    }
-
-    function showNotification(title, body, orderId) {
-        if (Notification.permission !== 'granted') return;
-        playNotificationSound();
-        const options = {
-            body: body,
-            icon: 'https://placehold.co/192x192/3b82f6/ffffff?text=P',
-            tag: `pedido-${orderId}`
-        };
-        new Notification(title, options);
-    }
-
-    // --- Lógica de Modales ---
-    function showModal(htmlContent) {
-        modalContent.innerHTML = htmlContent;
-        modalContainer.classList.remove('hidden');
-        modalContainer.offsetHeight;
-        modalContainer.classList.remove('opacity-0');
-        modalContainer.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
-    }
-
-    function hideModal() {
-        modalContainer.classList.add('opacity-0');
-        modalContainer.querySelector('.modal-container').classList.add('opacity-0', 'scale-95');
-        setTimeout(() => modalContainer.classList.add('hidden'), 300);
-    }
-
-    function showNewOrderModal(order) {
-        const modalHTML = `
-            <i class="ph ph-bell-ringing text-6xl text-blue-500 mb-4"></i>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">Novo Pedido!</h2>
-            <p class="text-lg text-slate-600 mb-1">Cliente: <span class="font-bold">${order.customer_name}</span></p>
-            <p class="text-lg text-slate-600 mb-4">Total: <span class="font-bold">R$${parseFloat(order.total).toFixed(2)}</span></p>
-            <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">
-                Entendido
-            </button>
-        `;
-        showModal(modalHTML);
-        document.getElementById('close-modal-btn').addEventListener('click', hideModal);
-    }
-
-    function showConfirmationModal(message, onConfirm) {
-        const modalHTML = `
-            <i class="ph ph-warning-circle text-6xl text-yellow-500 mb-4"></i>
-            <h2 class="text-xl font-bold text-slate-800 mb-4">${message}</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <button id="confirm-cancel-btn" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Cancelar</button>
-                <button id="confirm-action-btn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg transition">Confirmar</button>
-            </div>
-        `;
-        showModal(modalHTML);
-        document.getElementById('confirm-cancel-btn').addEventListener('click', hideModal);
-        document.getElementById('confirm-action-btn').addEventListener('click', () => {
-            hideModal();
-            onConfirm();
-        });
-    }
-
-    // --- Lógica Principal de la App ---
-    function showApp() {
-        loginContainer.classList.add('hidden');
-        appContainer.classList.remove('hidden');
-        setupNotifications();
-    }
-
-    function showLogin() {
-        appContainer.classList.add('hidden');
-        loginContainer.classList.remove('hidden');
-        if (window.orderPollingInterval) {
-            clearInterval(window.orderPollingInterval);
-        }
-    }
-
+    // --- Redirección si ya está logueado ---
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     if (token) {
-        showApp();
-        fetchAllEntregas();
-        window.orderPollingInterval = setInterval(fetchAllEntregas, 30000);
-    } else {
-        showLogin();
+        window.location.href = 'pedidos.html'; // Redirige al panel de pedidos
+        return;
     }
 
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const username = document.getElementById('username').value;
+    // --- Elementos del DOM ---
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = document.getElementById('login-button');
+    const loginText = document.getElementById('login-text');
+    const loginSpinner = document.getElementById('login-spinner');
+    document.getElementById('copyright').textContent = `© ${new Date().getFullYear()} AnalityInventory`;
+
+    // --- Lógica de Login ---
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const username = document.getElementById('username').value; // El campo de usuario ahora es el email
         const password = document.getElementById('password').value;
         const rememberMe = document.getElementById('remember-me').checked;
-        errorMessage.textContent = '';
-        const recaptchaResponse = grecaptcha.getResponse();
+        const API_BASE_URL = 'https://mi-primera-app.fly.dev';
         
-        if (recaptchaResponse.length === 0) {
-            errorMessage.textContent = 'Por favor, complete o reCAPTCHA.';
-            return;
-        }
-        
+        // Muestra el spinner y deshabilita el botón
+        loginText.classList.add('hidden');
+        loginSpinner.classList.remove('hidden');
+        loginButton.disabled = true;
+
         try {
-            const formData = new URLSearchParams();
-            formData.append('username', username);
-            formData.append('password', password);
-            
             const response = await fetch(`${API_BASE_URL}/token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData
+                body: new URLSearchParams({ grant_type: 'password', username, password }).toString()
             });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.detail || 'Usuário ou senha incorretos.');
-            }
-            
-            const data = await response.json();
-            
-            if (rememberMe) {
-                localStorage.setItem('authToken', data.access_token);
+
+            if (response.ok) {
+                const data = await response.json();
+                const storage = rememberMe ? localStorage : sessionStorage;
+                storage.setItem('authToken', data.access_token);
+                window.location.href = 'pedidos.html'; // Redirige al panel de pedidos
             } else {
-                sessionStorage.setItem('authToken', data.access_token);
+                const errorData = await response.json().catch(() => ({ detail: 'Erro de comunicação com o servidor.' }));
+                alert(`Erro ao iniciar sessão: ${errorData.detail}`);
             }
-
-            showApp();
-            await fetchAllEntregas();
-            window.orderPollingInterval = setInterval(fetchAllEntregas, 30000);
-
         } catch (error) {
-            errorMessage.textContent = error.message;
-            console.error('Erro no login:', error);
-        }
-    });
-
-    logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('authToken');
-        sessionStorage.removeItem('authToken');
-        showLogin();
-    });
-
-    function getAuthHeaders() {
-        const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` };
-    }
-
-    async function fetchApi(url, options = {}) {
-        const response = await fetch(url, { ...options, headers: getAuthHeaders() });
-        if (response.status === 401 || response.status === 403) {
-            showLogin();
-            throw new Error('Sessão expirada. Por favor, faça o login novamente.');
-        }
-        return response;
-    }
-
-    async function fetchAllEntregas() {
-        const isFirstRun = !initialFetchDone;
-        if (isFirstRun) showLoader(true);
-        
-        try {
-            const response = await fetchApi(`${API_BASE_URL}/orders`); 
-            if (!response.ok) throw new Error(`Erro de rede: ${response.statusText}`);
-            allEntregas = await response.json();
-            
-            checkForNewOrders();
-            renderVista(currentVista);
-        } catch (error) {
-            console.error('ERRO ao carregar os pedidos:', error);
+            alert(`Erro de rede: Não foi possível conectar à API.`);
         } finally {
-            if (isFirstRun) {
-                showLoader(false);
-                initialFetchDone = true;
-            }
+            // Oculta el spinner y habilita el botón
+            loginText.classList.remove('hidden');
+            loginSpinner.classList.add('hidden');
+            loginButton.disabled = false;
         }
-    }
-
-    function checkForNewOrders() {
-        const currentPendingOrders = allEntregas.filter(e => e.status && e.status.toLowerCase() === 'pendiente'); 
-        
-        if (!initialFetchDone) {
-            knownPendingIds = new Set(currentPendingOrders.map(o => o.id));
-        } else {
-            currentPendingOrders.forEach(order => {
-                if (!knownPendingIds.has(order.id)) {
-                    showNotification(`Novo Pedido #${order.id}`, `Cliente: ${order.customer_name}`, order.id);
-                    showNewOrderModal(order);
-                    knownPendingIds.add(order.id);
-                }
-            });
-        }
-        const currentPendingIdsSet = new Set(currentPendingOrders.map(o => o.id));
-        knownPendingIds = new Set([...knownPendingIds].filter(id => currentPendingIdsSet.has(id)));
-    }
-
-    function renderVista(vista) {
-        listaEntregasContainer.innerHTML = ''; 
-        mensajeVacio.classList.add('hidden'); 
-        headerTitle.textContent = `Pedidos ${vista}s`; 
-        
-        const entregasFiltradas = allEntregas.filter(entrega => 
-            entrega.status && entrega.status.toLowerCase() === vista.toLowerCase()
-        );
-        
-        if (entregasFiltradas.length === 0) {
-            mensajeVacio.classList.remove('hidden'); 
-            const iconElement = document.getElementById('mensaje-vacio-icono');
-            const textElement = document.getElementById('mensaje-vacio-texto');
-            iconElement.className = 'text-6xl text-slate-400'; 
-            if (vista.toLowerCase() === 'pendiente') {
-                iconElement.classList.add('ph', 'ph-package');
-                textElement.textContent = 'Não há pedidos pendentes no momento.';
-            } else if (vista.toLowerCase() === 'enviado') {
-                iconElement.classList.add('ph', 'ph-truck');
-                textElement.textContent = 'Não há pedidos em trânsito no momento.';
-            } else if (vista.toLowerCase() === 'entregado') {
-                iconElement.classList.add('ph', 'ph-check-circle');
-                textElement.textContent = 'Não há pedidos entregues.';
-            } else if (vista.toLowerCase() === 'cancelado') {
-                iconElement.classList.add('ph', 'ph-x-circle');
-                textElement.textContent = 'Não há pedidos cancelados.';
-            }
-        } else {
-            entregasFiltradas.forEach(crearTarjetaEntrega);
-        }
-    }
-    
-    function crearTarjetaEntrega(entrega) {
-        const card = tarjetaTemplate.content.cloneNode(true).firstElementChild;
-
-        card.querySelector('[data-id]').textContent = entrega.id;
-        card.querySelector('[data-cliente]').textContent = entrega.customer_name;
-        card.querySelector('[data-total]').textContent = `Total a cobrar: R$${parseFloat(entrega.total).toFixed(2)}`;
-        card.querySelector('[data-direccion]').textContent = entrega.customer_address || 'Endereço não disponível';
-        card.querySelector('[data-telefono]').textContent = entrega.customer_phone || 'Telefone não disponível';
-        card.querySelector('[data-direccion-link]').href = `https://www.google.com/maps?q=${encodeURIComponent(entrega.customer_address)}`;
-        
-        const productosContainer = card.querySelector('[data-productos]');
-        productosContainer.innerHTML = '';
-        const items = entrega.items || []; 
-
-        if (items.length > 0) {
-            items.forEach(p => { 
-                const li = document.createElement('li'); 
-                li.textContent = `${p.quantity}x ${p.product_name} (R$${parseFloat(p.unit_price).toFixed(2)} cada)`;
-                productosContainer.appendChild(li); 
-            });
-        } else { 
-            const li = document.createElement('li'); 
-            li.textContent = 'Produtos não especificados.'; 
-            productosContainer.appendChild(li); 
-        }
-
-        const btnsContainer = card.querySelector('.btns-container');
-        const btnEnviado = card.querySelector('[data-accion="Enviado"]');
-        const btnEntregado = card.querySelector('[data-accion="Entregado"]');
-        const btnCancelar = card.querySelector('[data-accion="Cancelado"]');
-
-        btnEnviado.style.display = 'none';
-        btnEntregado.style.display = 'none';
-        btnCancelar.style.display = 'none';
-
-        const estadoActual = (entrega.status || '').toLowerCase();
-
-        if (estadoActual === 'pendiente') {
-            btnEnviado.style.display = 'flex';
-            btnCancelar.style.display = 'flex';
-        } else if (estadoActual === 'enviado') {
-            btnEntregado.style.display = 'flex';
-            btnCancelar.style.display = 'flex';
-        } else {
-            btnsContainer.remove();
-        }
-
-        btnEnviado.addEventListener('click', () => handleAction(btnEnviado.dataset.accion, entrega, card));
-        btnEntregado.addEventListener('click', () => handleAction(btnEntregado.dataset.accion, entrega, card));
-        btnCancelar.addEventListener('click', () => handleAction(btnCancelar.dataset.accion, entrega, card));
-        
-        listaEntregasContainer.appendChild(card);
-    }
-
-    async function handleAction(accion, entrega, card) {
-        const performAction = async () => {
-            const loaderCard = card.querySelector('.loader-card');
-            const buttons = card.querySelectorAll('button'); 
-            loaderCard.classList.remove('hidden'); 
-            buttons.forEach(b => b.disabled = true);
-
-            let newStatus = '';
-            if (accion === 'Enviado') newStatus = 'Enviado';
-            else if (accion === 'Entregado') newStatus = 'Entregado';
-            else if (accion === 'Cancelado') newStatus = 'Cancelado';
-            
-            try {
-                const payload = { status: newStatus }; 
-                const response = await fetchApi(`${API_BASE_URL}/orders/${entrega.id}/status`, {
-                    method: 'PUT',
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.detail || `Erro do servidor: ${response.status}`);
-                }
-
-                showModal(`
-                    <i class="ph ph-check-circle text-6xl text-green-500 mb-4"></i>
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Sucesso!</h2>
-                    <p class="text-lg text-slate-600 mb-4">Status do Pedido #${entrega.id} atualizado para "${newStatus}".</p>
-                    <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Fechar</button>
-                `);
-                document.getElementById('close-modal-btn').addEventListener('click', hideModal);
-
-                card.classList.add('card-exit', 'card-exit-active');
-                card.addEventListener('transitionend', () => fetchAllEntregas()); 
-
-            } catch (error) {
-                console.error(`Erro ao executar ação para estado '${newStatus}':`, error);
-                showModal(`
-                    <i class="ph ph-x-circle text-6xl text-red-500 mb-4"></i>
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Erro!</h2>
-                    <p class="text-lg text-slate-600 mb-4">Não foi possível completar a ação: ${error.message}</p>
-                    <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Fechar</button>
-                `);
-                document.getElementById('close-modal-btn').addEventListener('click', hideModal);
-
-                loaderCard.classList.add('hidden');
-                buttons.forEach(b => b.disabled = false);
-            }
-        };
-        
-        if (accion === 'Cancelado') {
-            showConfirmationModal(`Tem certeza que deseja CANCELAR o Pedido #${entrega.id}? Esta ação é irreversível!`, performAction);
-        } else {
-            performAction();
-        }
-    }
-    
-    function showLoader(visible) {
-        loaderGlobal.classList.toggle('hidden', !visible); 
-    }
-
-    refreshButton.addEventListener('click', fetchAllEntregas);
-
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            currentVista = item.dataset.vista;
-            navItems.forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
-            renderVista(currentVista);
-        });
     });
-    
 });
 </script>
+
 </body>
 </html>

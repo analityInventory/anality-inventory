@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gestão de Produtos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        .form-input {
+            width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1;
+            border-radius: 0.5rem; transition: ring 0.2s;
+        }
+        .form-input:focus {
+            outline: none; --tw-ring-color: #3b82f6;
+            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000);
+            border-color: #3b82f6;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="font-sans">
+
+    <header class="bg-white shadow-md sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-slate-800">Gestão de Produtos</h1>
+            <div>
+                 <a href="index.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Voltar aos Pedidos">
+                    <i class="ph ph-arrow-u-left-up text-3xl"></i>
+                 </a>
+                 <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
+                     <i class="ph ph-sign-out text-3xl"></i>
+                 </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <div class="lg:col-span-2">
+            
+            <div class="bg-white p-5 rounded-xl shadow-lg mb-6">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">Resumen de Inventario</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div class="text-center md:text-left">
+                        <p class="text-slate-500 text-sm">💰 Valor Total del Inventario</p>
+                        <p id="total-inventory-value" class="text-4xl font-bold text-green-600">R$0.00</p>
+                    </div>
+                    <div class="text-center md:text-left">
+                        <p class="text-slate-500 text-sm">📦 Unidades Totales en Stock</p>
+                        <p id="total-stock-units" class="text-4xl font-bold text-blue-600">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 items-center">
+                    <input type="text" id="search-input" placeholder="Buscar por nome, marca ou ID..." class="form-input">
+                    <label class="flex items-center justify-end gap-2 text-slate-600">
+                        <input type="checkbox" id="out-of-stock-filter" class="h-4 w-4 rounded text-blue-600">
+                        Mostrar solo agotados
+                    </label>
+                </div>
+                <div class="h-[calc(100vh-380px)] overflow-y-auto pr-2">
+                    <table class="w-full text-left">
+                        <thead class="sticky top-0 bg-slate-50 z-10">
+                            <tr>
+                                <th class="p-3 text-sm font-semibold text-slate-600">ID</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Produto</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Custo</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Preço</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Stock</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Valor Total</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Clasif.</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-list-body"></tbody>
+                    </table>
+                     <p id="no-products-message" class="hidden text-center text-slate-500 py-16">Nenhum produto encontrado.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-1">
+            <div class="bg-white p-5 rounded-xl shadow-lg sticky top-[88px]">
+                <h3 id="form-title" class="text-xl font-bold text-slate-800 mb-4 border-b pb-3">Adicionar Novo Produto</h3>
+                <form id="product-form" class="space-y-4">
+                    <input type="hidden" id="product-id">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Nome do Produto *</label>
+                        <input type="text" id="product-name" class="form-input mt-1" required>
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-slate-700">Marca</label>
+                        <input type="text" id="product-brand" class="form-input mt-1">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                             <label class="block text-sm font-medium text-slate-700">Custo (R$)</label>
+                            <input type="number" id="product-cost" min="0" step="0.01" value="0" class="form-input mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Preço de Venta (R$) *</label>
+                            <input type="number" id="product-price" min="0.01" step="0.01" class="form-input mt-1" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Stock Inicial *</label>
+                        <input type="number" id="product-stock" min="0" step="1" class="form-input mt-1" required>
+                    </div>
+                    <div class="flex gap-4 pt-2">
+                        <button type="submit" id="save-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">Salvar Produto</button>
+                        <button type="button" id="clear-button" class="w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Limpar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+    
+    <template id="product-row-template">
+        <tr class="border-b border-slate-200 hover:bg-slate-50">
+            <td class="p-3 text-slate-500" data-id></td>
+            <td class="p-3">
+                <p class="font-bold text-slate-800" data-name></p>
+                <p class="text-xs text-slate-500" data-brand></p>
+            </td>
+            <td class="p-3" data-cost></td>
+            <td class="p-3 font-semibold text-blue-600" data-price></td>
+            <td class="p-3 font-bold" data-stock></td>
+            <td class="p-3" data-total-value></td>
+            <td class="p-3"><span class="px-2 py-1 text-xs font-bold rounded-full text-white" data-classification></span></td>
+            <td class="p-3">
+                <div class="flex gap-2">
+                    <button data-action="edit" class="text-blue-600 hover:text-blue-800" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                    <button data-action="delete" class="text-red-600 hover:text-red-800" title="Excluir"><i class="ph ph-trash"></i></button>
+                </div>
+            </td>
+        </tr>
+    </template>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- CONFIG & STATE ---
+    const API_BASE_URL = 'https://mi-primera-app.fly.dev';
+    let allProducts = [];
+    let editingProductId = null;
+
+    // --- SELECTORS ---
+    const productListBody = document.getElementById('product-list-body');
+    const noProductsMessage = document.getElementById('no-products-message');
+    const searchInput = document.getElementById('search-input');
+    const outOfStockFilter = document.getElementById('out-of-stock-filter');
+    const productForm = document.getElementById('product-form');
+    const formTitle = document.getElementById('form-title');
+    const saveButton = document.getElementById('save-button');
+    const clearButton = document.getElementById('clear-button');
+    const logoutButton = document.getElementById('logoutButton');
+    const totalInventoryValueEl = document.getElementById('total-inventory-value');
+    const totalStockUnitsEl = document.getElementById('total-stock-units');
+
+    // --- API LOGIC ---
+    function getAuthHeaders() {
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        if (!token) { window.location.href = 'index.html'; return null; }
+        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    }
+
+    async function fetchApi(endpoint, options = {}) {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido.' }));
+            throw new Error(errorData.detail);
+        }
+        if (response.status === 204) return null;
+        return response.json();
+    }
+
+    // --- DATA LOADING & RENDERING ---
+    async function loadProducts() {
+        try {
+            const filterText = searchInput.value;
+            const outOfStock = outOfStockFilter.checked;
+            const params = new URLSearchParams({
+                ...(filterText && { filter_text: filterText }),
+                ...(outOfStock && { out_of_stock: outOfStock.toString() })
+            });
+            allProducts = await fetchApi(`/products?${params.toString()}`);
+            renderProducts();
+        } catch (error) {
+            alert(`Erro ao carregar produtos: ${error.message}`);
+        }
+    }
+
+    function renderProducts() {
+        productListBody.innerHTML = '';
+        noProductsMessage.classList.toggle('hidden', allProducts.length > 0);
+        
+        let totalInventoryValue = 0;
+        let totalStock = 0;
+        let processedData = [];
+
+        // 1. Procesar datos y calcular valores, igual que en el panel de wxPython
+        allProducts.forEach(p => {
+            const totalValue = (p.price || 0) * (p.stock || 0);
+            totalInventoryValue += totalValue;
+            totalStock += p.stock || 0;
+            processedData.push({ ...p, totalValue });
+        });
+        
+        // 2. Lógica de Clasificación ABC
+        processedData.sort((a, b) => b.totalValue - a.totalValue);
+        let accumulatedValue = 0;
+        const totalAbcValue = processedData.reduce((sum, p) => sum + p.totalValue, 0);
+
+        processedData.forEach(p => {
+            accumulatedValue += p.totalValue;
+            const percentage = totalAbcValue > 0 ? (accumulatedValue / totalAbcValue) * 100 : 0;
+            if (percentage <= 80) p.classification = "A";
+            else if (percentage <= 95) p.classification = "B";
+            else p.classification = "C";
+        });
+
+        // 3. Renderizar la tabla
+        const template = document.getElementById('product-row-template');
+        processedData.forEach(p => {
+            const row = template.content.cloneNode(true).firstElementChild;
+            row.querySelector('[data-id]').textContent = p.id;
+            row.querySelector('[data-name]').textContent = p.name;
+            row.querySelector('[data-brand]').textContent = p.brand || 'N/A';
+            row.querySelector('[data-cost]').textContent = `R$${(p.costo || 0).toFixed(2)}`;
+            row.querySelector('[data-price]').textContent = `R$${(p.price || 0).toFixed(2)}`;
+            
+            const stockEl = row.querySelector('[data-stock]');
+            stockEl.textContent = p.stock;
+            if (p.stock <= 0) stockEl.classList.add('text-red-500');
+            else if (p.stock <= 5) stockEl.classList.add('text-yellow-500');
+
+            row.querySelector('[data-total-value]').textContent = `R$${p.totalValue.toFixed(2)}`;
+            
+            const classEl = row.querySelector('[data-classification]');
+            classEl.textContent = p.classification;
+            if (p.classification === "A") classEl.style.backgroundColor = '#16a34a'; // green-600
+            else if (p.classification === "B") classEl.style.backgroundColor = '#f59e0b'; // amber-500
+            else classEl.style.backgroundColor = '#ef4444'; // red-500
+            
+            row.querySelector('[data-action="edit"]').addEventListener('click', () => prepareEditForm(p));
+            row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteProduct(p.id, p.name));
+            
+            productListBody.appendChild(row);
+        });
+
+        // 4. Actualizar totales
+        totalInventoryValueEl.textContent = `R$${totalInventoryValue.toFixed(2)}`;
+        totalStockUnitsEl.textContent = totalStock;
+    }
+
+    // --- FORM LOGIC ---
+    function prepareEditForm(product) {
+        editingProductId = product.id;
+        formTitle.textContent = 'Editar Produto';
+        saveButton.textContent = 'Atualizar Produto';
+        document.getElementById('product-id').value = product.id;
+        document.getElementById('product-name').value = product.name;
+        document.getElementById('product-brand').value = product.brand || '';
+        document.getElementById('product-cost').value = product.costo || 0;
+        document.getElementById('product-price').value = product.price;
+        document.getElementById('product-stock').value = product.stock;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function clearForm() {
+        editingProductId = null;
+        productForm.reset();
+        formTitle.textContent = 'Adicionar Novo Produto';
+        saveButton.textContent = 'Salvar Produto';
+        document.getElementById('product-id').value = '';
+    }
+
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        const productData = {
+            name: document.getElementById('product-name').value,
+            brand: document.getElementById('product-brand').value || null,
+            costo: parseFloat(document.getElementById('product-cost').value),
+            price: parseFloat(document.getElementById('product-price').value),
+            stock: parseInt(document.getElementById('product-stock').value, 10),
+        };
+
+        try {
+            if (editingProductId) {
+                await fetchApi(`/products/${editingProductId}`, { method: 'PUT', body: JSON.stringify(productData) });
+                alert('Produto atualizado com sucesso!');
+            } else {
+                await fetchApi('/products', { method: 'POST', body: JSON.stringify(productData) });
+                alert('Produto adicionado com sucesso!');
+            }
+            clearForm();
+            loadProducts();
+        } catch (error) {
+            alert(`Erro ao salvar produto: ${error.message}`);
+        }
+    }
+
+    async function deleteProduct(id, name) {
+        if (!confirm(`Tem certeza que deseja excluir o produto "${name}"?`)) return;
+        try {
+            await fetchApi(`/products/${id}`, { method: 'DELETE' });
+            alert('Produto excluído com sucesso!');
+            loadProducts();
+        } catch (error) {
+            alert(`Erro ao excluir produto: ${error.message}`);
+        }
+    }
+    
+    // --- EVENT LISTENERS ---
+    searchInput.addEventListener('input', loadProducts);
+    outOfStockFilter.addEventListener('change', loadProducts);
+    productForm.addEventListener('submit', handleFormSubmit);
+    clearButton.addEventListener('click', clearForm);
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
+        window.location.href = 'index.html';
+    });
+
+    // --- INITIALIZATION ---
+    loadProducts();
+});
+</script>
+</body>
+</html>

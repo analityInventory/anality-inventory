@@ -3,560 +3,487 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Gestão de Inversiones</title>
+    <title>Gestão de Investimentos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        .form-input {
+            width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1;
+            border-radius: 0.5rem; transition: ring 0.2s;
+        }
+        .form-input:focus {
+            outline: none; --tw-ring-color: #3b82f6;
+            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000);
+            border-color: #3b82f6;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
-        #app-container { padding-bottom: 90px; }
-        .nav-item.active i, .nav-item.active span { color: #3b82f6; }
-        .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
 </head>
 <body class="font-sans">
-    <div id="app-container">
-        <header class="bg-white shadow-md sticky top-0 z-10">
-            <div class="max-w-4xl mx-auto px-5 py-4 flex justify-between items-center">
-                <h1 id="header-title" class="text-2xl font-bold text-slate-800">Inversiones</h1>
-                <div>
-                    <button id="addInversionButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition active:scale-90 mr-4" title="Nueva Inversión">
-                        <i class="ph ph-plus text-xl"></i> <span class="hidden sm:inline">Nueva Inversión</span>
-                    </button>
-                    <button id="refreshButton" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Actualizar">
-                        <i class="ph ph-arrow-clockwise text-3xl"></i>
-                    </button>
-                    <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
-                        <i class="ph ph-sign-out text-3xl"></i>
-                    </button>
+
+    <header class="bg-white shadow-md sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-slate-800">Gestão de Investimentos</h1>
+            <div>
+                 <a href="index.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Voltar aos Pedidos">
+                    <i class="ph ph-arrow-u-left-up text-3xl"></i>
+                 </a>
+                 <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
+                     <i class="ph ph-sign-out text-3xl"></i>
+                 </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <div class="lg:col-span-2">
+            
+            <div class="bg-white p-5 rounded-xl shadow-lg mb-6">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">Resumen de Inversiones</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div>
+                        <p class="text-slate-500 text-sm">💰 Valor Total</p>
+                        <p id="total-invested-value" class="text-2xl font-bold text-slate-800">R$0.00</p>
+                    </div>
+                     <div>
+                        <p class="text-slate-500 text-sm">🚚 En Camino</p>
+                        <p id="total-on-the-way-value" class="text-2xl font-bold text-blue-600">R$0.00</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 text-sm">✅ Recibido</p>
+                        <p id="total-received-value" class="text-2xl font-bold text-green-600">R$0.00</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 text-sm">⚠️ Retenido</p>
+                        <p id="total-retained-value" class="text-2xl font-bold text-yellow-600">R$0.00</p>
+                    </div>
                 </div>
             </div>
-        </header>
 
-        <main id="lista-inversiones" class="max-w-4xl mx-auto p-4"></main>
-
-        <div id="mensaje-vacio" class="hidden text-center mt-16 px-4">
-            <i id="mensaje-vacio-icono" class="ph ph-wallet text-6xl text-slate-400"></i>
-            <p id="mensaje-vacio-texto" class="text-slate-500 mt-4 text-lg">No hay inversiones en esta sección.</p>
-        </div>
-
-        <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-t-md border-t border-slate-200 h-[80px] z-20">
-            <div class="max-w-4xl mx-auto h-full grid grid-cols-3">
-                <button data-vista="En Camino" class="nav-item flex flex-col items-center justify-center text-slate-500 active">
-                    <i class="ph ph-truck text-3xl"></i><span class="text-xs font-medium">En Camino</span>
-                </button>
-                <button data-vista="Recibido" class="nav-item flex flex-col items-center justify-center text-slate-500">
-                    <i class="ph ph-check-circle text-3xl"></i><span class="text-xs font-medium">Recibidas</span>
-                </button>
-                <button data-vista="Retenido" class="nav-item flex flex-col items-center justify-center text-slate-500">
-                    <i class="ph ph-x-circle text-3xl"></i><span class="text-xs font-medium">Retenidas</span>
-                </button>
+            <div class="bg-white p-5 rounded-xl shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 items-center">
+                    <input type="text" id="search-input" placeholder="Buscar por descripción o tracking..." class="form-input">
+                    <select id="status-filter" class="form-input">
+                        <option value="Todos">Todos os Status</option>
+                        <option value="En Camino">En Camino</option>
+                        <option value="Recibido">Recibido</option>
+                        <option value="Retenido">Retenido</option>
+                    </select>
+                </div>
+                <div id="investment-list" class="h-[calc(100vh-380px)] overflow-y-auto pr-2 space-y-4">
+                    </div>
+                 <p id="no-investments-message" class="hidden text-center text-slate-500 py-16">Nenhuma inversión encontrada.</p>
             </div>
-        </nav>
-    </div>
-
-    <div id="loader-global" class="hidden fixed inset-0 bg-white bg-opacity-75 flex justify-center items-center z-50">
-        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
-    </div>
-    <div id="modal-container" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center modal-container opacity-0 scale-95">
-            <div id="modal-content"></div>
         </div>
-    </div>
 
-    <script>
-        // Aquí irá tu JavaScript para gestionar inversiones
-        const API_BASE_URL = "https://mi-primera-app.fly.dev"; // Cambia esto por la URL de tu API
-        const listaInversiones = document.getElementById('lista-inversiones');
-        const mensajeVacio = document.getElementById('mensaje-vacio');
-        const loaderGlobal = document.getElementById('loader-global');
-        const refreshButton = document.getElementById('refreshButton');
-        const logoutButton = document.getElementById('logoutButton');
-        const navItems = document.querySelectorAll('.nav-item');
-        const addInversionButton = document.getElementById('addInversionButton'); // Nuevo botón
-        let currentVista = 'En Camino'; // Estado inicial
-
-        // Funciones auxiliares (showLoader, showModal, hideModal, etc. - copiar de index.html)
-        function showLoader(visible) {
-            loaderGlobal.classList.toggle('hidden', !visible);
-        }
-
-        function showModal(contentHtml) {
-            const modalContainer = document.getElementById('modal-container');
-            const modalContent = document.getElementById('modal-content');
-            modalContent.innerHTML = contentHtml;
-            modalContainer.classList.remove('hidden');
-            setTimeout(() => {
-                modalContainer.classList.add('opacity-100');
-                modalContainer.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
-                modalContainer.querySelector('.modal-container').classList.add('opacity-100', 'scale-100');
-            }, 10);
-        }
-
-        function hideModal() {
-            const modalContainer = document.getElementById('modal-container');
-            modalContainer.classList.remove('opacity-100');
-            modalContainer.querySelector('.modal-container').classList.remove('opacity-100', 'scale-100');
-            modalContainer.querySelector('.modal-container').classList.add('opacity-0', 'scale-95');
-            setTimeout(() => {
-                modalContainer.classList.add('hidden');
-            }, 300); // Coincide con la duración de la transición CSS
-        }
-
-        function showConfirmationModal(message, onConfirm) {
-            showModal(`
-                <i class="ph ph-question text-6xl text-blue-500 mb-4"></i>
-                <h2 class="text-2xl font-bold text-slate-800 mb-2">Confirmar Acción</h2>
-                <p class="text-lg text-slate-600 mb-4">${message}</p>
-                <div class="flex justify-center space-x-4">
-                    <button id="confirm-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Confirmar</button>
-                    <button id="cancel-btn" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Cancelar</button>
-                </div>
-            `);
-            document.getElementById('confirm-btn').addEventListener('click', () => {
-                hideModal();
-                onConfirm();
-            });
-            document.getElementById('cancel-btn').addEventListener('click', hideModal);
-        }
-
-
-        // Funciones para la API
-        async function fetchAPI(endpoint, method = 'GET', data = null) {
-            const token = localStorage.getItem('access_token');
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            };
-
-            const config = { method, headers };
-            if (data) {
-                config.body = JSON.stringify(data);
-            }
-
-            try {
-                const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-                if (response.status === 401) {
-                    window.location.href = 'index.html'; // Redirigir al login si no autorizado
-                    return null;
-                }
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.detail || 'Algo salió mal');
-                }
-                if (method === 'DELETE' || response.status === 204) {
-                    return {}; // No content for DELETE or 204
-                }
-                return await response.json();
-            } catch (error) {
-                console.error('Error fetching from API:', error);
-                showModal(`
-                    <i class="ph ph-x-circle text-6xl text-red-500 mb-4"></i>
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Erro!</h2>
-                    <p class="text-lg text-slate-600 mb-4">Não foi possível completar a ação: ${error.message}</p>
-                    <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Fechar</button>
-                `);
-                document.getElementById('close-modal-btn').addEventListener('click', hideModal);
-                return null;
-            }
-        }
-
-        // Función para cargar inversiones
-        async function fetchAllInversiones() {
-            showLoader(true);
-            listaInversiones.innerHTML = '';
-            try {
-                const inversiones = await fetchAPI(`/inversiones?estado=${currentVista}`);
-                if (inversiones && inversiones.length > 0) {
-                    mensajeVacio.classList.add('hidden');
-                    inversiones.forEach(inversion => {
-                        listaInversiones.appendChild(createInversionCard(inversion));
-                    });
-                } else {
-                    mensajeVacio.classList.remove('hidden');
-                    document.getElementById('mensaje-vacio-icono').className = 'ph ph-wallet text-6xl text-slate-400';
-                    document.getElementById('mensaje-vacio-texto').textContent = `No hay inversiones en estado "${currentVista}".`;
-                }
-            } finally {
-                showLoader(false);
-            }
-        }
-
-        // Función para crear la tarjeta de inversión (adaptar de tarjeta-entrega-template)
-        function createInversionCard(inversion) {
-            const card = document.createElement('div');
-            card.className = 'bg-white rounded-lg shadow-md mb-4 overflow-hidden';
-            card.dataset.inversionId = inversion.id;
-
-            let itemsListHtml = inversion.items.map(item => `
-                <p class="text-sm text-slate-600 ml-4">- ${item.name} (x${item.quantity}) - R$ ${item.unit_cost.toFixed(2)} c/u</p>
-            `).join('');
-
-
-            card.innerHTML = `
-                <div class="p-5">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-xl font-semibold text-slate-800">Inversión #${inversion.id}</h2>
-                        <span class="text-sm font-medium px-3 py-1 rounded-full ${inversion.estado === 'Recibido' ? 'bg-green-100 text-green-800' : inversion.estado === 'En Camino' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">
-                            ${inversion.estado}
-                        </span>
+        <div class="lg:col-span-1">
+            <div class="bg-white p-5 rounded-xl shadow-lg sticky top-[88px]">
+                <h3 id="form-title" class="text-xl font-bold text-slate-800 mb-4 border-b pb-3">Adicionar Novo Investimento</h3>
+                <form id="investment-form" class="space-y-4">
+                    <input type="hidden" id="investment-id">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Descrição *</label>
+                        <input type="text" id="inv-description" class="form-input mt-1" required>
                     </div>
-                    <p class="text-slate-700 mb-2">Descripción: ${inversion.descripcion}</p>
-                    <p class="text-slate-700 mb-2">Costo Total: R$ ${inversion.total_costo.toFixed(2)}</p>
-                    ${inversion.tracking ? `<p class="text-slate-700 mb-2">Tracking: ${inversion.tracking}</p>` : ''}
-                    ${inversion.fecha_envio ? `<p class="text-slate-700 mb-2">Fecha Envío: ${new Date(inversion.fecha_envio).toLocaleDateString()}</p>` : ''}
-                    ${inversion.fecha_llegada ? `<p class="text-slate-700 mb-2">Fecha Llegada: ${new Date(inversion.fecha_llegada).toLocaleDateString()}</p>` : ''}
-                    <div class="mt-3">
-                        <h3 class="text-md font-semibold text-slate-700">Productos:</h3>
-                        ${itemsListHtml || '<p class="text-sm text-slate-600 ml-4">Sin productos asociados.</p>'}
-                    </div>
-
-                    <div class="flex justify-end space-x-2 mt-4">
-                        <button class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-lg text-sm edit-btn" data-id="${inversion.id}">
-                            <i class="ph ph-pencil-simple"></i> Editar
-                        </button>
-                        ${inversion.estado !== 'Recibido' ? `
-                        <button class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-3 rounded-lg text-sm mark-received-btn" data-id="${inversion.id}">
-                            <i class="ph ph-check"></i> Recibido
-                        </button>` : ''}
-                        <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg text-sm delete-btn" data-id="${inversion.id}">
-                            <i class="ph ph-trash"></i> Eliminar
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            card.querySelector('.edit-btn').addEventListener('click', () => openInversionForm(inversion.id));
-            if (inversion.estado !== 'Recibido') {
-                card.querySelector('.mark-received-btn').addEventListener('click', () => markInversionReceived(inversion.id));
-            }
-            card.querySelector('.delete-btn').addEventListener('click', () => deleteInversion(inversion.id));
-
-            return card;
-        }
-
-        // Función para abrir el formulario de inversión (crear o editar)
-        async function openInversionForm(inversionId = null) {
-            let inversion = null;
-            let formTitle = "Nueva Inversión";
-            let productsInForm = []; // Para almacenar los productos de la inversión editada
-
-            if (inversionId) {
-                showLoader(true);
-                inversion = await fetchAPI(`/inversiones/${inversionId}`);
-                showLoader(false);
-                if (!inversion) return;
-                formTitle = `Editar Inversión #${inversion.id}`;
-                productsInForm = inversion.items.map(item => ({
-                    id: item.product_id,
-                    name: item.name,
-                    quantity: item.quantity,
-                    unit_cost: item.unit_cost
-                }));
-            }
-
-            let formHtml = `
-                <h2 class="text-2xl font-bold text-slate-800 mb-4">${formTitle}</h2>
-                <form id="inversion-form" class="text-left">
-                    <div class="mb-3">
-                        <label class="block text-slate-700 mb-1" for="descripcion">Descripción:</label>
-                        <input type="text" id="descripcion" class="w-full px-3 py-2 border rounded-lg" value="${inversion ? inversion.descripcion : ''}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="block text-slate-700 mb-1" for="estado">Estado:</label>
-                        <select id="estado" class="w-full px-3 py-2 border rounded-lg">
-                            <option value="En Camino" ${inversion && inversion.estado === 'En Camino' ? 'selected' : ''}>En Camino</option>
-                            <option value="Recibido" ${inversion && inversion.estado === 'Recibido' ? 'selected' : ''}>Recibido</option>
-                            <option value="Retenido" ${inversion && inversion.estado === 'Retenido' ? 'selected' : ''}>Retenido</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="block text-slate-700 mb-1" for="fecha_envio">Fecha Envío:</label>
-                        <input type="date" id="fecha_envio" class="w-full px-3 py-2 border rounded-lg" value="${inversion && inversion.fecha_envio ? inversion.fecha_envio.split('T')[0] : ''}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="block text-slate-700 mb-1" for="fecha_llegada">Fecha Llegada:</label>
-                        <input type="date" id="fecha_llegada" class="w-full px-3 py-2 border rounded-lg" value="${inversion && inversion.fecha_llegada ? inversion.fecha_llegada.split('T')[0] : ''}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="block text-slate-700 mb-1" for="tracking">Tracking:</label>
-                        <input type="text" id="tracking" class="w-full px-3 py-2 border rounded-lg" value="${inversion ? inversion.tracking : ''}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="block text-slate-700 mb-1" for="costo_envio">Costo Envío (R$):</label>
-                        <input type="number" step="0.01" id="costo_envio" class="w-full px-3 py-2 border rounded-lg" value="${inversion ? inversion.costo_envio : '0.00'}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="block text-slate-700 mb-1" for="observaciones">Observaciones:</label>
-                        <textarea id="observaciones" class="w-full px-3 py-2 border rounded-lg h-24">${inversion ? inversion.observaciones : ''}</textarea>
-                    </div>
-
-                    <h3 class="text-xl font-bold text-slate-800 mt-6 mb-3">Productos</h3>
-                    <div id="product-items-container" class="border p-4 rounded-lg mb-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Custo de Envio (R$)</label>
+                            <input type="number" id="inv-shipping-cost" min="0" step="0.01" value="0" class="form-input mt-1">
                         </div>
-                    <button type="button" id="addProductBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded-lg text-sm mb-4">
-                        Añadir Producto
-                    </button>
-                    <p class="text-right text-lg font-bold text-slate-800">Costo Total Productos: R$ <span id="total-productos">0.00</span></p>
-
-                    <div class="flex justify-end space-x-4 mt-6">
-                        <button type="button" id="cancel-form-btn" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Cancelar</button>
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">
-                            ${inversionId ? 'Actualizar Inversión' : 'Guardar Inversión'}
+                        <div>
+                             <label class="block text-sm font-medium text-slate-700">Status *</label>
+                            <select id="inv-status" class="form-input mt-1" required>
+                                <option value="En Camino">En Camino</option>
+                                <option value="Recibido">Recibido</option>
+                                <option value="Retenido">Retenido</option>
+                            </select>
+                        </div>
+                    </div>
+                     <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Data de Envio</label>
+                            <input type="date" id="inv-shipping-date" class="form-input mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Data de Chegada</label>
+                            <input type="date" id="inv-arrival-date" class="form-input mt-1">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Nº de Tracking</label>
+                        <input type="text" id="inv-tracking" class="form-input mt-1">
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-slate-700">Observações</label>
+                        <textarea id="inv-obs" rows="2" class="form-input mt-1"></textarea>
+                    </div>
+                    
+                    <div class="border-t pt-4">
+                        <h4 class="font-semibold text-slate-700 mb-2">Produtos no Pacote</h4>
+                        <ul id="item-list" class="space-y-2 text-sm">
+                           </ul>
+                         <button type="button" id="add-item-btn" class="mt-2 w-full text-blue-600 font-semibold border-2 border-dashed border-blue-400 hover:bg-blue-50 py-2 rounded-lg transition">
+                            + Adicionar Produto
                         </button>
+                    </div>
+
+                    <div class="flex gap-4 pt-2">
+                        <button type="submit" id="save-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">Salvar</button>
+                        <button type="button" id="clear-button" class="w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Limpar</button>
                     </div>
                 </form>
-            `;
-            showModal(formHtml);
+            </div>
+        </div>
+    </main>
+    
+    <div id="product-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-start pt-20 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div class="p-4 border-b">
+                <h2 class="text-xl font-bold text-slate-800">Selecionar Produto</h2>
+                <input type="text" id="product-search-input" placeholder="Buscar produto..." class="form-input mt-2">
+            </div>
+            <div id="product-list-container" class="max-h-80 overflow-y-auto">
+                </div>
+             <div class="p-4 bg-slate-50 border-t flex justify-end">
+                <button id="close-product-modal" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg transition">Fechar</button>
+            </div>
+        </div>
+    </div>
 
-            const inversionForm = document.getElementById('inversion-form');
-            const productItemsContainer = document.getElementById('product-items-container');
-            const addProductBtn = document.getElementById('addProductBtn');
-            const totalProductosSpan = document.getElementById('total-productos');
-            let currentProducts = productsInForm; // Usar el array local
 
-            function updateTotalProducts() {
-                const total = currentProducts.reduce((sum, item) => sum + (item.quantity * item.unit_cost), 0);
-                totalProductosSpan.textContent = total.toFixed(2);
-            }
-
-            function renderProductItems() {
-                productItemsContainer.innerHTML = '';
-                currentProducts.forEach((item, index) => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'flex items-center space-x-2 mb-2 p-2 bg-slate-50 rounded-lg';
-                    itemDiv.innerHTML = `
-                        <p class="flex-1 text-slate-700">${item.name}</p>
-                        <input type="number" value="${item.quantity}" min="1" class="w-20 px-2 py-1 border rounded quantity-input" data-index="${index}">
-                        <input type="number" step="0.01" value="${item.unit_cost}" min="0" class="w-24 px-2 py-1 border rounded cost-input" data-index="${index}">
-                        <button type="button" class="text-red-500 hover:text-red-700 remove-product-btn" data-index="${index}">
-                            <i class="ph ph-minus-circle text-xl"></i>
-                        </button>
-                    `;
-                    productItemsContainer.appendChild(itemDiv);
-                });
-                attachProductItemListeners();
-                updateTotalProducts();
-            }
-
-            function attachProductItemListeners() {
-                productItemsContainer.querySelectorAll('.quantity-input').forEach(input => {
-                    input.addEventListener('change', (e) => {
-                        const index = e.target.dataset.index;
-                        currentProducts[index].quantity = parseInt(e.target.value);
-                        updateTotalProducts();
-                    });
-                });
-                productItemsContainer.querySelectorAll('.cost-input').forEach(input => {
-                    input.addEventListener('change', (e) => {
-                        const index = e.target.dataset.index;
-                        currentProducts[index].unit_cost = parseFloat(e.target.value);
-                        updateTotalProducts();
-                    });
-                });
-                productItemsContainer.querySelectorAll('.remove-product-btn').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const index = e.target.closest('button').dataset.index;
-                        currentProducts.splice(index, 1);
-                        renderProductItems();
-                    });
-                });
-            }
-
-            // Diálogo de selección de producto (simplificado para web)
-            async function selectProductModal() {
-                const products = await fetchAPI('/products'); // Asume que tienes un endpoint /products
-                if (!products) return;
-
-                let productSelectionHtml = `
-                    <h3 class="text-xl font-bold text-slate-800 mb-3">Seleccionar Producto</h3>
-                    <input type="text" id="product-search" class="w-full px-3 py-2 border rounded-lg mb-3" placeholder="Buscar producto...">
-                    <div id="product-list-modal" class="max-h-60 overflow-y-auto border rounded-lg mb-4">
-                        </div>
-                    <div class="flex justify-end space-x-4">
-                        <button id="cancel-select-product-btn" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-3 rounded-lg">Cancelar</button>
+    <template id="investment-card-template">
+         <div class="bg-slate-50 border border-slate-200 rounded-lg shadow-sm">
+            <div class="p-4">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <p class="font-bold text-lg text-slate-800" data-description></p>
+                        <p class="text-sm text-slate-500">ID: <span data-id></span></p>
                     </div>
-                `;
-                showModal(productSelectionHtml);
+                    <span class="px-3 py-1 text-xs font-bold rounded-full text-white" data-status></span>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-sm mt-3 border-t pt-3">
+                    <div>
+                        <p class="font-semibold">Valor dos Produtos:</p>
+                        <p data-items-value></p>
+                    </div>
+                     <div>
+                        <p class="font-semibold">Custo Total:</p>
+                        <p class="font-bold" data-total-value></p>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Nº Tracking:</p>
+                        <a href="#" target="_blank" class="text-blue-600 hover:underline" data-tracking></a>
+                    </div>
+                     <div>
+                        <p class="font-semibold">Data de Envio:</p>
+                        <p data-shipping-date></p>
+                    </div>
+                </div>
+                 <div class="mt-4 border-t pt-3">
+                    <p class="font-semibold text-sm mb-2">Produtos Inclusos:</p>
+                    <ul class="list-disc list-inside space-y-1 text-sm text-slate-600" data-items>
+                        </ul>
+                </div>
+            </div>
+            <div class="bg-slate-100 p-2 flex justify-end gap-2">
+                <button data-action="edit" class="text-sm font-semibold text-blue-600 hover:text-blue-800 py-1 px-3 rounded" title="Editar"><i class="ph ph-pencil-simple mr-1"></i>Editar</button>
+                <button data-action="delete" class="text-sm font-semibold text-red-600 hover:text-red-800 py-1 px-3 rounded" title="Excluir"><i class="ph ph-trash mr-1"></i>Excluir</button>
+            </div>
+        </div>
+    </template>
+    
+    <template id="item-list-row-template">
+        <li class="flex justify-between items-center p-2 bg-slate-100 rounded">
+            <span class="item-text"></span>
+            <button type="button" class="item-remove-btn text-red-500 hover:text-red-700">
+                <i class="ph ph-x-circle text-lg"></i>
+            </button>
+        </li>
+    </template>
 
-                const productSearchInput = document.getElementById('product-search');
-                const productListModal = document.getElementById('product-list-modal');
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- CONFIG & STATE ---
+    const API_BASE_URL = 'https://mi-primera-app.fly.dev';
+    let allInvestments = [];
+    let editingInvestmentId = null;
+    let formItems = []; // Almacena los productos para el formulario actual
 
-                function renderFilteredProducts(filterText = '') {
-                    productListModal.innerHTML = '';
-                    const filtered = products.filter(p =>
-                        p.name.toLowerCase().includes(filterText.toLowerCase()) ||
-                        (p.brand && p.brand.toLowerCase().includes(filterText.toLowerCase()))
-                    );
-                    filtered.forEach(p => {
-                        const productItem = document.createElement('div');
-                        productItem.className = 'p-3 hover:bg-blue-100 cursor-pointer border-b last:border-b-0 flex justify-between items-center';
-                        productItem.innerHTML = `
-                            <span>${p.name} (${p.brand || 'N/A'}) - Stock: ${p.stock}</span>
-                            <button type="button" class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-2 py-1 rounded select-product-item-btn"
-                                data-id="${p.id}" data-name="${p.name}" data-cost="${p.costo || 0}">Seleccionar</button>
-                        `;
-                        productListModal.appendChild(productItem);
-                    });
-                    productListModal.querySelectorAll('.select-product-item-btn').forEach(btn => {
-                        btn.addEventListener('click', (e) => {
-                            const productId = parseInt(e.target.dataset.id);
-                            const productName = e.target.dataset.name;
-                            const productCost = parseFloat(e.target.dataset.cost);
+    // --- SELECTORS ---
+    const searchInput = document.getElementById('search-input');
+    const statusFilter = document.getElementById('status-filter');
+    const investmentListContainer = document.getElementById('investment-list');
+    const noInvestmentsMessage = document.getElementById('no-investments-message');
+    const investmentForm = document.getElementById('investment-form');
+    const formTitle = document.getElementById('form-title');
+    const saveButton = document.getElementById('save-button');
+    const clearButton = document.getElementById('clear-button');
+    const logoutButton = document.getElementById('logoutButton');
+    
+    const addItemBtn = document.getElementById('add-item-btn');
+    const productModal = document.getElementById('product-modal');
+    const closeProductModalBtn = document.getElementById('close-product-modal');
+    const productSearchInput = document.getElementById('product-search-input');
+    const productListContainer = document.getElementById('product-list-container');
+    const itemListEl = document.getElementById('item-list');
 
-                            // Si el producto ya está en la lista, incrementar cantidad
-                            const existingItem = currentProducts.find(item => item.id === productId);
-                            if (existingItem) {
-                                existingItem.quantity += 1;
-                            } else {
-                                currentProducts.push({
-                                    product_id: productId,
-                                    name: productName,
-                                    quantity: 1,
-                                    unit_cost: productCost
-                                });
-                            }
-                            renderProductItems();
-                            hideModal(); // Cerrar el modal de selección
-                            // Reabrir el modal de inversión (opcional, si el flujo lo requiere)
-                            // openInversionForm(inversionId); // Para que el usuario pueda seguir añadiendo o editando
-                        });
-                    });
-                }
+    // --- API LOGIC ---
+    function getAuthHeaders() {
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        if (!token) { window.location.href = 'index.html'; return null; }
+        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    }
 
-                productSearchInput.addEventListener('input', (e) => renderFilteredProducts(e.target.value));
-                document.getElementById('cancel-select-product-btn').addEventListener('click', hideModal);
+    async function fetchApi(endpoint, options = {}) {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido.' }));
+            throw new Error(errorData.detail);
+        }
+        if (response.status === 204) return null;
+        return response.json();
+    }
+    
+    // --- DATA LOADING & RENDERING ---
+    async function loadInvestments() {
+        try {
+            const status = statusFilter.value;
+            const filterText = searchInput.value;
+            const params = new URLSearchParams({
+                ...(status !== 'Todos' && { status }),
+                ...(filterText && { filter_text: filterText })
+            });
+            allInvestments = await fetchApi(`/inversiones?${params.toString()}`);
+            renderInvestments();
+        } catch (error) {
+            alert(`Erro ao carregar investimentos: ${error.message}`);
+        }
+    }
 
-                renderFilteredProducts(); // Renderizar al abrir
+    function renderInvestments() {
+        investmentListContainer.innerHTML = '';
+        noInvestmentsMessage.classList.toggle('hidden', allInvestments.length > 0);
+
+        allInvestments.forEach(inv => createInvestmentCard(inv));
+        updateSummary();
+    }
+    
+    function createInvestmentCard(inv) {
+        const template = document.getElementById('investment-card-template');
+        const card = template.content.cloneNode(true).firstElementChild;
+        
+        card.querySelector('[data-id]').textContent = inv.id;
+        card.querySelector('[data-description]').textContent = inv.descripcion;
+        
+        const statusEl = card.querySelector('[data-status]');
+        statusEl.textContent = inv.estado;
+        if (inv.estado === 'Recibido') statusEl.className += ' bg-green-500';
+        else if (inv.estado === 'En Camino') statusEl.className += ' bg-blue-500';
+        else if (inv.estado === 'Retenido') statusEl.className += ' bg-yellow-500';
+
+        const itemsValue = inv.items.reduce((sum, item) => sum + (item.quantity * item.unit_cost), 0);
+        const totalValue = itemsValue + (inv.costo_envio || 0);
+        
+        card.querySelector('[data-items-value]').textContent = `R$${itemsValue.toFixed(2)}`;
+        card.querySelector('[data-total-value]').textContent = `R$${totalValue.toFixed(2)}`;
+        
+        const trackingLink = card.querySelector('[data-tracking]');
+        if(inv.tracking) {
+            trackingLink.textContent = inv.tracking;
+            trackingLink.href = `https://www.google.com/search?q=${inv.tracking}`;
+        } else {
+            trackingLink.textContent = 'N/A';
+            trackingLink.href = '#';
+        }
+
+        card.querySelector('[data-shipping-date]').textContent = inv.fecha_envio || 'N/A';
+        
+        const itemsList = card.querySelector('[data-items]');
+        inv.items.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = `${item.quantity}x ${item.name} @ R$${item.unit_cost.toFixed(2)}`;
+            itemsList.appendChild(li);
+        });
+
+        card.querySelector('[data-action="edit"]').addEventListener('click', () => prepareEditForm(inv.id));
+        card.querySelector('[data-action="delete"]').addEventListener('click', () => deleteInvestment(inv.id, inv.descripcion));
+        
+        investmentListContainer.appendChild(card);
+    }
+    
+    function updateSummary() {
+        let totalInvested = 0, totalOnTheWay = 0, totalReceived = 0, totalRetained = 0;
+        allInvestments.forEach(inv => {
+            const totalValue = inv.items.reduce((s, i) => s + (i.quantity * i.unit_cost), 0) + (inv.costo_envio || 0);
+            totalInvested += totalValue;
+            if (inv.estado === 'En Camino') totalOnTheWay += totalValue;
+            else if (inv.estado === 'Recibido') totalReceived += totalValue;
+            else if (inv.estado === 'Retenido') totalRetained += totalValue;
+        });
+        document.getElementById('total-invested-value').textContent = `R$${totalInvested.toFixed(2)}`;
+        document.getElementById('total-on-the-way-value').textContent = `R$${totalOnTheWay.toFixed(2)}`;
+        document.getElementById('total-received-value').textContent = `R$${totalReceived.toFixed(2)}`;
+        document.getElementById('total-retained-value').textContent = `R$${totalRetained.toFixed(2)}`;
+    }
+
+    // --- FORM LOGIC ---
+    function clearForm() {
+        editingInvestmentId = null;
+        investmentForm.reset();
+        formTitle.textContent = 'Adicionar Novo Investimento';
+        saveButton.textContent = 'Salvar';
+        document.getElementById('investment-id').value = '';
+        formItems = [];
+        renderFormItems();
+    }
+
+    async function prepareEditForm(id) {
+        try {
+            const inv = await fetchApi(`/inversiones/${id}`);
+            editingInvestmentId = inv.id;
+            formTitle.textContent = 'Editar Investimento';
+            saveButton.textContent = 'Atualizar';
+            document.getElementById('investment-id').value = inv.id;
+            document.getElementById('inv-description').value = inv.descripcion;
+            document.getElementById('inv-shipping-cost').value = inv.costo_envio || 0;
+            document.getElementById('inv-status').value = inv.estado;
+            document.getElementById('inv-shipping-date').value = inv.fecha_envio || '';
+            document.getElementById('inv-arrival-date').value = inv.fecha_llegada || '';
+            document.getElementById('inv-tracking').value = inv.tracking || '';
+            document.getElementById('inv-obs').value = inv.observaciones || '';
+            formItems = inv.items.map(item => ({...item, product_id: item.product_id}));
+            renderFormItems();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (error) {
+            alert(`Erro ao carregar dados para edição: ${error.message}`);
+        }
+    }
+
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        const payload = {
+            inversion_data: {
+                descripcion: document.getElementById('inv-description').value,
+                costo_envio: parseFloat(document.getElementById('inv-shipping-cost').value),
+                estado: document.getElementById('inv-status').value,
+                fecha_envio: document.getElementById('inv-shipping-date').value || null,
+                fecha_llegada: document.getElementById('inv-arrival-date').value || null,
+                tracking: document.getElementById('inv-tracking').value,
+                observaciones: document.getElementById('inv-obs').value
+            },
+            items: formItems
+        };
+        
+        try {
+            if (editingInvestmentId) {
+                await fetchApi(`/inversiones/${editingInvestmentId}`, { method: 'PUT', body: JSON.stringify(payload) });
+                alert('Investimento atualizado com sucesso!');
+            } else {
+                await fetchApi('/inversiones', { method: 'POST', body: JSON.stringify(payload) });
+                alert('Investimento adicionado com sucesso!');
             }
-
-
-            addProductBtn.addEventListener('click', selectProductModal);
-            document.getElementById('cancel-form-btn').addEventListener('click', hideModal);
-
-            inversionForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                showLoader(true);
-
-                const inversionData = {
-                    descripcion: document.getElementById('descripcion').value,
-                    estado: document.getElementById('estado').value,
-                    fecha_envio: document.getElementById('fecha_envio').value || null,
-                    fecha_llegada: document.getElementById('fecha_llegada').value || null,
-                    tracking: document.getElementById('tracking').value || null,
-                    costo_envio: parseFloat(document.getElementById('costo_envio').value),
-                    observaciones: document.getElementById('observaciones').value || null,
-                    total_costo: parseFloat(totalProductosSpan.textContent) + parseFloat(document.getElementById('costo_envio').value) // Suma de items + costo_envio
-                };
-
-                const items = currentProducts.map(item => ({
-                    product_id: item.product_id, // Usar product_id
-                    name: item.name,
-                    quantity: item.quantity,
-                    unit_cost: item.unit_cost
-                }));
-
-                const payload = {
-                    inversion_data: inversionData,
-                    items: items
-                };
-
-                let response;
-                if (inversionId) {
-                    response = await fetchAPI(`/inversiones/${inversionId}`, 'PUT', payload);
-                } else {
-                    response = await fetchAPI('/inversiones', 'POST', payload);
-                }
-
-                showLoader(false);
-                if (response) {
-                    hideModal();
-                    await fetchAllInversiones(); // Recargar la lista después de guardar
-                    showModal(`
-                        <i class="ph ph-check-circle text-6xl text-green-500 mb-4"></i>
-                        <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Éxito!</h2>
-                        <p class="text-lg text-slate-600 mb-4">Inversión ${inversionId ? 'actualizada' : 'creada'} correctamente.</p>
-                        <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Cerrar</button>
-                    `);
-                    document.getElementById('close-modal-btn').addEventListener('click', hideModal);
-                }
-            });
-
-            renderProductItems(); // Renderizar productos iniciales si es una edición
+            clearForm();
+            loadInvestments();
+        } catch (error) {
+            alert(`Erro ao salvar investimento: ${error.message}`);
         }
-
-        async function markInversionReceived(inversionId) {
-            showConfirmationModal("¿Desea marcar esta inversión como 'Recibida'? Esto actualizará el stock de los productos.", async () => {
-                showLoader(true);
-                const payload = {
-                    estado: 'Recibido',
-                    fecha_llegada: new Date().toISOString().split('T')[0] // Fecha actual
-                };
-                const response = await fetchAPI(`/inversiones/${inversionId}/status`, 'PUT', payload);
-                showLoader(false);
-                if (response) {
-                    await fetchAllInversiones();
-                    showModal(`
-                        <i class="ph ph-check-circle text-6xl text-green-500 mb-4"></i>
-                        <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Éxito!</h2>
-                        <p class="text-lg text-slate-600 mb-4">Inversión marcada como Recibida. El stock ha sido actualizado.</p>
-                        <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Cerrar</button>
-                    `);
-                    document.getElementById('close-modal-btn').addEventListener('click', hideModal);
-                }
-            });
+    }
+    
+    async function deleteInvestment(id, description) {
+        if (!confirm(`Tem certeza que deseja excluir o investimento "${description}"?`)) return;
+        try {
+            await fetchApi(`/inversiones/${id}`, { method: 'DELETE' });
+            alert('Investimento excluído com sucesso!');
+            loadInvestments();
+        } catch (error) {
+            alert(`Erro ao excluir investimento: ${error.message}`);
         }
+    }
 
-        async function deleteInversion(inversionId) {
-            showConfirmationModal("¿Está seguro de que desea ELIMINAR esta inversión? Esta acción es irreversible.", async () => {
-                showLoader(true);
-                const response = await fetchAPI(`/inversiones/${inversionId}`, 'DELETE');
-                showLoader(false);
-                if (response !== null) { // DELETE returns empty object on success, or null on API error
-                    await fetchAllInversiones();
-                    showModal(`
-                        <i class="ph ph-check-circle text-6xl text-green-500 mb-4"></i>
-                        <h2 class="text-2xl font-bold text-slate-800 mb-2">¡Éxito!</h2>
-                        <p class="text-lg text-slate-600 mb-4">Inversión eliminada correctamente.</p>
-                        <button id="close-modal-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition">Cerrar</button>
-                    `);
-                    document.getElementById('close-modal-btn').addEventListener('click', hideModal);
-                }
+    // --- PRODUCT & ITEM MANAGEMENT ---
+    function openProductModal() {
+        productSearchInput.value = '';
+        productModal.classList.remove('hidden');
+        loadProductsForModal('');
+    }
+
+    async function loadProductsForModal(searchText) {
+        try {
+            const products = await fetchApi(`/products?filter_text=${searchText}`);
+            productListContainer.innerHTML = '';
+            products.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'p-3 hover:bg-slate-100 cursor-pointer border-b';
+                div.textContent = `${p.name} (Marca: ${p.brand || 'N/A'})`;
+                div.addEventListener('click', () => selectProduct(p));
+                productListContainer.appendChild(div);
             });
+        } catch (error) {
+            alert(`Erro ao carregar produtos: ${error.message}`);
         }
+    }
 
+    function selectProduct(product) {
+        const quantity = parseInt(prompt(`Quantidade para "${product.name}":`, '1'), 10);
+        if (isNaN(quantity) || quantity <= 0) return;
 
-        // Event Listeners
-        refreshButton.addEventListener('click', fetchAllInversiones);
-        logoutButton.addEventListener('click', () => {
-            localStorage.removeItem('access_token');
-            window.location.href = 'index.html';
+        const cost = parseFloat(prompt(`Custo unitário para "${product.name}":`, product.costo || '0.0'));
+        if (isNaN(cost) || cost < 0) return;
+        
+        formItems.push({
+            product_id: product.id,
+            name: product.name,
+            quantity: quantity,
+            unit_cost: cost
         });
-        navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                navItems.forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-                currentVista = item.dataset.vista;
-                document.getElementById('header-title').textContent = `Inversiones ${currentVista}`;
-                fetchAllInversiones();
+        
+        renderFormItems();
+        productModal.classList.add('hidden');
+    }
+
+    function renderFormItems() {
+        itemListEl.innerHTML = '';
+        const template = document.getElementById('item-list-row-template');
+        formItems.forEach((item, index) => {
+            const li = template.content.cloneNode(true).firstElementChild;
+            li.querySelector('.item-text').textContent = `${item.quantity}x ${item.name} @ R$${item.unit_cost.toFixed(2)}`;
+            li.querySelector('.item-remove-btn').addEventListener('click', () => {
+                formItems.splice(index, 1);
+                renderFormItems();
             });
+            itemListEl.appendChild(li);
         });
-        addInversionButton.addEventListener('click', () => openInversionForm()); // Abre el formulario para nueva inversión
+    }
+    
+    // --- EVENT LISTENERS ---
+    searchInput.addEventListener('input', loadInvestments);
+    statusFilter.addEventListener('change', loadInvestments);
+    investmentForm.addEventListener('submit', handleFormSubmit);
+    clearButton.addEventListener('click', clearForm);
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
 
+        window.location.href = 'index.html';
+    });
+    
+    addItemBtn.addEventListener('click', openProductModal);
+    closeProductModalBtn.addEventListener('click', () => productModal.classList.add('hidden'));
+    productSearchInput.addEventListener('input', (e) => loadProductsForModal(e.target.value));
 
-        // Inicialización
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-                window.location.href = 'index.html'; // Redirigir al login si no hay token
-                return;
-            }
-            fetchAllInversiones();
-        });
-
-    </script>
+    // --- INITIALIZATION ---
+    loadInvestments();
+});
+</script>
 </body>
 </html>

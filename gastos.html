@@ -287,8 +287,17 @@ document.addEventListener('DOMContentLoaded', () => {
         populateCategorySelects();
     }
     
+    // --- FUNCIÓN CORREGIDA ---
     async function fetchExpenses() {
-        allExpenses = await fetchApi('/gastos');
+        const fetchedExpenses = await fetchApi('/gastos');
+        // Enriquece los datos de gastos con el categoria_id faltante
+        allExpenses = fetchedExpenses.map(expense => {
+            const category = allCategories.find(cat => cat.nombre === expense.categoria);
+            return {
+                ...expense,
+                categoria_id: category ? category.id : null
+            };
+        });
         populateMonthFilter();
         renderFilteredResults();
     }
@@ -354,10 +363,9 @@ document.addEventListener('DOMContentLoaded', () => {
             row.querySelector('[data-value]').textContent = `R$${parseFloat(expense.valor).toFixed(2)}`;
             
             const categoryEl = row.querySelector('[data-category]');
-            const categoryData = allCategories.find(c => c.id === expense.categoria_id);
-            categoryEl.textContent = categoryData?.nombre || 'N/A';
-            if (categoryData?.color) {
-                categoryEl.style.backgroundColor = categoryData.color;
+            categoryEl.textContent = expense.categoria || 'N/A';
+            if (expense.categoria_color) {
+                categoryEl.style.backgroundColor = expense.categoria_color;
                 categoryEl.style.color = '#fff';
             } else {
                 categoryEl.classList.add('bg-slate-600', 'text-slate-200');
@@ -377,11 +385,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const ctx = canvas.getContext('2d');
         
         const categoryTotals = expenses.reduce((acc, expense) => {
-            const category = allCategories.find(c => c.id === expense.categoria_id) || { nombre: 'Sem Categoria', color: '#64748b' };
-            if (!acc[category.nombre]) {
-                acc[category.nombre] = { total: 0, color: category.color };
+            const categoryName = expense.categoria || 'Sem Categoria';
+            const categoryColor = expense.categoria_color || '#64748b';
+            if (!acc[categoryName]) {
+                acc[categoryName] = { total: 0, color: categoryColor };
             }
-            acc[category.nombre].total += parseFloat(expense.valor);
+            acc[categoryName].total += parseFloat(expense.valor);
             return acc;
         }, {});
 
@@ -477,8 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('expense-id').value = expense.id;
         document.getElementById('expense-description').value = expense.descripcion;
         document.getElementById('expense-value').value = expense.valor;
-        const categoryData = allCategories.find(c => c.id === expense.categoria_id);
-        document.getElementById('expense-category').value = categoryData?.nombre || '';
+        document.getElementById('expense-category').value = expense.categoria || '';
         document.getElementById('expense-date').value = expense.fecha;
         document.getElementById('expense-obs').value = expense.observaciones || '';
         openModal(expenseModal);
@@ -498,11 +506,10 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const categoryName = document.getElementById('expense-category').value;
         
-        // --- CÓDIGO CORREGIDO ---
         const expenseData = {
             descripcion: document.getElementById('expense-description').value,
             valor: parseFloat(document.getElementById('expense-value').value),
-            categoria: categoryName, // Se envía el nombre de la categoría
+            categoria: categoryName,
             fecha: document.getElementById('expense-date').value,
             observaciones: document.getElementById('expense-obs').value
         };
@@ -605,5 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
+</body>
+</html>
 </body>
 </html>

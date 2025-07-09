@@ -18,77 +18,85 @@
         }
         .modal-overlay { transition: opacity 0.3s ease; }
         .modal-container { transition: transform 0.3s ease, opacity 0.3s ease; }
+        .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="font-sans">
 
-    <header class="bg-white shadow-md sticky top-0 z-20">
-        <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-slate-800">Gestão de Produtos</h1>
-            <div>
-                 <a href="entregaa.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Voltar aos Pedidos">
-                    <i class="ph ph-truck text-3xl"></i>
-                 </a>
-                 <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
-                     <i class="ph ph-sign-out text-3xl"></i>
-                 </button>
-            </div>
-        </div>
-    </header>
+    <div id="loader-global" class="fixed inset-0 bg-white bg-opacity-75 flex justify-center items-center z-50">
+        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
+    </div>
 
-    <main class="max-w-7xl mx-auto p-4 lg:p-6">
-        
-        <div class="bg-white p-5 rounded-xl shadow-lg mb-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-4">Resumo do Inventário</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                <div class="text-center md:text-left">
-                    <p class="text-slate-500 text-sm">💰 Valor Total do Inventário (Venda)</p>
-                    <p id="total-inventory-value" class="text-4xl font-bold text-green-600">R$0.00</p>
-                </div>
-                <div class="text-center md:text-left">
-                    <p class="text-slate-500 text-sm">📦 Unidades Totais em Stock</p>
-                    <p id="total-stock-units" class="text-4xl font-bold text-blue-600">0</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white p-5 rounded-xl shadow-lg">
-            <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
-                <div class="flex-grow min-w-[250px]">
-                    <input type="text" id="search-input" placeholder="Buscar por nome, marca ou ID..." class="form-input">
-                </div>
-                <div class="flex items-center gap-4">
-                    <label class="flex items-center gap-2 text-slate-600 cursor-pointer">
-                        <input type="checkbox" id="out-of-stock-filter" class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500">
-                        Mostrar esgotados
-                    </label>
-                    <button id="add-product-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-transform active:scale-95">
-                        <i class="ph ph-plus-circle text-xl"></i>
-                        <span>Novo Produto</span>
-                    </button>
+    <div id="app-container" class="hidden">
+        <header class="bg-white shadow-md sticky top-0 z-20">
+            <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-slate-800">Gestão de Produtos</h1>
+                <div>
+                     <a href="entregaa.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Voltar aos Pedidos">
+                        <i class="ph ph-truck text-3xl"></i>
+                     </a>
+                     <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
+                         <i class="ph ph-sign-out text-3xl"></i>
+                     </button>
                 </div>
             </div>
-            <div class="h-[calc(100vh-420px)] overflow-y-auto pr-2">
-                <table class="w-full text-left">
-                    <thead class="sticky top-0 bg-slate-50 z-10">
-                        <tr>
-                            <th class="p-3 text-sm font-semibold text-slate-600">ID</th>
-                            <th class="p-3 text-sm font-semibold text-slate-600">Produto</th>
-                            <th class="p-3 text-sm font-semibold text-slate-600">Custo</th>
-                            <th class="p-3 text-sm font-semibold text-slate-600">Preço</th>
-                            <th class="p-3 text-sm font-semibold text-slate-600">Stock</th>
-                            <th class="p-3 text-sm font-semibold text-slate-600">Valor Total</th>
-                            <th class="p-3 text-sm font-semibold text-slate-600">Clasif.</th>
-                            <th class="p-3 text-sm font-semibold text-slate-600">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="product-list-body"></tbody>
-                </table>
-                 <p id="no-products-message" class="hidden text-center text-slate-500 py-16">Nenhum produto encontrado.</p>
+        </header>
+    
+        <main class="max-w-7xl mx-auto p-4 lg:p-6">
+            
+            <div class="bg-white p-5 rounded-xl shadow-lg mb-6">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">Resumo do Inventário</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div class="text-center md:text-left">
+                        <p class="text-slate-500 text-sm">💰 Valor Total do Inventário (Venda)</p>
+                        <p id="total-inventory-value" class="text-4xl font-bold text-green-600">R$0.00</p>
+                    </div>
+                    <div class="text-center md:text-left">
+                        <p class="text-slate-500 text-sm">📦 Unidades Totais em Stock</p>
+                        <p id="total-stock-units" class="text-4xl font-bold text-blue-600">0</p>
+                    </div>
+                </div>
             </div>
-        </div>
-    </main>
+    
+            <div class="bg-white p-5 rounded-xl shadow-lg">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                    <div class="flex-grow min-w-[250px]">
+                        <input type="text" id="search-input" placeholder="Buscar por nome, marca ou ID..." class="form-input">
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <label class="flex items-center gap-2 text-slate-600 cursor-pointer">
+                            <input type="checkbox" id="out-of-stock-filter" class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500">
+                            Mostrar esgotados
+                        </label>
+                        <button id="add-product-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-transform active:scale-95">
+                            <i class="ph ph-plus-circle text-xl"></i>
+                            <span>Novo Produto</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="h-[calc(100vh-420px)] overflow-y-auto pr-2">
+                    <table class="w-full text-left">
+                        <thead class="sticky top-0 bg-slate-50 z-10">
+                            <tr>
+                                <th class="p-3 text-sm font-semibold text-slate-600">ID</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Produto</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Custo</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Preço</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Stock</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Valor Total</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Clasif.</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-list-body"></tbody>
+                    </table>
+                     <p id="no-products-message" class="hidden text-center text-slate-500 py-16">Nenhum produto encontrado.</p>
+                </div>
+            </div>
+        </main>
+    </div>
     
     <div id="product-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-60 z-40 flex justify-center items-center p-4 modal-overlay opacity-0">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg modal-container opacity-0 scale-95" id="product-modal-container">
@@ -159,6 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingProductId = null;
 
     // --- SELECTORS ---
+    const appContainer = document.getElementById('app-container');
+    const loaderGlobal = document.getElementById('loader-global');
     const productListBody = document.getElementById('product-list-body');
     const noProductsMessage = document.getElementById('no-products-message');
     const searchInput = document.getElementById('search-input');
@@ -170,30 +180,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutButton = document.getElementById('logoutButton');
     const totalInventoryValueEl = document.getElementById('total-inventory-value');
     const totalStockUnitsEl = document.getElementById('total-stock-units');
-
-    // --- NUEVOS SELECTORS PARA EL MODAL ---
     const addProductBtn = document.getElementById('add-product-btn');
     const productModalOverlay = document.getElementById('product-modal-overlay');
     const productModalContainer = document.getElementById('product-modal-container');
     const modalCloseBtn = document.getElementById('modal-close-btn');
 
-    // --- API LOGIC ---
-    function getAuthHeaders() {
-        const token = localStorage.getItem('accessToken'); // Asegúrate que la clave es 'accessToken' como en entregaa.html
-        if (!token) {
-            alert('Sessão expirada. Por favor, faça login novamente.');
-            window.location.href = 'login.html'; // Cambia 'login.html' por tu página de inicio de sesión
-            return null;
-        }
-        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-    }
-
+    // --- API LOGIC (CORREGIDA)---
     async function fetchApi(endpoint, options = {}) {
-        const headers = getAuthHeaders();
-        if (!headers) return Promise.reject(new Error("No autorizado"));
+        const token = localStorage.getItem('accessToken');
+        // 1. Si no hay token, redirige a login. Se acabó la alerta.
+        if (!token) {
+            window.location.href = 'login.html';
+            return; // Detiene la ejecución
+        }
+
+        const headers = { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}`,
+            ...options.headers
+        };
         
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options });
+            // 2. Si el token es inválido (401), borra el token malo y redirige a login.
+            if (response.status === 401) {
+                localStorage.removeItem('accessToken');
+                window.location.href = 'login.html';
+                return; // Detiene la ejecución
+            }
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido no servidor.' }));
                 throw new Error(errorData.detail);
@@ -201,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.status === 204) return null;
             return response.json();
         } catch (error) {
+            console.error("API Fetch Error:", error);
             throw error;
         }
     }
@@ -228,32 +243,54 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const filterText = searchInput.value;
             const outOfStock = outOfStockFilter.checked;
+            const includeAll = true; // Siempre traer todos y filtrar en el frontend para el cálculo ABC
             const params = new URLSearchParams({
                 ...(filterText && { filter_text: filterText }),
-                ...(outOfStock && { out_of_stock: outOfStock.toString() })
+                out_of_stock: outOfStock.toString(),
+                include_all: 'true' // Parámetro para asegurar que traemos todo para los cálculos de resumen
             });
-            allProducts = await fetchApi(`/products?${params.toString()}`);
+
+            // Usamos una promesa para asegurar que la API no bloquee el resto
+            const productsPromise = fetchApi(`/products?${params.toString()}`);
+            
+            // Si la promesa es undefined (porque no había token), la función ya habrá redirigido.
+            if (!productsPromise) return;
+
+            allProducts = await productsPromise;
+            
+            // Ocultar el loader y mostrar la app solo después de la primera carga exitosa
+            loaderGlobal.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+
             renderProducts();
+
         } catch (error) {
-            alert(`Erro ao carregar produtos: ${error.message}`);
+            // No mostramos alerta porque fetchApi ya redirige en caso de error de autenticación.
+            console.error(`Erro ao carregar produtos: ${error.message}`);
         }
     }
 
     function renderProducts() {
-        productListBody.innerHTML = '';
         noProductsMessage.classList.toggle('hidden', allProducts.length > 0);
         
         let totalInventoryValue = 0;
         let totalStock = 0;
-        let processedData = [];
-
-        allProducts.forEach(p => {
-            const totalValue = (p.price || 0) * (p.stock || 0);
-            totalInventoryValue += totalValue;
-            totalStock += p.stock || 0;
-            processedData.push({ ...p, totalValue });
-        });
         
+        allProducts.forEach(p => {
+            totalInventoryValue += (p.price || 0) * (p.stock || 0);
+            totalStock += p.stock || 0;
+        });
+
+        const outOfStockFilterChecked = document.getElementById('out-of-stock-filter').checked;
+        let filteredForDisplay = outOfStockFilterChecked 
+            ? allProducts.filter(p => p.stock <= 0)
+            : allProducts;
+        
+        let processedData = filteredForDisplay.map(p => ({
+            ...p,
+            totalValue: (p.price || 0) * (p.stock || 0)
+        }));
+
         processedData.sort((a, b) => b.totalValue - a.totalValue);
         let accumulatedValue = 0;
         const totalAbcValue = processedData.reduce((sum, p) => sum + p.totalValue, 0);
@@ -266,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else p.classification = "C";
         });
 
+        productListBody.innerHTML = '';
         const template = document.getElementById('product-row-template');
         processedData.forEach(p => {
             const row = template.content.cloneNode(true).firstElementChild;
@@ -277,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const stockEl = row.querySelector('[data-stock]');
             stockEl.textContent = p.stock;
-            stockEl.className = 'p-3 font-bold text-lg'; // Reset classes
+            stockEl.className = 'p-3 font-bold text-lg';
             if (p.stock <= 0) stockEl.classList.add('text-red-500');
             else if (p.stock > 0 && p.stock <= 10) stockEl.classList.add('text-yellow-500');
             else stockEl.classList.add('text-slate-700');
@@ -286,9 +324,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const classEl = row.querySelector('[data-classification]');
             classEl.textContent = p.classification;
-            if (p.classification === "A") classEl.style.backgroundColor = '#16a34a'; // green-600
-            else if (p.classification === "B") classEl.style.backgroundColor = '#f59e0b'; // amber-500
-            else classEl.style.backgroundColor = '#ef4444'; // red-500
+            if (p.classification === "A") classEl.style.backgroundColor = '#16a34a';
+            else if (p.classification === "B") classEl.style.backgroundColor = '#f59e0b';
+            else classEl.style.backgroundColor = '#ef4444';
             
             row.querySelector('[data-action="edit"]').addEventListener('click', () => prepareEditForm(p));
             row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteProduct(p.id, p.name));
@@ -302,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FORM LOGIC ---
     function prepareEditForm(product) {
-        clearForm(); // Limpia cualquier estado anterior
+        clearForm();
         editingProductId = product.id;
         formTitle.textContent = 'Editar Produto';
         saveButton.textContent = 'Atualizar Produto';
@@ -339,10 +377,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (editingProductId) {
                 await fetchApi(`/products/${editingProductId}`, { method: 'PUT', body: JSON.stringify(productData) });
-                alert('Produto atualizado com sucesso!');
             } else {
                 await fetchApi('/products', { method: 'POST', body: JSON.stringify(productData) });
-                alert('Produto adicionado com sucesso!');
             }
             hideModal();
             loadProducts();
@@ -350,7 +386,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`Erro ao salvar produto: ${error.message}`);
         } finally {
             saveButton.disabled = false;
-            // El texto del botón se restablecerá en clearForm/hideModal
         }
     }
 
@@ -358,7 +393,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!confirm(`Tem certeza que deseja excluir o produto "${name}"?`)) return;
         try {
             await fetchApi(`/products/${id}`, { method: 'DELETE' });
-            alert('Produto excluído com sucesso!');
             loadProducts();
         } catch (error) {
             alert(`Erro ao excluir produto: ${error.message}`);
@@ -366,26 +400,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- EVENT LISTENERS ---
-    searchInput.addEventListener('input', loadProducts);
-    outOfStockFilter.addEventListener('change', loadProducts);
+    searchInput.addEventListener('input', renderProducts); // Filtra en el frontend
+    outOfStockFilter.addEventListener('change', renderProducts); // Filtra en el frontend
     productForm.addEventListener('submit', handleFormSubmit);
-    
-    // Listeners para el modal
     addProductBtn.addEventListener('click', () => {
         clearForm();
         showModal();
     });
     modalCloseBtn.addEventListener('click', hideModal);
-    clearButton.addEventListener('click', clearForm); // El botón de limpiar dentro del modal
+    clearButton.addEventListener('click', clearForm);
     productModalOverlay.addEventListener('click', (e) => {
         if (e.target === productModalOverlay) {
             hideModal();
         }
     });
-
     logoutButton.addEventListener('click', () => {
         localStorage.removeItem('accessToken');
-        window.location.href = 'login.html'; // Cambia si tu login tiene otro nombre
+        window.location.href = 'login.html';
     });
 
     // --- INITIALIZATION ---

@@ -1,457 +1,222 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Gestión de Productos</title>
+    <title>Gestão de Produtos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
-        /* Estilos base para el cuerpo y contenedor principal */
-        body { background-color: #0f172a; font-family: 'Inter', sans-serif; color: #e2e8f0; }
-        #app-container { padding-bottom: 90px; } /* Espacio para la barra de navegación inferior si existe */
-
-        /* Estilos para campos de formulario */
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
         .form-input {
-            width: 100%; padding: 0.75rem; border: 1px solid #475569;
-            border-radius: 0.5rem; background-color: #334155; color: #f1f5f9;
-            transition: all 0.2s;
+            width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1;
+            border-radius: 0.5rem; transition: ring 0.2s;
         }
         .form-input:focus {
-            outline: none; border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+            outline: none; --tw-ring-color: #3b82f6;
+            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000);
+            border-color: #3b82f6;
         }
-
-        /* Estilos para el loader global */
-        .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Estilos para el modal (superposición y contenedor) */
-        .modal-overlay { transition: opacity 0.3s ease; }
-        .modal-container { transition: transform 0.3s ease, opacity 0.3s ease; }
-
-        /* Estilos para la barra de desplazamiento (scroll bar) */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="font-sans">
 
-    <div id="app-container">
-        <!-- Encabezado de la aplicación -->
-        <header class="bg-slate-900/80 backdrop-blur-sm shadow-md sticky top-0 z-20 border-b border-slate-700">
-            <div class="max-w-4xl mx-auto px-5 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-white">Gestión de Productos</h1>
-                <div class="flex items-center gap-3">
-                    <!-- Enlace para volver al menú principal (como en ventas.html) -->
-                    <a href="index.html" class="text-slate-400 hover:text-white transition active:scale-90" title="Volver al Menú">
-                        <i class="ph ph-arrow-u-left-up text-3xl"></i>
-                    </a>
-                    <!-- Botón de cerrar sesión -->
-                    <button id="logoutButton" class="text-slate-400 hover:text-red-400 transition active:scale-90" title="Cerrar Sesión">
-                        <i class="ph ph-sign-out text-2xl"></i>
-                    </button>
-                </div>
+    <header class="bg-white shadow-md sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-slate-800">Gestão de Produtos</h1>
+            <div>
+                 <a href="index.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Voltar aos Pedidos">
+                    <i class="ph ph-arrow-u-left-up text-3xl"></i>
+                 </a>
+                 <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
+                     <i class="ph ph-sign-out text-3xl"></i>
+                 </button>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <!-- Contenido principal de la página -->
-        <main class="max-w-4xl mx-auto p-4">
-            <!-- Sección de resumen de inventario -->
-            <div class="bg-slate-800 p-5 rounded-xl shadow-lg mb-6 border border-slate-700">
-                <h3 class="text-xl font-bold text-white mb-4">Resumen de Inventario</h3>
+    <main class="max-w-7xl mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <div class="lg:col-span-2">
+            
+            <div class="bg-white p-5 rounded-xl shadow-lg mb-6">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">Resumen de Inventario</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                     <div class="text-center md:text-left">
-                        <p class="text-slate-400 text-sm">💰 Valor Total del Inventario</p>
-                        <p id="total-inventory-value" class="text-4xl font-bold text-green-400">R$0.00</p>
+                        <p class="text-slate-500 text-sm">💰 Valor Total del Inventario</p>
+                        <p id="total-inventory-value" class="text-4xl font-bold text-green-600">R$0.00</p>
                     </div>
                     <div class="text-center md:text-left">
-                        <p class="text-slate-400 text-sm">📦 Unidades Totales en Stock</p>
-                        <p id="total-stock-units" class="text-4xl font-bold text-blue-400">0</p>
+                        <p class="text-slate-500 text-sm">📦 Unidades Totales en Stock</p>
+                        <p id="total-stock-units" class="text-4xl font-bold text-blue-600">0</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Sección de listado de productos y filtros -->
-            <div class="bg-slate-800 p-5 rounded-xl shadow-lg border border-slate-700">
-                <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
-                    <!-- Botón para añadir un nuevo producto (abre el modal) -->
-                    <button id="add-product-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition active:scale-95 flex items-center justify-center gap-2 md:order-1">
-                        <i class="ph ph-plus text-xl"></i> Añadir Producto
-                    </button>
-                    <!-- Campo de búsqueda de productos -->
-                    <input type="text" id="search-input" placeholder="Buscar por nombre, marca o ID..." class="form-input md:flex-grow md:order-2">
-                    <!-- Filtro para mostrar solo productos agotados -->
-                    <label class="flex items-center justify-end gap-2 text-slate-400 md:order-3">
-                        <input type="checkbox" id="out-of-stock-filter" class="h-4 w-4 rounded text-blue-600 bg-slate-700 border-slate-600">
+            <div class="bg-white p-5 rounded-xl shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 items-center">
+                    <input type="text" id="search-input" placeholder="Buscar por nome, marca ou ID..." class="form-input">
+                    <label class="flex items-center justify-end gap-2 text-slate-600">
+                        <input type="checkbox" id="out-of-stock-filter" class="h-4 w-4 rounded text-blue-600">
                         Mostrar solo agotados
                     </label>
                 </div>
-                <!-- Tabla de productos -->
                 <div class="h-[calc(100vh-380px)] overflow-y-auto pr-2">
                     <table class="w-full text-left">
-                        <thead class="sticky top-0 bg-slate-900/80 backdrop-blur-sm z-10">
+                        <thead class="sticky top-0 bg-slate-50 z-10">
                             <tr>
-                                <th class="p-3 text-sm font-semibold text-slate-300">ID</th>
-                                <th class="p-3 text-sm font-semibold text-slate-300">Producto</th>
-                                <th class="p-3 text-sm font-semibold text-slate-300">Costo</th>
-                                <th class="p-3 text-sm font-semibold text-slate-300">Precio</th>
-                                <th class="p-3 text-sm font-semibold text-slate-300">Stock</th>
-                                <th class="p-3 text-sm font-semibold text-slate-300">Valor Total</th>
-                                <th class="p-3 text-sm font-semibold text-slate-300">Clasif.</th>
-                                <th class="p-3 text-sm font-semibold text-slate-300">Acciones</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">ID</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Produto</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Custo</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Preço</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Stock</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Valor Total</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Clasif.</th>
+                                <th class="p-3 text-sm font-semibold text-slate-600">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="product-list-body"></tbody>
                     </table>
-                     <!-- Mensaje si no se encuentran productos -->
-                     <p id="no-products-message" class="hidden text-center text-slate-400 py-16">Ningún producto encontrado.</p>
+                     <p id="no-products-message" class="hidden text-center text-slate-500 py-16">Nenhum produto encontrado.</p>
                 </div>
             </div>
-        </main>
-    </div>
-
-    <!-- Modal para Adicionar/Editar Producto -->
-    <div id="modal-container" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
-        <div class="bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 modal-container opacity-0 scale-95 border border-slate-700">
-            <h3 id="form-title-modal" class="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-3">Añadir Nuevo Producto</h3>
-            <form id="product-form" class="space-y-4">
-                <input type="hidden" id="product-id">
-                <div>
-                    <label class="block text-sm font-medium text-slate-300">Nombre del Producto *</label>
-                    <input type="text" id="product-name" class="form-input mt-1" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-300">Marca</label>
-                    <input type="text" id="product-brand" class="form-input mt-1">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300">Costo (R$)</label>
-                        <input type="number" id="product-cost" min="0" step="0.01" value="0" class="form-input mt-1">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300">Precio de Venta (R$) *</label>
-                        <input type="number" id="product-price" min="0.01" step="0.01" class="form-input mt-1" required>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-300">Stock Inicial *</label>
-                    <input type="number" id="product-stock" min="0" value="0" class="form-input mt-1" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-300">Clasificación</label>
-                    <select id="product-category" class="form-input mt-1">
-                        <option value="Eletrônicos">Electrónica</option>
-                        <option value="Vestuário">Vestuario</option>
-                        <option value="Alimentos">Alimentos</option>
-                        <option value="Bebidas">Bebidas</option>
-                        <option value="Limpeza">Limpieza</option>
-                        <option value="Saúde e Beleza">Salud y Belleza</option>
-                        <option value="Casa e Decoração">Hogar y Decoración</option>
-                        <option value="Automotivo">Automoción</option>
-                        <option value="Outros">Otros</option>
-                    </select>
-                </div>
-                <div class="flex gap-3 mt-6">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition">
-                        Guardar Producto
-                    </button>
-                    <button type="button" id="clear-button" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 px-4 rounded-lg transition">
-                        Limpiar
-                    </button>
-                </div>
-            </form>
         </div>
-    </div>
 
-    <!-- Loader global (visible durante cargas de datos o acciones) -->
-    <div id="loader-global" class="hidden fixed inset-0 bg-slate-900 bg-opacity-75 flex justify-center items-center z-50">
-        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
-    </div>
-
-    <!-- Banner de permiso de notificación (aparece en la parte inferior) -->
-    <div id="notification-permission-banner" class="hidden fixed bottom-[90px] left-0 right-0 bg-slate-900 text-white p-4 z-20 flex justify-between items-center border-t border-slate-700">
-        <span>¿Deseas recibir notificaciones de nuevos pedidos?</span>
-        <button id="enable-notifications-btn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold">Activar</button>
-    </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // Selectores de elementos del DOM
-    const logoutButton = document.getElementById('logoutButton');
-    const addProductBtn = document.getElementById('add-product-btn');
-    const modalContainer = document.getElementById('modal-container');
-    const productForm = document.getElementById('product-form');
-    const formTitleModal = document.getElementById('form-title-modal');
-    const clearButton = document.getElementById('clear-button');
-    const searchInput = document.getElementById('search-input');
-    const outOfStockFilter = document.getElementById('out-of-stock-filter');
-    const productListBody = document.getElementById('product-list-body');
-    const noProductsMessage = document.getElementById('no-products-message');
-    const totalInventoryValue = document.getElementById('total-inventory-value');
-    const totalStockUnits = document.getElementById('total-stock-units');
-
-    let editingProductId = null; // Variable para almacenar el ID del producto que se está editando
-
-    // --- Funciones de Utilidad para la Interfaz de Usuario ---
-
-    /**
-     * Muestra un modal con el contenido HTML proporcionado.
-     * @param {HTMLElement} content - El elemento HTML a mostrar dentro del modal.
-     */
-    function showModal(content) {
-        const modalContent = modalContainer.querySelector('.bg-slate-800'); // Selecciona el contenedor interno del modal
-        modalContent.innerHTML = ''; // Limpia cualquier contenido previo
-        modalContent.appendChild(content); // Añade el nuevo contenido
-
-        modalContainer.classList.remove('hidden'); // Hace visible la superposición del modal
-        // Pequeño retraso para permitir que la transición CSS se aplique
-        setTimeout(() => {
-            modalContainer.classList.remove('opacity-0'); // Hace la superposición opaca
-            modalContainer.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95'); // Inicia la transición del contenedor del modal
-            modalContainer.querySelector('.modal-container').classList.add('opacity-100', 'scale-100');
-        }, 10);
-    }
-
-    /**
-     * Oculta el modal y restablece su contenido original.
-     */
-    function hideModal() {
-        const modalInner = modalContainer.querySelector('.modal-container');
-        modalInner.classList.remove('opacity-100', 'scale-100'); // Inicia la transición de salida del contenedor del modal
-        modalInner.classList.add('opacity-0', 'scale-95');
-        modalContainer.classList.add('opacity-0'); // Inicia la transición de salida de la superposición
-
-        // Después de que la transición termine, oculta completamente el modal y restablece el formulario
-        setTimeout(() => {
-            modalContainer.classList.add('hidden');
-            // Restaura el contenido original del formulario de producto dentro del modal
-            const originalFormContent = document.createRange().createContextualFragment(`
-                <h3 id="form-title-modal" class="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-3">Añadir Nuevo Producto</h3>
+        <div class="lg:col-span-1">
+            <div class="bg-white p-5 rounded-xl shadow-lg sticky top-[88px]">
+                <h3 id="form-title" class="text-xl font-bold text-slate-800 mb-4 border-b pb-3">Adicionar Novo Produto</h3>
                 <form id="product-form" class="space-y-4">
                     <input type="hidden" id="product-id">
                     <div>
-                        <label class="block text-sm font-medium text-slate-300">Nombre del Producto *</label>
+                        <label class="block text-sm font-medium text-slate-700">Nome do Produto *</label>
                         <input type="text" id="product-name" class="form-input mt-1" required>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300">Marca</label>
+                     <div>
+                        <label class="block text-sm font-medium text-slate-700">Marca</label>
                         <input type="text" id="product-brand" class="form-input mt-1">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-300">Costo (R$)</label>
+                             <label class="block text-sm font-medium text-slate-700">Custo (R$)</label>
                             <input type="number" id="product-cost" min="0" step="0.01" value="0" class="form-input mt-1">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-300">Precio de Venta (R$) *</label>
+                            <label class="block text-sm font-medium text-slate-700">Preço de Venta (R$) *</label>
                             <input type="number" id="product-price" min="0.01" step="0.01" class="form-input mt-1" required>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-300">Stock Inicial *</label>
-                        <input type="number" id="product-stock" min="0" value="0" class="form-input mt-1" required>
+                        <label class="block text-sm font-medium text-slate-700">Stock Inicial *</label>
+                        <input type="number" id="product-stock" min="0" step="1" class="form-input mt-1" required>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300">Clasificación</label>
-                        <select id="product-category" class="form-input mt-1">
-                            <option value="Eletrônicos">Electrónica</option>
-                            <option value="Vestuário">Vestuario</option>
-                            <option value="Alimentos">Alimentos</option>
-                            <option value="Bebidas">Bebidas</option>
-                            <option value="Limpeza">Limpieza</option>
-                            <option value="Saúde e Beleza">Salud y Belleza</option>
-                            <option value="Casa e Decoração">Hogar y Decoración</option>
-                            <option value="Automotivo">Automoción</option>
-                            <option value="Outros">Otros</option>
-                        </select>
-                    </div>
-                    <div class="flex gap-3 mt-6">
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition">
-                            Guardar Producto
-                        </button>
-                        <button type="button" id="clear-button" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 px-4 rounded-lg transition">
-                            Limpiar
-                        </button>
+                    <div class="flex gap-4 pt-2">
+                        <button type="submit" id="save-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">Salvar Produto</button>
+                        <button type="button" id="clear-button" class="w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Limpar</button>
                     </div>
                 </form>
-            `);
-            modalContainer.querySelector('.bg-slate-800').innerHTML = ''; // Limpia el contenido actual
-            modalContainer.querySelector('.bg-slate-800').appendChild(originalFormContent); // Añade el contenido original
-            // Vuelve a adjuntar los event listeners para los elementos del formulario dentro del modal
-            document.getElementById('product-form').addEventListener('submit', handleFormSubmit);
-            document.getElementById('clear-button').addEventListener('click', clearForm);
-            editingProductId = null; // Restablece el estado de edición
-        }, 300); // Espera a que termine la transición
-    }
-
-    /**
-     * Muestra u oculta el loader global.
-     * @param {boolean} visible - Si es true, el loader se muestra; de lo contrario, se oculta.
-     */
-    function showLoader(visible) {
-        document.getElementById('loader-global').classList.toggle('hidden', !visible);
-    }
-
-    /**
-     * Muestra un modal de confirmación con un mensaje y una función de callback.
-     * @param {string} message - El mensaje a mostrar en el modal.
-     * @param {Function} onConfirm - La función a ejecutar si el usuario confirma.
-     */
-    function showConfirmationModal(message, onConfirm) {
-        const modalContentDiv = document.createElement('div');
-        modalContentDiv.className = 'text-center';
-        modalContentDiv.innerHTML = `
-            <i class="ph ph-question text-6xl text-blue-400 mb-4"></i>
-            <h2 class="text-2xl font-bold text-white mb-2">Confirmación</h2>
-            <p class="text-lg text-slate-300 mb-4">${message}</p>
-            <div class="flex justify-center gap-4">
-                <button id="confirm-action-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition">Confirmar</button>
-                <button id="cancel-action-btn" class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 px-6 rounded-lg transition">Cancelar</button>
             </div>
-        `;
-        showModal(modalContentDiv);
+        </div>
+    </main>
+    
+    <template id="product-row-template">
+        <tr class="border-b border-slate-200 hover:bg-slate-50">
+            <td class="p-3 text-slate-500" data-id></td>
+            <td class="p-3">
+                <p class="font-bold text-slate-800" data-name></p>
+                <p class="text-xs text-slate-500" data-brand></p>
+            </td>
+            <td class="p-3" data-cost></td>
+            <td class="p-3 font-semibold text-blue-600" data-price></td>
+            <td class="p-3 font-bold" data-stock></td>
+            <td class="p-3" data-total-value></td>
+            <td class="p-3"><span class="px-2 py-1 text-xs font-bold rounded-full text-white" data-classification></span></td>
+            <td class="p-3">
+                <div class="flex gap-2">
+                    <button data-action="edit" class="text-blue-600 hover:text-blue-800" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+                    <button data-action="delete" class="text-red-600 hover:text-red-800" title="Excluir"><i class="ph ph-trash"></i></button>
+                </div>
+            </td>
+        </tr>
+    </template>
 
-        document.getElementById('confirm-action-btn').addEventListener('click', () => {
-            onConfirm();
-            hideModal();
-        });
-        document.getElementById('cancel-action-btn').addEventListener('click', hideModal);
-    }
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- CONFIG & STATE ---
+    const API_BASE_URL = 'https://mi-primera-app.fly.dev';
+    let allProducts = [];
+    let editingProductId = null;
 
-    /**
-     * Muestra un modal de información o error.
-     * @param {string} message - El mensaje a mostrar.
-     * @param {boolean} isError - Si es true, el modal se muestra como un error.
-     */
-    function showInfoModal(message, isError = false) {
-        const modalContentDiv = document.createElement('div');
-        modalContentDiv.className = 'text-center';
-        modalContentDiv.innerHTML = `
-            <i class="ph ${isError ? 'ph-x-circle text-red-400' : 'ph-check-circle text-green-400'} text-6xl mb-4"></i>
-            <h2 class="text-2xl font-bold text-white mb-2">${isError ? '¡Error!' : '¡Éxito!'}</h2>
-            <p class="text-lg text-slate-300 mb-4">${message}</p>
-            <button id="close-modal-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition">Cerrar</button>
-        `;
-        showModal(modalContentDiv);
-        document.getElementById('close-modal-btn').addEventListener('click', hideModal);
-    }
+    // --- SELECTORS ---
+    const productListBody = document.getElementById('product-list-body');
+    const noProductsMessage = document.getElementById('no-products-message');
+    const searchInput = document.getElementById('search-input');
+    const outOfStockFilter = document.getElementById('out-of-stock-filter');
+    const productForm = document.getElementById('product-form');
+    const formTitle = document.getElementById('form-title');
+    const saveButton = document.getElementById('save-button');
+    const clearButton = document.getElementById('clear-button');
+    const logoutButton = document.getElementById('logoutButton');
+    const totalInventoryValueEl = document.getElementById('total-inventory-value');
+    const totalStockUnitsEl = document.getElementById('total-stock-units');
 
-    // --- Llamadas a la API ---
-    const API_BASE_URL = 'https://analityinventory.onrender.com'; // URL base de tu API
-
-    /**
-     * Función genérica para realizar llamadas a la API.
-     * Incluye manejo de token de autenticación y errores.
-     * @param {string} endpoint - El endpoint de la API (ej. '/products').
-     * @param {Object} options - Opciones para la solicitud fetch (método, body, etc.).
-     * @returns {Promise<Object>} - La respuesta JSON de la API.
-     * @throws {Error} - Si la solicitud falla o el token es inválido.
-     */
-    async function fetchApi(endpoint, options = {}) {
+    // --- API LOGIC ---
+    function getAuthHeaders() {
         const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        if (!token) {
-            window.location.href = 'login.html'; // Redirige a login si no hay token
-            return;
-        }
-
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        };
-
-        const config = {
-            ...options,
-            headers: { ...headers, ...options.headers }
-        };
-
-        try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-            if (response.status === 401) { // Si el token no es válido o ha expirado
-                localStorage.removeItem('authToken'); // Limpia el token
-                sessionStorage.removeItem('authToken');
-                window.location.href = 'login.html'; // Redirige a login
-                return;
-            }
-            if (!response.ok) { // Si la respuesta no es OK (ej. 400, 500)
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Algo salió mal');
-            }
-            // Si la respuesta es 204 No Content (ej. para DELETE), no intenta parsear JSON
-            if (response.status === 204) {
-                return null;
-            }
-            return await response.json();
-        } catch (error) {
-            console.error('Error en fetchApi:', error);
-            throw error; // Propaga el error para que sea manejado por la función que llamó a fetchApi
-        }
+        if (!token) { window.location.href = 'index.html'; return null; }
+        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
     }
 
-    // --- Lógica de Gestión de Productos ---
+    async function fetchApi(endpoint, options = {}) {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido.' }));
+            throw new Error(errorData.detail);
+        }
+        if (response.status === 204) return null;
+        return response.json();
+    }
 
-    /**
-     * Carga los productos desde la API y los renderiza en la tabla.
-     * Aplica filtros de búsqueda y stock.
-     */
+    // --- DATA LOADING & RENDERING ---
     async function loadProducts() {
-        showLoader(true); // Muestra el loader
         try {
-            const searchTerm = searchInput.value;
+            const filterText = searchInput.value;
             const outOfStock = outOfStockFilter.checked;
-
-            // Construye los parámetros de la URL para la API
-            const params = new URLSearchParams();
-            if (searchTerm) {
-                params.append('filter_text', searchTerm);
-            }
-            if (outOfStock) {
-                params.append('out_of_stock', 'true');
-            }
-
-            // Realiza la llamada a la API para obtener los productos
-            const products = await fetchApi(`/products?${params.toString()}`);
-            
-            renderProducts(products); // Renderiza los productos filtrados
-            updateInventorySummary(products); // Actualiza el resumen del inventario
+            const params = new URLSearchParams({
+                ...(filterText && { filter_text: filterText }),
+                ...(outOfStock && { out_of_stock: outOfStock.toString() })
+            });
+            allProducts = await fetchApi(`/products?${params.toString()}`);
+            renderProducts();
         } catch (error) {
-            showInfoModal(`Error al cargar productos: ${error.message}`, true); // Muestra un mensaje de error
-            productListBody.innerHTML = ''; // Limpia la tabla
-            noProductsMessage.classList.remove('hidden'); // Muestra el mensaje de "no productos"
-        } finally {
-            showLoader(false); // Oculta el loader
+            alert(`Erro ao carregar produtos: ${error.message}`);
         }
     }
 
-    /**
-     * Renderiza la lista de productos en la tabla.
-     * @param {Array<Object>} products - Array de objetos de producto.
-     */
-    function renderProducts(products) {
-        productListBody.innerHTML = ''; // Limpia el cuerpo de la tabla
-        if (!products || products.length === 0) {
-            noProductsMessage.classList.remove('hidden'); // Muestra el mensaje si no hay productos
-            return;
-        }
-        noProductsMessage.classList.add('hidden'); // Oculta el mensaje si hay productos
+    function renderProducts() {
+        productListBody.innerHTML = '';
+        noProductsMessage.classList.toggle('hidden', allProducts.length > 0);
+        
+        let totalInventoryValue = 0;
+        let totalStock = 0;
+        let processedData = [];
 
-        // Calcula la clasificación ABC
-        let processedProducts = products.map(p => ({
-            ...p,
-            totalValue: (p.price || 0) * (p.stock || 0)
-        }));
-
-        processedProducts.sort((a, b) => b.totalValue - a.totalValue);
-
+        // 1. Procesar datos y calcular valores, igual que en el panel de wxPython
+        allProducts.forEach(p => {
+            const totalValue = (p.price || 0) * (p.stock || 0);
+            totalInventoryValue += totalValue;
+            totalStock += p.stock || 0;
+            processedData.push({ ...p, totalValue });
+        });
+        
+        // 2. Lógica de Clasificación ABC
+        processedData.sort((a, b) => b.totalValue - a.totalValue);
         let accumulatedValue = 0;
-        const totalAbcValue = processedProducts.reduce((sum, p) => sum + p.totalValue, 0);
+        const totalAbcValue = processedData.reduce((sum, p) => sum + p.totalValue, 0);
 
-        processedProducts.forEach(p => {
+        processedData.forEach(p => {
             accumulatedValue += p.totalValue;
             const percentage = totalAbcValue > 0 ? (accumulatedValue / totalAbcValue) * 100 : 0;
             if (percentage <= 80) p.classification = "A";
@@ -459,208 +224,111 @@ document.addEventListener('DOMContentLoaded', () => {
             else p.classification = "C";
         });
 
-        // Itera sobre los productos y crea una fila para cada uno
-        processedProducts.forEach(product => {
-            const row = productListBody.insertRow();
-            row.className = 'border-b border-slate-700 hover:bg-slate-700';
-            row.innerHTML = `
-                <td class="p-3 text-sm text-slate-200 font-mono">${product.id}</td>
-                <td class="p-3 text-sm text-slate-200">
-                    <p class="font-semibold">${product.name}</p>
-                    <p class="text-slate-400 text-xs">${product.brand || 'N/A'}</p>
-                </td>
-                <td class="p-3 text-sm text-slate-200">R$${(product.costo || 0).toFixed(2)}</td>
-                <td class="p-3 text-sm text-blue-400 font-bold">R$${product.price.toFixed(2)}</td>
-                <td class="p-3 text-sm ${product.stock === 0 ? 'text-red-400 font-bold' : 'text-slate-200'}">
-                    ${product.stock} ${product.stock === 0 ? '(Agotado)' : ''}
-                </td>
-                <td class="p-3 text-sm text-slate-200">R$${product.totalValue.toFixed(2)}</td>
-                <td class="p-3 text-sm">
-                    <span class="px-2 py-1 text-xs font-bold rounded-full text-white" style="background-color: ${
-                        product.classification === "A" ? '#16a34a' : // green-600
-                        product.classification === "B" ? '#f59e0b' : // amber-500
-                        '#ef4444' // red-500
-                    };">${product.classification || 'N/A'}</span>
-                </td>
-                <td class="p-3 text-sm">
-                    <div class="flex gap-2">
-                        <!-- Botón de editar, llama a la función editProduct con el ID -->
-                        <button class="text-blue-400 hover:text-blue-300 transition" onclick="editProduct(${product.id})">
-                            <i class="ph ph-pencil-simple text-xl"></i>
-                        </button>
-                        <!-- Botón de eliminar, llama a la función deleteProduct con el ID y nombre -->
-                        <button class="text-red-400 hover:text-red-300 transition" onclick="deleteProduct(${product.id}, '${product.name}')">
-                            <i class="ph ph-trash text-xl"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
+        // 3. Renderizar la tabla
+        const template = document.getElementById('product-row-template');
+        processedData.forEach(p => {
+            const row = template.content.cloneNode(true).firstElementChild;
+            row.querySelector('[data-id]').textContent = p.id;
+            row.querySelector('[data-name]').textContent = p.name;
+            row.querySelector('[data-brand]').textContent = p.brand || 'N/A';
+            row.querySelector('[data-cost]').textContent = `R$${(p.costo || 0).toFixed(2)}`;
+            row.querySelector('[data-price]').textContent = `R$${(p.price || 0).toFixed(2)}`;
+            
+            const stockEl = row.querySelector('[data-stock]');
+            stockEl.textContent = p.stock;
+            if (p.stock <= 0) stockEl.classList.add('text-red-500');
+            else if (p.stock <= 5) stockEl.classList.add('text-yellow-500');
+
+            row.querySelector('[data-total-value]').textContent = `R$${p.totalValue.toFixed(2)}`;
+            
+            const classEl = row.querySelector('[data-classification]');
+            classEl.textContent = p.classification;
+            if (p.classification === "A") classEl.style.backgroundColor = '#16a34a'; // green-600
+            else if (p.classification === "B") classEl.style.backgroundColor = '#f59e0b'; // amber-500
+            else classEl.style.backgroundColor = '#ef4444'; // red-500
+            
+            row.querySelector('[data-action="edit"]').addEventListener('click', () => prepareEditForm(p));
+            row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteProduct(p.id, p.name));
+            
+            productListBody.appendChild(row);
         });
+
+        // 4. Actualizar totales
+        totalInventoryValueEl.textContent = `R$${totalInventoryValue.toFixed(2)}`;
+        totalStockUnitsEl.textContent = totalStock;
     }
 
-    /**
-     * Actualiza los valores del resumen de inventario.
-     * @param {Array<Object>} products - Array de objetos de producto.
-     */
-    function updateInventorySummary(products) {
-        let totalValue = 0;
-        let totalUnits = 0;
-        products.forEach(product => {
-            totalValue += (product.stock || 0) * (product.costo || 0); // Usa 'costo' para el valor del inventario
-            totalUnits += (product.stock || 0);
-        });
-        totalInventoryValue.textContent = `R$${totalValue.toFixed(2)}`;
-        totalStockUnits.textContent = totalUnits;
+    // --- FORM LOGIC ---
+    function prepareEditForm(product) {
+        editingProductId = product.id;
+        formTitle.textContent = 'Editar Produto';
+        saveButton.textContent = 'Atualizar Produto';
+        document.getElementById('product-id').value = product.id;
+        document.getElementById('product-name').value = product.name;
+        document.getElementById('product-brand').value = product.brand || '';
+        document.getElementById('product-cost').value = product.costo || 0;
+        document.getElementById('product-price').value = product.price;
+        document.getElementById('product-stock').value = product.stock;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    /**
-     * Limpia el formulario de productos y restablece el estado de edición.
-     */
     function clearForm() {
-        document.getElementById('product-id').value = '';
-        document.getElementById('product-name').value = '';
-        document.getElementById('product-brand').value = '';
-        document.getElementById('product-cost').value = '0';
-        document.getElementById('product-price').value = '';
-        document.getElementById('product-stock').value = '0';
-        document.getElementById('product-category').value = 'Outros'; // Valor por defecto
-        formTitleModal.textContent = 'Añadir Nuevo Producto';
         editingProductId = null;
+        productForm.reset();
+        formTitle.textContent = 'Adicionar Novo Produto';
+        saveButton.textContent = 'Salvar Produto';
+        document.getElementById('product-id').value = '';
     }
 
-    /**
-     * Maneja el envío del formulario de productos (añadir o editar).
-     * @param {Event} event - El evento de envío del formulario.
-     */
-    async function handleFormSubmit(event) {
-        event.preventDefault(); // Previene el envío por defecto del formulario
-        showLoader(true); // Muestra el loader
-
-        // Obtiene los valores del formulario
-        const productId = document.getElementById('product-id').value;
-        const productName = document.getElementById('product-name').value;
-        const productBrand = document.getElementById('product-brand').value;
-        const productCost = parseFloat(document.getElementById('product-cost').value);
-        const productPrice = parseFloat(document.getElementById('product-price').value);
-        const productStock = parseInt(document.getElementById('product-stock').value, 10);
-        const productCategory = document.getElementById('product-category').value;
-
+    async function handleFormSubmit(e) {
+        e.preventDefault();
         const productData = {
-            name: productName,
-            brand: productBrand,
-            costo: productCost, // Asegúrate de que el nombre del campo coincida con tu API
-            price: productPrice,
-            stock: productStock,
-            category: productCategory // Si tu API soporta la categoría en el modelo de producto
+            name: document.getElementById('product-name').value,
+            brand: document.getElementById('product-brand').value || null,
+            costo: parseFloat(document.getElementById('product-cost').value),
+            price: parseFloat(document.getElementById('product-price').value),
+            stock: parseInt(document.getElementById('product-stock').value, 10),
         };
 
         try {
-            if (productId) { // Si hay un ID de producto, es una edición
-                await fetchApi(`/products/${productId}`, { method: 'PUT', body: JSON.stringify(productData) });
-                showInfoModal('¡Producto actualizado con éxito!');
-            } else { // Si no hay ID, es un nuevo producto
+            if (editingProductId) {
+                await fetchApi(`/products/${editingProductId}`, { method: 'PUT', body: JSON.stringify(productData) });
+                alert('Produto atualizado com sucesso!');
+            } else {
                 await fetchApi('/products', { method: 'POST', body: JSON.stringify(productData) });
-                showInfoModal('¡Producto añadido con éxito!');
+                alert('Produto adicionado com sucesso!');
             }
-            clearForm(); // Limpia el formulario
-            hideModal(); // Oculta el modal
-            loadProducts(); // Recarga la lista de productos
+            clearForm();
+            loadProducts();
         } catch (error) {
-            showInfoModal(`Error al guardar producto: ${error.message}`, true); // Muestra un mensaje de error
-        } finally {
-            showLoader(false); // Oculta el loader
+            alert(`Erro ao salvar produto: ${error.message}`);
         }
     }
 
-    /**
-     * Prepara el formulario para editar un producto existente.
-     * Se expone globalmente para ser llamada desde el HTML (onclick).
-     * @param {number} id - El ID del producto a editar.
-     */
-    window.editProduct = async (id) => {
-        showLoader(true); // Muestra el loader
+    async function deleteProduct(id, name) {
+        if (!confirm(`Tem certeza que deseja excluir o produto "${name}"?`)) return;
         try {
-            const product = await fetchApi(`/products/${id}`); // Obtiene los datos del producto
-            // Rellena el formulario con los datos del producto
-            document.getElementById('product-id').value = product.id;
-            document.getElementById('product-name').value = product.name;
-            document.getElementById('product-brand').value = product.brand || '';
-            document.getElementById('product-cost').value = product.costo || 0;
-            document.getElementById('product-price').value = product.price;
-            document.getElementById('product-stock').value = product.stock;
-            document.getElementById('product-category').value = product.category || 'Outros'; // Establece la categoría
-            formTitleModal.textContent = `Editar Producto: ${product.name}`; // Actualiza el título del modal
-            editingProductId = product.id; // Establece el ID del producto en edición
-
-            // Clona el contenido del formulario para mostrarlo en el modal
-            const productFormElement = document.getElementById('product-form').closest('.bg-slate-800');
-            if (productFormElement) {
-                showModal(productFormElement.cloneNode(true));
-            } else {
-                 showInfoModal('Error: No se pudo encontrar el formulario del producto.', true);
-            }
+            await fetchApi(`/products/${id}`, { method: 'DELETE' });
+            alert('Produto excluído com sucesso!');
+            loadProducts();
         } catch (error) {
-            showInfoModal(`Error al cargar datos del producto para edición: ${error.message}`, true);
-        } finally {
-            showLoader(false); // Oculta el loader
+            alert(`Erro ao excluir produto: ${error.message}`);
         }
-    };
-
-    /**
-     * Elimina un producto después de la confirmación del usuario.
-     * Se expone globalmente para ser llamada desde el HTML (onclick).
-     * @param {number} id - El ID del producto a eliminar.
-     * @param {string} name - El nombre del producto (para el mensaje de confirmación).
-     */
-    window.deleteProduct = (id, name) => {
-        showConfirmationModal(`¿Estás seguro de que deseas eliminar el producto "${name}"? ¡Esta acción es irreversible!`, async () => {
-            showLoader(true); // Muestra el loader
-            try {
-                await fetchApi(`/products/${id}`, { method: 'DELETE' }); // Llama a la API para eliminar
-                showInfoModal('¡Producto eliminado con éxito!');
-                loadProducts(); // Recarga la lista de productos
-            } catch (error) {
-                showInfoModal(`Error al eliminar producto: ${error.message}`, true);
-            } finally {
-                showLoader(false); // Oculta el loader
-            }
-        });
-    };
+    }
     
-    // --- Event Listeners ---
-
-    // Abre el modal para añadir un nuevo producto
-    addProductBtn.addEventListener('click', () => {
-        clearForm(); // Limpia el formulario antes de abrir el modal
-        // Clona el contenido del formulario para mostrarlo en el modal
-        const productFormElement = document.getElementById('product-form').closest('.bg-slate-800');
-        if (productFormElement) {
-            showModal(productFormElement.cloneNode(true));
-        }
-    });
-
-    // Cierra el modal si se hace clic fuera de su contenido
-    modalContainer.addEventListener('click', (e) => {
-        if (e.target === modalContainer) {
-            hideModal();
-        }
-    });
-
-    // Event listeners para los filtros y el formulario
+    // --- EVENT LISTENERS ---
     searchInput.addEventListener('input', loadProducts);
     outOfStockFilter.addEventListener('change', loadProducts);
     productForm.addEventListener('submit', handleFormSubmit);
     clearButton.addEventListener('click', clearForm);
-    
-    // Event listener para el botón de cerrar sesión
     logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('authToken'); // Elimina el token de localStorage
-        sessionStorage.removeItem('authToken'); // Elimina el token de sessionStorage
-        window.location.href = 'login.html'; // Redirige a la página de login
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
+        window.location.href = 'index.html';
     });
 
-    // --- Inicialización ---
-    loadProducts(); // Carga los productos al iniciar la página
+    // --- INITIALIZATION ---
+    loadProducts();
 });
 </script>
 </body>

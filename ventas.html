@@ -306,20 +306,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cart.length === 0) { alert('O carrinho está vazio.'); return; }
         if (!customerName) { alert('O nome do cliente é obrigatório.'); return; }
 
-        // --- INICIO DE LA MODIFICACIÓN ---
-
-        // 1. Obtener el tipo de entrega seleccionado del <select>
+        // Lógica para determinar el estado correcto del pedido
         const deliveryType = document.getElementById('delivery-type').value;
+        const orderStatus = deliveryType === 'delivery' ? 'Pendiente' : 'Entregado';
 
-        // 2. Determinar el estado del pedido basado en el tipo de entrega
-        let orderStatus;
-        if (deliveryType === 'delivery') {
-            orderStatus = 'Pendiente'; // Si es delivery, el pedido queda pendiente de envío.
-        } else { // Si es 'tienda' o cualquier otro valor
-            orderStatus = 'Entregado'; // Si se retira en tienda, se considera entregado al momento.
-        }
-
-        // 3. Construir el payload con el estado dinámico
         const payload = {
             customer_name: customerName,
             customer_address: document.getElementById('customer-address').value.trim(),
@@ -327,11 +317,9 @@ document.addEventListener('DOMContentLoaded', () => {
             total: cart.reduce((s, i) => s + (i.price * i.quantity), 0) + (parseFloat(deliveryFeeEl.value) || 0),
             payment_method: document.getElementById('payment-method').value,
             delivery_fee: parseFloat(deliveryFeeEl.value) || 0,
-            status: orderStatus, // Usamos la variable con el estado correcto
+            status: orderStatus, // <-- ESTADO AÑADIDO
             items: cart.map(item => ({ id: item.id, quantity: item.quantity, price: item.price, costo: item.costo || 0 }))
         };
-        
-        // --- FIN DE LA MODIFICACIÓN ---
         
         const headers = getAuthHeaders();
         if (!headers) return;
@@ -340,7 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
         finalizeButton.innerHTML = '<div class="spinner"></div> Processando...';
 
         try {
-            // ... el resto de la función no necesita cambios ...
             const response = await fetch(`${API_BASE_URL}/orders`, { method: 'POST', headers, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error((await response.json()).detail || 'Ocorreu um erro.');
             const result = await response.json();

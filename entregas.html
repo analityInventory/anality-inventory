@@ -103,7 +103,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const API_BASE_URL = 'https://mi-primera-app.fly.dev'; 
-    const appContainer = document.getElementById('app-container');
     const logoutButton = document.getElementById('logoutButton');
     const listaEntregasContainer = document.getElementById('lista-entregas');
     const tarjetaTemplate = document.getElementById('tarjeta-entrega-template');
@@ -115,9 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalContainer = document.getElementById('modal-container');
     const modalContent = document.getElementById('modal-content');
 
-    let allEntregas = []; 
     let currentVista = 'Pendiente';
-    let initialFetchDone = false;
     
     // --- AUTH & API ---
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -171,33 +168,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- APP LOGIC ---
-    async function fetchAllEntregas() {
-        if (!initialFetchDone) showLoader(true);
-        try {
-            allEntregas = await fetchApi(`${API_BASE_URL}/orders`);
-            renderVista();
-        } catch (error) {
-            console.error('ERRO ao carregar os pedidos:', error);
-        } finally {
-            if (!initialFetchDone) {
-                showLoader(false);
-                initialFetchDone = true;
-            }
-        }
-    }
-
-    function renderVista() {
+    async function fetchAndRenderOrders() {
+        showLoader(true);
         listaEntregasContainer.innerHTML = '';
         mensajeVacio.classList.add('hidden');
         headerTitle.textContent = `Pedidos ${currentVista}s`;
         
-        const entregasFiltradas = allEntregas.filter(e => e.status && e.status.toLowerCase() === currentVista.toLowerCase());
-        
-        if (entregasFiltradas.length === 0) {
+        try {
+            const endpoint = currentVista === 'Todos' ? '/orders' : `/orders?status_filter=${currentVista}`;
+            const orders = await fetchApi(API_BASE_URL + endpoint);
+            
+            if (orders && orders.length > 0) {
+                orders.forEach(crearTarjetaEntrega);
+            } else {
+                mensajeVacio.classList.remove('hidden');
+                const iconElement = document.getElementById('mensaje-vacio-icono');
+                const textElement = document.getElementById('mensaje-vacio-texto');
+                iconElement.className = 'text-6xl text-slate-500 ph ';
+                if (currentVista === 'Pendiente') { iconElement.classList.add('ph-package'); textElement.textContent = 'Não há pedidos pendentes.'; }
+                else if (currentVista === 'Enviado') { iconElement.classList.add('ph-truck'); textElement.textContent = 'Não há pedidos em trânsito.'; }
+                else if (currentVista === 'Entregado') { iconElement.classList.add('ph-check-circle'); textElement.textContent = 'Não há pedidos entregues.'; }
+                else if (currentVista === 'Cancelado') { iconElement.classList.add('ph-x-circle'); textElement.textContent = 'Não há pedidos cancelados.'; }
+            }
+        } catch (error) {
+            console.error('ERRO ao carregar os pedidos:', error);
+            mensajeVacio.textContent = `Erro ao carregar pedidos: ${error.message}`;
             mensajeVacio.classList.remove('hidden');
-            // ... (lógica del mensaje vacío no cambia) ...
-        } else {
-            entregasFiltradas.forEach(crearTarjetaEntrega);
+        } finally {
+            showLoader(false);
         }
     }
 
@@ -212,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const productosContainer = card.querySelector('[data-productos]');
         productosContainer.innerHTML = '';
-        // **LÓGICA CORREGIDA**: Lee de 'entrega.products' en lugar de 'entrega.items'
+        // **LÓGICA CORREGIDA**: Lee de 'entrega.products' que es lo que envía la API
         const items = entrega.products || []; 
         if (items.length > 0) {
             items.forEach(p => { 
@@ -227,14 +225,13 @@ document.addEventListener('DOMContentLoaded', () => {
             productosContainer.appendChild(li); 
         }
 
-        // Lógica de status y botones (sin cambios, pero adaptada al nuevo diseño)
         const statusEl = card.querySelector('[data-status]');
         statusEl.textContent = entrega.status;
         const statusColors = {'Pendiente': 'bg-yellow-500', 'Enviado': 'bg-blue-500', 'Entregado': 'bg-green-500', 'Cancelado': 'bg-red-500'};
         statusEl.classList.add(statusColors[entrega.status] || 'bg-slate-600');
         
         const btnsContainer = card.querySelector('.btns-container');
-        btnsContainer.innerHTML = ''; // Limpiar antes de añadir
+        btnsContainer.innerHTML = '';
         const actions = {
             'Pendiente': [{ text: 'Marcar como Enviado', status: 'Enviado', color: 'bg-blue-600 hover:bg-blue-700' }, { text: 'Cancelar', status: 'Cancelado', color: 'bg-red-600 hover:bg-red-700' }],
             'Enviado': [{ text: 'Marcar como Entregue', status: 'Entregado', color: 'bg-green-600 hover:bg-green-700' }, { text: 'Cancelar', status: 'Cancelado', color: 'bg-red-600 hover:bg-red-700' }]
@@ -279,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showLoader(visible) { loaderGlobal.classList.toggle('hidden', !visible); }
 
     // --- EVENT LISTENERS ---
-    refreshButton.addEventListener('click', fetchAllEntregas);
+    refreshButton.addEventListener('click', fetchAndRenderOrders);
     logoutButton.addEventListener('click', () => {
         localStorage.removeItem('authToken');
         sessionStorage.removeItem('authToken');
@@ -290,12 +287,12 @@ document.addEventListener('DOMContentLoaded', () => {
             currentVista = item.dataset.vista;
             navItems.forEach(i => i.classList.remove('active'));
             item.classList.add('active');
-            fetchAllEntregas();
+            fetchAndRenderOrders();
         });
     });
     
     // --- INITIALIZATION ---
-    fetchAllEntregas();
+    fetchAndRenderOrders();
 });
 </script>
 </body>

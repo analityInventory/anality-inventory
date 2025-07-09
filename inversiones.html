@@ -3,242 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Gestão de Investimentos</title>
+    <title>AnalityInventory - Gestão de Investimentos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <style>
-        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
-        .form-input {
-            width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1;
-            border-radius: 0.5rem; transition: ring 0.2s;
-        }
-        .form-input:focus {
-            outline: none; --tw-ring-color: #3b82f6;
-            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000);
-            border-color: #3b82f6;
-        }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    </style>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        .form-input { width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.5rem; background-color: #334155; color: #f1f5f9; transition: all 0.2s; }
+        .form-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4); }
+        .modal-overlay { transition: opacity 0.3s ease; }
+        .modal-container { transition: transform 0.3s ease, opacity 0.3s ease; }
+    </style>
 </head>
 <body class="font-sans">
 
-    <header class="bg-white shadow-md sticky top-0 z-20">
+    <header class="bg-slate-900/80 backdrop-blur-sm shadow-md sticky top-0 z-20 border-b border-slate-700">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-slate-800">Gestão de Investimentos</h1>
-            <div>
-                 <a href="index.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Voltar aos Pedidos">
-                    <i class="ph ph-arrow-u-left-up text-3xl"></i>
-                 </a>
-                 <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
-                     <i class="ph ph-sign-out text-3xl"></i>
-                 </button>
+            <h1 class="text-2xl font-bold text-white">Gestão de Investimentos</h1>
+            <div class="flex items-center gap-4">
+                 <a href="index.html" class="text-slate-400 hover:text-white transition" title="Voltar ao Menu"><i class="ph ph-arrow-u-left-up text-3xl"></i></a>
+                 <button id="logoutButton" class="text-slate-400 hover:text-white transition" title="Sair"><i class="ph ph-sign-out text-3xl"></i></button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        <div class="lg:col-span-2">
-            
-            <div class="bg-white p-5 rounded-xl shadow-lg mb-6">
-                <h3 class="text-xl font-bold text-slate-800 mb-4">Resumen de Inversiones</h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                    <div>
-                        <p class="text-slate-500 text-sm">💰 Valor Total</p>
-                        <p id="total-invested-value" class="text-2xl font-bold text-slate-800">R$0.00</p>
-                    </div>
-                     <div>
-                        <p class="text-slate-500 text-sm">🚚 En Camino</p>
-                        <p id="total-on-the-way-value" class="text-2xl font-bold text-blue-600">R$0.00</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-500 text-sm">✅ Recibido</p>
-                        <p id="total-received-value" class="text-2xl font-bold text-green-600">R$0.00</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-500 text-sm">⚠️ Retenido</p>
-                        <p id="total-retained-value" class="text-2xl font-bold text-yellow-600">R$0.00</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white p-5 rounded-xl shadow-lg">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 items-center">
-                    <input type="text" id="search-input" placeholder="Buscar por descripción o tracking..." class="form-input">
-                    <select id="status-filter" class="form-input">
-                        <option value="Todos">Todos os Status</option>
-                        <option value="En Camino">En Camino</option>
-                        <option value="Recibido">Recibido</option>
-                        <option value="Retenido">Retenido</option>
-                    </select>
-                </div>
-                <div id="investment-list" class="h-[calc(100vh-380px)] overflow-y-auto pr-2 space-y-4">
-                    </div>
-                 <p id="no-investments-message" class="hidden text-center text-slate-500 py-16">Nenhuma inversión encontrada.</p>
+    <main class="max-w-7xl mx-auto p-4 lg:p-6">
+        <!-- Resumen y Filtros -->
+        <div class="bg-slate-800 p-5 rounded-xl shadow-lg mb-6 border border-slate-700">
+            <h3 class="text-xl font-bold text-white mb-4">Resumen de Inversiones</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div><p class="text-slate-400 text-sm">💰 Valor Total</p><p id="total-invested-value" class="text-2xl font-bold text-white">R$0.00</p></div>
+                <div><p class="text-slate-400 text-sm">🚚 En Camino</p><p id="total-on-the-way-value" class="text-2xl font-bold text-blue-400">R$0.00</p></div>
+                <div><p class="text-slate-400 text-sm">✅ Recibido</p><p id="total-received-value" class="text-2xl font-bold text-green-400">R$0.00</p></div>
+                <div><p class="text-slate-400 text-sm">⚠️ Retenido</p><p id="total-retained-value" class="text-2xl font-bold text-yellow-400">R$0.00</p></div>
             </div>
         </div>
 
-        <div class="lg:col-span-1">
-            <div class="bg-white p-5 rounded-xl shadow-lg sticky top-[88px]">
-                <h3 id="form-title" class="text-xl font-bold text-slate-800 mb-4 border-b pb-3">Adicionar Novo Investimento</h3>
-                <form id="investment-form" class="space-y-4">
-                    <input type="hidden" id="investment-id">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">Descrição *</label>
-                        <input type="text" id="inv-description" class="form-input mt-1" required>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700">Custo de Envio (R$)</label>
-                            <input type="number" id="inv-shipping-cost" min="0" step="0.01" value="0" class="form-input mt-1">
-                        </div>
-                        <div>
-                             <label class="block text-sm font-medium text-slate-700">Status *</label>
-                            <select id="inv-status" class="form-input mt-1" required>
-                                <option value="En Camino">En Camino</option>
-                                <option value="Recibido">Recibido</option>
-                                <option value="Retenido">Retenido</option>
-                            </select>
-                        </div>
-                    </div>
-                     <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700">Data de Envio</label>
-                            <input type="date" id="inv-shipping-date" class="form-input mt-1">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700">Data de Chegada</label>
-                            <input type="date" id="inv-arrival-date" class="form-input mt-1">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">Nº de Tracking</label>
-                        <input type="text" id="inv-tracking" class="form-input mt-1">
-                    </div>
-                     <div>
-                        <label class="block text-sm font-medium text-slate-700">Observações</label>
-                        <textarea id="inv-obs" rows="2" class="form-input mt-1"></textarea>
-                    </div>
-                    
-                    <div class="border-t pt-4">
-                        <h4 class="font-semibold text-slate-700 mb-2">Produtos no Pacote</h4>
-                        <ul id="item-list" class="space-y-2 text-sm">
-                           </ul>
-                         <button type="button" id="add-item-btn" class="mt-2 w-full text-blue-600 font-semibold border-2 border-dashed border-blue-400 hover:bg-blue-50 py-2 rounded-lg transition">
-                            + Adicionar Produto
-                        </button>
-                    </div>
-
-                    <div class="flex gap-4 pt-2">
-                        <button type="submit" id="save-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">Salvar</button>
-                        <button type="button" id="clear-button" class="w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Limpar</button>
-                    </div>
-                </form>
+        <div class="bg-slate-800 p-5 rounded-xl shadow-lg border border-slate-700">
+            <div class="flex flex-wrap gap-4 mb-4 items-center">
+                <input type="text" id="search-input" placeholder="Buscar por descripción o tracking..." class="form-input flex-grow">
+                <select id="status-filter" class="form-input w-full md:w-auto">
+                    <option value="Todos">Todos os Status</option>
+                    <option value="En Camino">En Camino</option>
+                    <option value="Recibido">Recibido</option>
+                    <option value="Retenido">Retenido</option>
+                </select>
+                <button id="add-investment-btn" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                    <i class="ph ph-plus"></i> Adicionar Investimento
+                </button>
             </div>
+            <div id="investment-list" class="space-y-4"></div>
+            <p id="no-investments-message" class="hidden text-center text-slate-500 py-16">Nenhuma inversión encontrada.</p>
         </div>
     </main>
     
-    <div id="product-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-start pt-20 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
-            <div class="p-4 border-b">
-                <h2 class="text-xl font-bold text-slate-800">Selecionar Produto</h2>
-                <input type="text" id="product-search-input" placeholder="Buscar produto..." class="form-input mt-2">
+    <!-- Modal para Adicionar/Editar Investimento -->
+    <div id="investment-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
+        <div class="modal-container opacity-0 scale-95 bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl border border-slate-700">
+            <div class="p-6 border-b border-slate-700">
+                <h2 id="form-title" class="text-2xl font-bold text-white"></h2>
             </div>
-            <div id="product-list-container" class="max-h-80 overflow-y-auto">
-                </div>
-             <div class="p-4 bg-slate-50 border-t flex justify-end">
-                <button id="close-product-modal" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg transition">Fechar</button>
+            <div class="p-6 max-h-[75vh] overflow-y-auto">
+                <form id="investment-form" class="space-y-4">
+                    <input type="hidden" id="investment-id">
+                    <div><label class="block text-sm font-medium text-slate-400">Descrição *</label><input type="text" id="inv-description" class="form-input mt-1" required></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium text-slate-400">Custo de Envio (R$)</label><input type="number" id="inv-shipping-cost" min="0" step="0.01" value="0" class="form-input mt-1"></div>
+                        <div><label class="block text-sm font-medium text-slate-400">Status *</label><select id="inv-status" class="form-input mt-1" required><option>En Camino</option><option>Recibido</option><option>Retenido</option></select></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium text-slate-400">Data de Envio</label><input type="date" id="inv-shipping-date" class="form-input mt-1"></div>
+                        <div><label class="block text-sm font-medium text-slate-400">Data de Chegada</label><input type="date" id="inv-arrival-date" class="form-input mt-1"></div>
+                    </div>
+                    <div><label class="block text-sm font-medium text-slate-400">Nº de Tracking</label><input type="text" id="inv-tracking" class="form-input mt-1"></div>
+                    <div><label class="block text-sm font-medium text-slate-400">Observações</label><textarea id="inv-obs" rows="2" class="form-input mt-1"></textarea></div>
+                    <div class="border-t border-slate-700 pt-4">
+                        <h4 class="font-semibold text-slate-300 mb-2">Produtos no Pacote</h4>
+                        <ul id="item-list" class="space-y-2 text-sm"></ul>
+                        <button type="button" id="add-item-btn-modal" class="mt-2 w-full text-blue-400 font-semibold border-2 border-dashed border-slate-600 hover:bg-slate-700 py-2 rounded-lg transition">+ Adicionar Produto</button>
+                    </div>
+                </form>
+            </div>
+            <div class="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-end gap-3">
+                <button type="button" id="close-investment-modal" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                <button type="submit" form="investment-form" id="save-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Salvar</button>
             </div>
         </div>
     </div>
+    
+    <!-- Modal para Seleccionar Productos -->
+    <div id="product-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-start pt-20 p-4">
+        <div class="bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg border border-slate-700">
+            <div class="p-4 border-b border-slate-700"><h2 class="text-xl font-bold text-white">Selecionar Produto</h2><input type="text" id="product-search-input" placeholder="Buscar produto..." class="form-input mt-2"></div>
+            <div id="product-list-container" class="max-h-80 overflow-y-auto"></div>
+            <div class="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-end"><button id="close-product-modal" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg">Fechar</button></div>
+        </div>
+    </div>
 
-
+    <!-- Templates -->
     <template id="investment-card-template">
-         <div class="bg-slate-50 border border-slate-200 rounded-lg shadow-sm">
+         <div class="bg-slate-800 border border-slate-700 rounded-lg shadow-sm">
             <div class="p-4">
-                <div class="flex justify-between items-start mb-2">
-                    <div>
-                        <p class="font-bold text-lg text-slate-800" data-description></p>
-                        <p class="text-sm text-slate-500">ID: <span data-id></span></p>
-                    </div>
-                    <span class="px-3 py-1 text-xs font-bold rounded-full text-white" data-status></span>
+                <div class="flex justify-between items-start mb-2"><p class="font-bold text-lg text-white" data-description></p><span class="px-3 py-1 text-xs font-bold rounded-full text-white" data-status></span></div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-3 border-t border-slate-700 pt-3">
+                    <div><p class="font-semibold text-slate-400">ID:</p><p data-id></p></div>
+                    <div><p class="font-semibold text-slate-400">Custo Total:</p><p class="font-bold" data-total-value></p></div>
+                    <div><p class="font-semibold text-slate-400">Nº Tracking:</p><a href="#" target="_blank" class="text-blue-400 hover:underline" data-tracking></a></div>
+                    <div><p class="font-semibold text-slate-400">Data de Envio:</p><p data-shipping-date></p></div>
                 </div>
-                <div class="grid grid-cols-2 gap-4 text-sm mt-3 border-t pt-3">
-                    <div>
-                        <p class="font-semibold">Valor dos Produtos:</p>
-                        <p data-items-value></p>
-                    </div>
-                     <div>
-                        <p class="font-semibold">Custo Total:</p>
-                        <p class="font-bold" data-total-value></p>
-                    </div>
-                    <div>
-                        <p class="font-semibold">Nº Tracking:</p>
-                        <a href="#" target="_blank" class="text-blue-600 hover:underline" data-tracking></a>
-                    </div>
-                     <div>
-                        <p class="font-semibold">Data de Envio:</p>
-                        <p data-shipping-date></p>
-                    </div>
-                </div>
-                 <div class="mt-4 border-t pt-3">
-                    <p class="font-semibold text-sm mb-2">Produtos Inclusos:</p>
-                    <ul class="list-disc list-inside space-y-1 text-sm text-slate-600" data-items>
-                        </ul>
-                </div>
+                 <div class="mt-4 border-t border-slate-700 pt-3"><p class="font-semibold text-sm text-slate-400 mb-2">Produtos Inclusos:</p><ul class="list-disc list-inside space-y-1 text-sm text-slate-300" data-items></ul></div>
             </div>
-            <div class="bg-slate-100 p-2 flex justify-end gap-2">
-                <button data-action="edit" class="text-sm font-semibold text-blue-600 hover:text-blue-800 py-1 px-3 rounded" title="Editar"><i class="ph ph-pencil-simple mr-1"></i>Editar</button>
-                <button data-action="delete" class="text-sm font-semibold text-red-600 hover:text-red-800 py-1 px-3 rounded" title="Excluir"><i class="ph ph-trash mr-1"></i>Excluir</button>
-            </div>
+            <div class="bg-slate-900/50 p-2 flex justify-end gap-2 border-t border-slate-700"><button data-action="edit" class="text-sm font-semibold text-blue-400 hover:text-white py-1 px-3 rounded"><i class="ph ph-pencil-simple mr-1"></i>Editar</button><button data-action="delete" class="text-sm font-semibold text-red-400 hover:text-white py-1 px-3 rounded"><i class="ph ph-trash mr-1"></i>Excluir</button></div>
         </div>
     </template>
-    
     <template id="item-list-row-template">
-        <li class="flex justify-between items-center p-2 bg-slate-100 rounded">
-            <span class="item-text"></span>
-            <button type="button" class="item-remove-btn text-red-500 hover:text-red-700">
-                <i class="ph ph-x-circle text-lg"></i>
-            </button>
-        </li>
+        <li class="flex justify-between items-center p-2 bg-slate-700 rounded"><span class="item-text text-slate-200"></span><button type="button" class="item-remove-btn text-red-400 hover:text-red-300"><i class="ph ph-x-circle text-lg"></i></button></li>
     </template>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- CONFIG & STATE ---
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
     let allInvestments = [];
     let editingInvestmentId = null;
-    let formItems = []; // Almacena los productos para el formulario actual
+    let formItems = [];
 
-    // --- SELECTORS ---
     const searchInput = document.getElementById('search-input');
     const statusFilter = document.getElementById('status-filter');
     const investmentListContainer = document.getElementById('investment-list');
     const noInvestmentsMessage = document.getElementById('no-investments-message');
     const investmentForm = document.getElementById('investment-form');
     const formTitle = document.getElementById('form-title');
-    const saveButton = document.getElementById('save-button');
-    const clearButton = document.getElementById('clear-button');
     const logoutButton = document.getElementById('logoutButton');
     
-    const addItemBtn = document.getElementById('add-item-btn');
+    // Modal de Inversión
+    const investmentModal = document.getElementById('investment-modal');
+    const addInvestmentBtn = document.getElementById('add-investment-btn');
+    const closeInvestmentModalBtn = document.getElementById('close-investment-modal');
+    const addItemBtnModal = document.getElementById('add-item-btn-modal');
+    const itemListEl = document.getElementById('item-list');
+
+    // Modal de Productos
     const productModal = document.getElementById('product-modal');
     const closeProductModalBtn = document.getElementById('close-product-modal');
     const productSearchInput = document.getElementById('product-search-input');
     const productListContainer = document.getElementById('product-list-container');
-    const itemListEl = document.getElementById('item-list');
-
-    // --- API LOGIC ---
+    
     function getAuthHeaders() {
         const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        if (!token) { window.location.href = 'index.html'; return null; }
+        if (!token) { window.location.href = 'login.html'; return null; }
         return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
     }
 
@@ -254,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return response.json();
     }
     
-    // --- DATA LOADING & RENDERING ---
     async function loadInvestments() {
         try {
             const status = statusFilter.value;
@@ -273,31 +187,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderInvestments() {
         investmentListContainer.innerHTML = '';
         noInvestmentsMessage.classList.toggle('hidden', allInvestments.length > 0);
-
-        allInvestments.forEach(inv => createInvestmentCard(inv));
+        allInvestments.forEach(createInvestmentCard);
         updateSummary();
     }
     
     function createInvestmentCard(inv) {
         const template = document.getElementById('investment-card-template');
         const card = template.content.cloneNode(true).firstElementChild;
-        
         card.querySelector('[data-id]').textContent = inv.id;
         card.querySelector('[data-description]').textContent = inv.descripcion;
-        
         const statusEl = card.querySelector('[data-status]');
         statusEl.textContent = inv.estado;
-        if (inv.estado === 'Recibido') statusEl.className += ' bg-green-500';
-        else if (inv.estado === 'En Camino') statusEl.className += ' bg-blue-500';
-        else if (inv.estado === 'Retenido') statusEl.className += ' bg-yellow-500';
+        const statusColors = {'Recibido': 'bg-green-600', 'En Camino': 'bg-blue-600', 'Retenido': 'bg-yellow-500'};
+        statusEl.classList.add(statusColors[inv.estado] || 'bg-slate-600');
 
         const items = Array.isArray(inv.items) ? inv.items : [];
         const itemsValue = items.reduce((sum, item) => sum + (item.quantity * item.unit_cost), 0);
         const totalValue = itemsValue + (inv.costo_envio || 0);
         
-        card.querySelector('[data-items-value]').textContent = `R$${itemsValue.toFixed(2)}`;
         card.querySelector('[data-total-value]').textContent = `R$${totalValue.toFixed(2)}`;
-        
         const trackingLink = card.querySelector('[data-tracking]');
         if(inv.tracking) {
             trackingLink.textContent = inv.tracking;
@@ -308,17 +216,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         card.querySelector('[data-shipping-date]').textContent = inv.fecha_envio || 'N/A';
-        
         const itemsList = card.querySelector('[data-items]');
         items.forEach(item => {
             const li = document.createElement('li');
-            li.textContent = `${item.quantity}x ${item.name} @ R$${item.unit_cost.toFixed(2)}`;
+            li.textContent = `${item.quantity}x ${item.name || 'Produto desconhecido'} @ R$${(item.unit_cost || 0).toFixed(2)}`;
             itemsList.appendChild(li);
         });
 
-        card.querySelector('[data-action="edit"]').addEventListener('click', () => prepareEditForm(inv.id));
+        card.querySelector('[data-action="edit"]').addEventListener('click', () => openModalForEdit(inv.id));
         card.querySelector('[data-action="delete"]').addEventListener('click', () => deleteInvestment(inv.id, inv.descripcion));
-        
         investmentListContainer.appendChild(card);
     }
     
@@ -338,23 +244,24 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('total-retained-value').textContent = `R$${totalRetained.toFixed(2)}`;
     }
 
-    // --- FORM LOGIC ---
-    function clearForm() {
+    function openModalForNew() {
         editingInvestmentId = null;
         investmentForm.reset();
-        formTitle.textContent = 'Adicionar Novo Investimento';
-        saveButton.textContent = 'Salvar';
-        document.getElementById('investment-id').value = '';
         formItems = [];
         renderFormItems();
+        formTitle.textContent = 'Adicionar Novo Investimento';
+        investmentModal.classList.remove('hidden');
+        setTimeout(() => {
+            investmentModal.classList.remove('opacity-0');
+            investmentModal.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
+        }, 10);
     }
 
-    async function prepareEditForm(id) {
+    async function openModalForEdit(id) {
         try {
             const inv = await fetchApi(`/inversiones/${id}`);
             editingInvestmentId = inv.id;
             formTitle.textContent = 'Editar Investimento';
-            saveButton.textContent = 'Atualizar';
             document.getElementById('investment-id').value = inv.id;
             document.getElementById('inv-description').value = inv.descripcion;
             document.getElementById('inv-shipping-cost').value = inv.costo_envio || 0;
@@ -363,12 +270,22 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('inv-arrival-date').value = inv.fecha_llegada || '';
             document.getElementById('inv-tracking').value = inv.tracking || '';
             document.getElementById('inv-obs').value = inv.observaciones || '';
-            formItems = inv.items.map(item => ({...item, product_id: item.product_id}));
+            formItems = Array.isArray(inv.items) ? inv.items.map(item => ({...item, product_id: item.product_id})) : [];
             renderFormItems();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            investmentModal.classList.remove('hidden');
+            setTimeout(() => {
+                investmentModal.classList.remove('opacity-0');
+                investmentModal.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
+            }, 10);
         } catch (error) {
             alert(`Erro ao carregar dados para edição: ${error.message}`);
         }
+    }
+
+    function closeModal() {
+        investmentModal.classList.add('opacity-0');
+        investmentModal.querySelector('.modal-container').classList.add('opacity-0', 'scale-95');
+        setTimeout(() => investmentModal.classList.add('hidden'), 300);
     }
 
     async function handleFormSubmit(e) {
@@ -376,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const payload = {
             inversion_data: {
                 descripcion: document.getElementById('inv-description').value,
-                costo_envio: parseFloat(document.getElementById('inv-shipping-cost').value),
+                costo_envio: parseFloat(document.getElementById('inv-shipping-cost').value) || 0,
                 estado: document.getElementById('inv-status').value,
                 fecha_envio: document.getElementById('inv-shipping-date').value || null,
                 fecha_llegada: document.getElementById('inv-arrival-date').value || null,
@@ -394,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await fetchApi('/inversiones', { method: 'POST', body: JSON.stringify(payload) });
                 alert('Investimento adicionado com sucesso!');
             }
-            clearForm();
+            closeModal();
             loadInvestments();
         } catch (error) {
             alert(`Erro ao salvar investimento: ${error.message}`);
@@ -412,71 +329,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- PRODUCT & ITEM MANAGEMENT ---
     function openProductModal() {
         productSearchInput.value = '';
         productModal.classList.remove('hidden');
         loadProductsForModal('');
     }
 
-      async function loadProductsForModal(searchText) {
-    try {
-        // Se añade ?include_all=true para obtener todos los productos
-        const products = await fetchApi(`/products?include_all=true&filter_text=${searchText}`);
-        productListContainer.innerHTML = ''; // Limpia la lista
-
-        if (products.length === 0) {
-            productListContainer.innerHTML = '<p class="p-4 text-center text-slate-500">Nenhum produto encontrado.</p>';
-            return;
+    async function loadProductsForModal(searchText) {
+        try {
+            const products = await fetchApi(`/products?include_all=true&filter_text=${searchText}`);
+            productListContainer.innerHTML = '';
+            products.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'p-3 hover:bg-slate-700 cursor-pointer border-b border-slate-700';
+                div.textContent = `${p.name} (Marca: ${p.brand || 'N/A'})`;
+                div.addEventListener('click', () => selectProduct(p));
+                productListContainer.appendChild(div);
+            });
+        } catch (error) {
+            alert(`Erro ao carregar produtos: ${error.message}`);
         }
-
-        products.forEach(p => {
-            const div = document.createElement('div');
-            div.className = 'flex justify-between items-center p-3 hover:bg-slate-100 cursor-pointer border-b';
-
-            // Lógica para los colores del stock
-            let stockColorClass = 'bg-green-500'; // Verde por defecto
-            if (p.stock <= 0) {
-                stockColorClass = 'bg-red-500'; // Rojo para agotados
-            } else if (p.stock <= 5) {
-                stockColorClass = 'bg-yellow-500'; // Amarillo para stock bajo
-            }
-
-            div.innerHTML = `
-                <div>
-                    <p class="font-semibold text-slate-800">${p.name}</p>
-                    <p class="text-sm text-slate-500">Marca: ${p.brand || 'N/A'}</p>
-                </div>
-                <div class="text-right">
-                    <p class="font-bold text-slate-700">${p.stock}</p>
-                    <div class="flex justify-end items-center mt-1">
-                        <span class="text-xs text-slate-500 mr-2">Stock</span>
-                        <span class="w-3 h-3 rounded-full ${stockColorClass}"></span>
-                    </div>
-                </div>
-            `;
-            div.addEventListener('click', () => selectProduct(p));
-            productListContainer.appendChild(div);
-        });
-    } catch (error) {
-        alert(`Erro ao carregar produtos: ${error.message}`);
     }
-}
 
     function selectProduct(product) {
         const quantity = parseInt(prompt(`Quantidade para "${product.name}":`, '1'), 10);
         if (isNaN(quantity) || quantity <= 0) return;
-
-        const cost = parseFloat(prompt(`Custo unitário para "${product.name}":`, product.costo || '0.0'));
+        const cost = parseFloat(prompt(`Custo unitário para "${product.name}":`, (product.costo || 0).toString()));
         if (isNaN(cost) || cost < 0) return;
         
-        formItems.push({
-            product_id: product.id,
-            name: product.name,
-            quantity: quantity,
-            unit_cost: cost
-        });
-        
+        formItems.push({ product_id: product.id, name: product.name, quantity, unit_cost: cost });
         renderFormItems();
         productModal.classList.add('hidden');
     }
@@ -486,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const template = document.getElementById('item-list-row-template');
         formItems.forEach((item, index) => {
             const li = template.content.cloneNode(true).firstElementChild;
-            li.querySelector('.item-text').textContent = `${item.quantity}x ${item.name} @ R$${item.unit_cost.toFixed(2)}`;
+            li.querySelector('.item-text').textContent = `${item.quantity}x ${item.name} @ R$${(item.unit_cost || 0).toFixed(2)}`;
             li.querySelector('.item-remove-btn').addEventListener('click', () => {
                 formItems.splice(index, 1);
                 renderFormItems();
@@ -495,23 +376,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // --- EVENT LISTENERS ---
     searchInput.addEventListener('input', loadInvestments);
     statusFilter.addEventListener('change', loadInvestments);
     investmentForm.addEventListener('submit', handleFormSubmit);
-    clearButton.addEventListener('click', clearForm);
     logoutButton.addEventListener('click', () => {
         localStorage.removeItem('authToken');
         sessionStorage.removeItem('authToken');
-
-        window.location.href = 'index.html';
+        window.location.href = 'login.html';
     });
     
-    addItemBtn.addEventListener('click', openProductModal);
+    addInvestmentBtn.addEventListener('click', openModalForNew);
+    closeInvestmentModalBtn.addEventListener('click', closeModal);
+    addItemBtnModal.addEventListener('click', openProductModal);
     closeProductModalBtn.addEventListener('click', () => productModal.classList.add('hidden'));
     productSearchInput.addEventListener('input', (e) => loadProductsForModal(e.target.value));
 
-    // --- INITIALIZATION ---
     loadInvestments();
 });
 </script>

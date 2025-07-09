@@ -60,6 +60,33 @@
             display: inline-block;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* **NUEVOS ESTILOS PARA EL INDICADOR DE SELECCIÓN** */
+        .selection-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: #3b82f6;
+            color: white;
+            font-weight: bold;
+            font-size: 0.75rem;
+            width: 28px;
+            height: 28px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #0f172a;
+            transform: scale(0);
+            transition: transform 0.2s ease-out;
+        }
+        .product-card.selected .selection-badge {
+            transform: scale(1);
+        }
+        .product-card.selected {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+        }
     </style>
 </head>
 <body class="overflow-x-hidden">
@@ -151,16 +178,18 @@
     </main>
 
     <!-- Botón flotante para cambiar de vista -->
-    <button id="checkout-view-btn" class="hidden fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg p-4 transition-transform transform active:scale-90">
-        <i class="ph ph-arrow-right text-2xl"></i>
+    <button id="checkout-view-btn" class="hidden fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg p-5 transition-transform transform active:scale-90">
+        <i class="ph ph-arrow-right text-3xl"></i>
     </button>
-    <button id="products-view-btn" class="hidden fixed bottom-6 left-6 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-full shadow-lg p-4 transition-transform transform active:scale-90">
-        <i class="ph ph-arrow-left text-2xl"></i>
+    <button id="products-view-btn" class="hidden fixed bottom-6 left-6 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-full shadow-lg p-5 transition-transform transform active:scale-90">
+        <i class="ph ph-arrow-left text-3xl"></i>
     </button>
 
     <!-- Templates -->
     <template id="product-card-template">
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-3 flex flex-col items-center text-center shadow-sm hover:border-blue-500 transition cursor-pointer">
+        <div class="product-card bg-slate-800 border border-slate-700 rounded-lg p-3 flex flex-col items-center text-center shadow-sm hover:border-blue-500 transition cursor-pointer relative">
+            <!-- **NUEVO INDICADOR DE SELECCIÓN** -->
+            <div class="selection-badge"></div>
             <div class="flex-grow">
                 <h3 class="font-bold text-white leading-tight"></h3>
                 <p class="text-xs text-slate-400 mb-1" data-brand></p>
@@ -236,11 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
         viewProducts.classList.remove('view-hidden-left');
         viewCheckout.classList.add('view-hidden-right');
         productsViewBtn.classList.add('hidden');
-        if (cart.length > 0) {
-            checkoutViewBtn.classList.remove('hidden');
-        } else {
-            checkoutViewBtn.classList.add('hidden');
-        }
+        updateCheckoutButtonVisibility();
     }
 
     // --- RENDER LOGIC ---
@@ -261,6 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.dataset.productId = product.id;
             productListContainer.appendChild(card);
         });
+        updateAllProductCardSelections();
     }
 
     function renderCart() {
@@ -284,29 +310,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         updateTotals();
+        updateCheckoutButtonVisibility();
     }
     
     // --- BUSINESS LOGIC ---
     function addToCart(productId) {
         const product = allProducts.find(p => p.id === productId);
         if (!product) return;
-
-        const wasCartEmpty = cart.length === 0;
         const existingCartItem = cart.find(item => item.id === productId);
 
         if (existingCartItem) {
-            if (existingCartItem.quantity < product.stock) existingCartItem.quantity++;
-            else alert('Não há mais estoque disponível para este produto.');
+            if (existingCartItem.quantity < product.stock) {
+                existingCartItem.quantity++;
+            } else {
+                alert('Não há mais estoque disponível para este produto.');
+            }
         } else {
             cart.push({ ...product, quantity: 1 });
         }
         
         renderCart();
-
-        // **CAMBIO CLAVE**: Si el carrito estaba vacío, transiciona a la vista de checkout.
-        if (wasCartEmpty) {
-            showCheckoutView();
-        }
+        updateProductCardSelection(productId);
     }
     
     function updateCartItemQuantity(productId, newQuantity) {
@@ -324,16 +348,13 @@ document.addEventListener('DOMContentLoaded', () => {
             cartItem.quantity = newQuantity;
         }
         updateTotals();
+        updateProductCardSelection(productId);
     }
 
     function removeFromCart(productId) {
         cart = cart.filter(item => item.id !== productId);
         renderCart();
-        
-        // **CAMBIO CLAVE**: Si el carrito queda vacío, vuelve a la vista de productos.
-        if (cart.length === 0) {
-            showProductsView();
-        }
+        updateProductCardSelection(productId);
     }
 
     function updateTotals() {
@@ -343,6 +364,33 @@ document.addEventListener('DOMContentLoaded', () => {
         
         subtotalValueEl.textContent = `R$${subtotal.toFixed(2)}`;
         grandTotalValueEl.textContent = `R$${grandTotal.toFixed(2)}`;
+    }
+    
+    // --- **NUEVAS FUNCIONES PARA LA INTERFAZ** ---
+    function updateProductCardSelection(productId) {
+        const card = productListContainer.querySelector(`[data-product-id='${productId}']`);
+        if (!card) return;
+        const cartItem = cart.find(item => item.id === productId);
+        const badge = card.querySelector('.selection-badge');
+
+        if (cartItem) {
+            card.classList.add('selected');
+            badge.textContent = `${cartItem.quantity}x`;
+        } else {
+            card.classList.remove('selected');
+        }
+    }
+
+    function updateAllProductCardSelections() {
+        allProducts.forEach(p => updateProductCardSelection(p.id));
+    }
+
+    function updateCheckoutButtonVisibility() {
+        if (cart.length > 0) {
+            checkoutViewBtn.classList.remove('hidden');
+        } else {
+            checkoutViewBtn.classList.add('hidden');
+        }
     }
 
     async function finalizeSale() {
@@ -399,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     productListContainer.addEventListener('click', (e) => {
-        const card = e.target.closest('[data-product-id]');
+        const card = e.target.closest('.product-card');
         if (card) addToCart(parseInt(card.dataset.productId));
     });
 
@@ -425,5 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchProducts();
 });
 </script>
+</body>
+</html>
 </body>
 </html>

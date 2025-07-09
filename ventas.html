@@ -50,6 +50,16 @@
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
         }
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="overflow-x-hidden">
@@ -66,6 +76,7 @@
     </header>
 
     <main class="relative">
+        <!-- Vista 1: Selección de Productos -->
         <div id="view-products" class="view">
             <div class="max-w-7xl mx-auto p-4 lg:p-6">
                 <div class="sticky top-[88px] bg-slate-900/80 backdrop-blur-sm py-4 z-10">
@@ -76,8 +87,10 @@
             </div>
         </div>
 
+        <!-- Vista 2: Carrito y Finalización -->
         <div id="view-checkout" class="view view-hidden-right">
             <div class="max-w-7xl mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Coluna do Carrito -->
                 <div class="space-y-6">
                     <div class="bg-slate-800 p-5 rounded-xl shadow-lg">
                         <h3 class="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-3">Produtos Selecionados</h3>
@@ -94,6 +107,7 @@
                         </div>
                     </div>
                 </div>
+                <!-- Coluna de Finalização -->
                 <div class="bg-slate-800 p-5 rounded-xl shadow-lg h-fit sticky top-[100px]">
                      <h3 class="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-3">Totais e Pagamento</h3>
                      <div class="space-y-3 text-lg">
@@ -136,6 +150,7 @@
         </div>
     </main>
 
+    <!-- Botón flotante para cambiar de vista -->
     <button id="checkout-view-btn" class="hidden fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg p-4 transition-transform transform active:scale-90">
         <i class="ph ph-arrow-right text-2xl"></i>
     </button>
@@ -143,6 +158,7 @@
         <i class="ph ph-arrow-left text-2xl"></i>
     </button>
 
+    <!-- Templates -->
     <template id="product-card-template">
         <div class="bg-slate-800 border border-slate-700 rounded-lg p-3 flex flex-col items-center text-center shadow-sm hover:border-blue-500 transition cursor-pointer">
             <div class="flex-grow">
@@ -153,7 +169,6 @@
             <span class="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full" data-stock></span>
         </div>
     </template>
-
     <template id="cart-item-template">
         <div class="flex items-center gap-3 py-2 border-b border-slate-700">
             <div class="flex-grow">
@@ -184,7 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const grandTotalValueEl = document.getElementById('grand-total-value');
     const finalizeButton = document.getElementById('finalize-button');
     
-    // View selectors
     const viewProducts = document.getElementById('view-products');
     const viewCheckout = document.getElementById('view-checkout');
     const checkoutViewBtn = document.getElementById('checkout-view-btn');
@@ -221,8 +235,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function showProductsView() {
         viewProducts.classList.remove('view-hidden-left');
         viewCheckout.classList.add('view-hidden-right');
-        if (cart.length > 0) checkoutViewBtn.classList.remove('hidden');
         productsViewBtn.classList.add('hidden');
+        if (cart.length > 0) {
+            checkoutViewBtn.classList.remove('hidden');
+        } else {
+            checkoutViewBtn.classList.add('hidden');
+        }
     }
 
     // --- RENDER LOGIC ---
@@ -250,14 +268,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cart.length === 0) {
             cartItemsContainer.appendChild(cartEmptyMessage);
             cartEmptyMessage.hidden = false;
-            if(!document.querySelector('#view-products.view-hidden-left')) {
-                 checkoutViewBtn.classList.add('hidden');
-            }
         } else {
             cartEmptyMessage.hidden = true;
-             if(!document.querySelector('#view-products.view-hidden-left')) {
-                checkoutViewBtn.classList.remove('hidden');
-            }
             const template = document.getElementById('cart-item-template');
             cart.forEach(item => {
                 const cartItemEl = template.content.cloneNode(true).firstElementChild;
@@ -278,6 +290,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function addToCart(productId) {
         const product = allProducts.find(p => p.id === productId);
         if (!product) return;
+
+        const wasCartEmpty = cart.length === 0;
         const existingCartItem = cart.find(item => item.id === productId);
 
         if (existingCartItem) {
@@ -286,7 +300,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             cart.push({ ...product, quantity: 1 });
         }
+        
         renderCart();
+
+        // **CAMBIO CLAVE**: Si el carrito estaba vacío, transiciona a la vista de checkout.
+        if (wasCartEmpty) {
+            showCheckoutView();
+        }
     }
     
     function updateCartItemQuantity(productId, newQuantity) {
@@ -294,8 +314,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const product = allProducts.find(p => p.id === productId);
         if (!cartItem || !product) return;
 
-        if (newQuantity <= 0) removeFromCart(productId);
-        else if (newQuantity > product.stock) {
+        if (newQuantity <= 0) {
+            removeFromCart(productId);
+        } else if (newQuantity > product.stock) {
             alert(`Estoque máximo para ${product.name} é ${product.stock}.`);
             cartItem.quantity = product.stock;
             renderCart();
@@ -308,6 +329,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function removeFromCart(productId) {
         cart = cart.filter(item => item.id !== productId);
         renderCart();
+        
+        // **CAMBIO CLAVE**: Si el carrito queda vacío, vuelve a la vista de productos.
+        if (cart.length === 0) {
+            showProductsView();
+        }
     }
 
     function updateTotals() {

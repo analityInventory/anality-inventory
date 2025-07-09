@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- API LOGIC (CORREGIDA)---
     async function fetchApi(endpoint, options = {}) {
-        const token = localStorage.getItem('accessToken');
+        const token = localStorage.getItem('authToken');
         // 1. Si no hay token, redirige a login. Se acabó la alerta.
         if (!token) {
             window.location.href = 'login.html';
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options });
             // 2. Si el token es inválido (401), borra el token malo y redirige a login.
             if (response.status === 401) {
-                localStorage.removeItem('accessToken');
+                localStorage.removeItem('authToken');
                 window.location.href = 'login.html';
                 return; // Detiene la ejecución
             }

@@ -275,7 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DATA LOADING ---
     async function loadInitialData() {
         try {
-            // Fetch categories first to use their colors in the charts
             await fetchCategories();
             await fetchExpenses();
         } catch (error) {
@@ -498,12 +497,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleFormSubmit(e) {
         e.preventDefault();
         const categoryName = document.getElementById('expense-category').value;
-        const category = allCategories.find(c => c.nombre === categoryName);
         
+        // --- CÓDIGO CORREGIDO ---
         const expenseData = {
             descripcion: document.getElementById('expense-description').value,
             valor: parseFloat(document.getElementById('expense-value').value),
-            categoria_id: category ? category.id : null,
+            categoria: categoryName, // Se envía el nombre de la categoría
             fecha: document.getElementById('expense-date').value,
             observaciones: document.getElementById('expense-obs').value
         };
@@ -574,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetchApi(`/gastos/categorias/${id}`, { method: 'DELETE' });
             await fetchCategories();
             renderCategoryList();
-            fetchExpenses(); // Refresh expenses in case some were in the deleted category
+            fetchExpenses();
         } catch (error) {
             alert(`Erro ao excluir categoria: ${error.message}`);
         }
@@ -590,7 +589,10 @@ document.addEventListener('DOMContentLoaded', () => {
     closeExpenseModalBtn.addEventListener('click', () => closeModal(expenseModal));
     cancelFormBtn.addEventListener('click', () => closeModal(expenseModal));
 
-    manageCategoriesBtn.addEventListener('click', () => openModal(categoryModal));
+    manageCategoriesBtn.addEventListener('click', () => {
+        renderCategoryList();
+        openModal(categoryModal);
+    });
     closeCategoryModalBtn.addEventListener('click', () => closeModal(categoryModal));
     addCategoryForm.addEventListener('submit', handleAddNewCategory);
 

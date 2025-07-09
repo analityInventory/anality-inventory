@@ -170,10 +170,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const data = await response.json();
-                // Por defecto, se guarda en sessionStorage (se borra al cerrar).
-                // Puedes añadir la lógica de "Lembrar usuário" si lo necesitas.
-                sessionStorage.setItem('authToken', data.access_token);
-                window.location.href = 'index.html'; // Redirige al menú principal
+            
+            if (rememberMe) {
+               localStorage.setItem('authToken', data.access_token);
+            } else {
+               sessionStorage.setItem('authToken', data.access_token);
+            }
+               window.location.href = 'index.html'; // Redirige al menú principal
             } else {
                 const errorData = await response.json().catch(() => ({ detail: 'Erro de comunicação.' }));
                 alert(`Erro ao iniciar sessão: ${errorData.detail}`);

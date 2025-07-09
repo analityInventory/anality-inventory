@@ -3,34 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Gestão de Despesas</title>
+    <title>AnalityInventory - Gestão de Despesas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- 1. LIBRERÍA DE GRÁFICOS AÑADIDA -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        /* --- TEMA OSCURO APLICADO --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+        /* Estilos para la barra de rolagem */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        /* Estilos para inputs y modales */
         .form-input {
             width: 100%;
             padding: 0.75rem;
-            border: 1px solid #cbd5e1;
+            border: 1px solid #475569;
             border-radius: 0.5rem;
-            transition: ring 0.2s;
+            background-color: #334155;
+            color: #f1f5f9;
+            transition: all 0.2s;
         }
         .form-input:focus {
             outline: none;
-            --tw-ring-color: #3b82f6;
-            --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
-            --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
-            box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
         }
-        /* Estilos para a barra de rolagem */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        /* Estilos para o seletor de cor */
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+        .modal-container {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
         input[type="color"] {
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -41,139 +53,140 @@
             cursor: pointer;
             border-radius: 0.5rem;
             padding: 0;
+            background-color: transparent;
         }
-        input[type="color"]::-webkit-color-swatch-wrapper {
-            padding: 0;
-        }
-        input[type="color"]::-webkit-color-swatch {
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 1px solid #475569; border-radius: 0.5rem; }
     </style>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="font-sans">
 
-    <header class="bg-white shadow-md sticky top-0 z-20">
+    <header class="bg-slate-900/80 backdrop-blur-sm shadow-md sticky top-0 z-20 border-b border-slate-700">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-slate-800">Gestão de Despesas</h1>
+            <h1 class="text-2xl font-bold text-white">Gestão de Despesas</h1>
             <div>
-                 <a href="index.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Voltar aos Pedidos">
+                 <a href="index.html" class="text-slate-400 hover:text-white transition" title="Voltar ao Menu">
                     <i class="ph ph-arrow-u-left-up text-3xl"></i>
                  </a>
-                 <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
-                     <i class="ph ph-sign-out text-3xl"></i>
-                 </button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        <!-- Coluna da Lista de Despesas -->
-        <div class="lg:col-span-2">
-            
-            <div class="bg-white p-5 rounded-xl shadow-lg mb-6">
-                <h3 class="text-xl font-bold text-slate-800 mb-4">Resumen de Gastos (Filtro Actual)</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                    <div class="text-center md:text-left">
-                        <p class="text-slate-500 text-sm">Total Gastado</p>
-                        <p id="total-expenses-value" class="text-4xl font-bold text-red-600">R$0.00</p>
+    <main class="max-w-7xl mx-auto p-4 lg:p-6">
+        <!-- Contenedor principal -->
+        <div class="bg-slate-800 p-5 rounded-xl shadow-lg border border-slate-700">
+            <!-- Sección de Resumen y Gráficos -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-center mb-6 border-b border-slate-700 pb-6">
+                <div class="lg:col-span-2 text-center lg:text-left">
+                    <p class="text-slate-400 text-sm">Total Gastado (Filtro Atual)</p>
+                    <p id="total-expenses-value" class="text-5xl font-bold text-red-400">R$0.00</p>
+                </div>
+                <!-- Contenedor para ambos gráficos -->
+                <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="relative h-48">
+                        <canvas id="expense-donut-chart"></canvas>
+                        <p id="donut-no-data" class="hidden absolute inset-0 flex items-center justify-center text-slate-500">Sem dados de categoria</p>
                     </div>
-                    <div class="relative h-40">
-                        <canvas id="expense-chart"></canvas>
+                    <div class="relative h-48">
+                        <canvas id="expense-trend-chart"></canvas>
+                         <p id="trend-no-data" class="hidden absolute inset-0 flex items-center justify-center text-slate-500">Sem dados de tendência</p>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white p-5 rounded-xl shadow-lg">
-                <!-- SECCIÓN DE FILTROS MODIFICADA -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4 items-center">
-                    <input type="text" id="search-input" placeholder="Buscar por descrição..." class="form-input lg:col-span-1">
-                    <select id="month-filter" class="form-input">
-                        <option value="Todos">Todos os Meses</option>
+            <!-- Sección de Filtros y Tabla -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4 items-center">
+                <input type="text" id="search-input" placeholder="Buscar por descrição..." class="form-input lg:col-span-1">
+                <select id="month-filter" class="form-input">
+                    <option value="Todos">Todos os Meses</option>
+                </select>
+                <div class="flex gap-2">
+                    <select id="category-filter" class="form-input flex-grow">
+                        <option value="Todos">Todas as Categorias</option>
                     </select>
-                    <div class="flex gap-2">
-                        <select id="category-filter" class="form-input flex-grow">
-                            <option value="Todos">Todas as Categorias</option>
-                        </select>
-                        <button id="manage-categories-btn" class="p-3 bg-slate-200 hover:bg-slate-300 rounded-lg transition" title="Gerenciar Categorias">
-                            <i class="ph ph-gear-six"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="h-[calc(100vh-380px)] overflow-y-auto pr-2">
-                    <table class="w-full text-left">
-                        <thead class="sticky top-0 bg-slate-50 z-10">
-                            <tr>
-                                <th class="p-3 text-sm font-semibold text-slate-600">Descrição</th>
-                                <th class="p-3 text-sm font-semibold text-slate-600">Valor</th>
-                                <th class="p-3 text-sm font-semibold text-slate-600">Categoria</th>
-                                <th class="p-3 text-sm font-semibold text-slate-600">Data</th>
-                                <th class="p-3 text-sm font-semibold text-slate-600">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="expenses-list-body"></tbody>
-                    </table>
-                     <p id="no-expenses-message" class="hidden text-center text-slate-500 py-16">Nenhuma despesa encontrada.</p>
+                    <button id="manage-categories-btn" class="p-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition" title="Gerenciar Categorias">
+                        <i class="ph ph-gear-six text-xl"></i>
+                    </button>
                 </div>
             </div>
-        </div>
-
-        <!-- Coluna do Formulário -->
-        <div class="lg:col-span-1">
-            <div class="bg-white p-5 rounded-xl shadow-lg sticky top-[88px]">
-                <h3 id="form-title" class="text-xl font-bold text-slate-800 mb-4 border-b pb-3">Adicionar Nova Despesa</h3>
-                <form id="expense-form" class="space-y-4">
-                    <input type="hidden" id="expense-id">
-                    <div>
-                        <label for="expense-description" class="block text-sm font-medium text-slate-700">Descrição *</label>
-                        <input type="text" id="expense-description" class="form-input mt-1" required>
-                    </div>
-                    <div>
-                        <label for="expense-value" class="block text-sm font-medium text-slate-700">Valor (R$) *</label>
-                        <input type="number" id="expense-value" min="0.01" step="0.01" class="form-input mt-1" required>
-                    </div>
-                    <div>
-                        <label for="expense-category" class="block text-sm font-medium text-slate-700">Categoria *</label>
-                        <select id="expense-category" class="form-input mt-1" required></select>
-                    </div>
-                    <div>
-                        <label for="expense-date" class="block text-sm font-medium text-slate-700">Data *</label>
-                        <input type="date" id="expense-date" class="form-input mt-1" required>
-                    </div>
-                     <div>
-                        <label for="expense-obs" class="block text-sm font-medium text-slate-700">Observações</label>
-                        <textarea id="expense-obs" rows="3" class="form-input mt-1"></textarea>
-                    </div>
-                    <div class="flex gap-4 pt-2">
-                        <button type="submit" id="save-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">Salvar Despesa</button>
-                        <button type="button" id="clear-button" class="w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-4 rounded-lg transition">Limpar</button>
-                    </div>
-                </form>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="sticky top-0 bg-slate-800 z-10">
+                        <tr>
+                            <th class="p-3 text-sm font-semibold text-slate-400">Descrição</th>
+                            <th class="p-3 text-sm font-semibold text-slate-400">Valor</th>
+                            <th class="p-3 text-sm font-semibold text-slate-400">Categoria</th>
+                            <th class="p-3 text-sm font-semibold text-slate-400">Data</th>
+                            <th class="p-3 text-sm font-semibold text-slate-400">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenses-list-body" class="divide-y divide-slate-700"></tbody>
+                </table>
+                 <p id="no-expenses-message" class="hidden text-center text-slate-500 py-16">Nenhuma despesa encontrada.</p>
             </div>
         </div>
     </main>
     
-    <!-- Modal de Gestão de Categorias -->
-    <div id="category-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
-            <div class="p-6 border-b flex justify-between items-center">
-                <h2 class="text-xl font-bold text-slate-800">Gerenciar Categorias de Despesa</h2>
-                <button id="close-category-modal" class="text-slate-500 hover:text-slate-800">&times;</button>
+    <!-- Botón flotante para añadir gasto -->
+    <button id="add-expense-btn" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg p-4 transition-transform transform active:scale-90 z-30">
+        <i class="ph ph-plus text-3xl"></i>
+    </button>
+
+    <!-- Modal para Añadir/Editar Gasto -->
+    <div id="expense-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
+        <div class="modal-container opacity-0 scale-95 bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg border border-slate-700">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center">
+                <h2 id="form-title" class="text-2xl font-bold text-white"></h2>
+                <button id="close-expense-modal" class="text-slate-400 hover:text-white"><i class="ph ph-x text-2xl"></i></button>
             </div>
             <div class="p-6">
-                <div id="category-list-container" class="space-y-2 max-h-60 overflow-y-auto mb-6 pr-2">
-                </div>
-                <form id="add-category-form" class="space-y-3 border-t pt-4">
-                    <h4 class="font-semibold">Adicionar Nova Categoria</h4>
+                <form id="expense-form" class="space-y-4">
+                    <input type="hidden" id="expense-id">
+                    <div>
+                        <label for="expense-description" class="block text-sm font-medium text-slate-400">Descrição *</label>
+                        <input type="text" id="expense-description" class="form-input mt-1" required>
+                    </div>
+                    <div>
+                        <label for="expense-value" class="block text-sm font-medium text-slate-400">Valor (R$) *</label>
+                        <input type="number" id="expense-value" min="0.01" step="0.01" class="form-input mt-1" required>
+                    </div>
+                    <div>
+                        <label for="expense-category" class="block text-sm font-medium text-slate-400">Categoria *</label>
+                        <select id="expense-category" class="form-input mt-1" required></select>
+                    </div>
+                    <div>
+                        <label for="expense-date" class="block text-sm font-medium text-slate-400">Data *</label>
+                        <input type="date" id="expense-date" class="form-input mt-1" required>
+                    </div>
+                     <div>
+                        <label for="expense-obs" class="block text-sm font-medium text-slate-400">Observações</label>
+                        <textarea id="expense-obs" rows="2" class="form-input mt-1"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-end gap-3">
+                <button type="button" id="cancel-form-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                <button type="submit" form="expense-form" id="save-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Salvar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Gestão de Categorias -->
+    <div id="category-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4">
+        <div class="bg-slate-800 rounded-xl shadow-2xl w-full max-w-md border border-slate-700">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white">Gerenciar Categorias</h2>
+                <button id="close-category-modal" class="text-slate-400 hover:text-white"><i class="ph ph-x text-2xl"></i></button>
+            </div>
+            <div class="p-6">
+                <div id="category-list-container" class="space-y-2 max-h-60 overflow-y-auto mb-6 pr-2"></div>
+                <form id="add-category-form" class="space-y-3 border-t border-slate-700 pt-4">
+                    <h4 class="font-semibold text-white">Adicionar Nova Categoria</h4>
                     <div class="flex items-center gap-3">
                         <input type="text" id="new-category-name" placeholder="Nome da categoria" class="form-input flex-grow" required>
-                        <input type="color" id="new-category-color" value="#475569" class="form-input p-1 h-12 w-12">
+                        <input type="color" id="new-category-color" value="#475569" class="form-input p-1">
                     </div>
-                    <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition">Adicionar Categoria</button>
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition">Adicionar</button>
                 </form>
             </div>
         </div>
@@ -181,62 +194,69 @@
 
     <!-- Templates -->
     <template id="expense-row-template">
-        <tr class="border-b border-slate-200 hover:bg-slate-50">
-            <td class="p-3" data-description></td>
-            <td class="p-3 font-semibold text-red-600" data-value></td>
+        <tr class="hover:bg-slate-700/50">
+            <td class="p-3 text-slate-300" data-description></td>
+            <td class="p-3 font-semibold text-red-400" data-value></td>
             <td class="p-3">
                 <span class="px-2 py-1 text-xs font-semibold rounded-full" data-category></span>
             </td>
-            <td class="p-3 text-slate-500" data-date></td>
+            <td class="p-3 text-slate-400" data-date></td>
             <td class="p-3">
                 <div class="flex gap-2">
-                    <button data-action="edit" class="text-blue-600 hover:text-blue-800" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-                    <button data-action="delete" class="text-red-600 hover:text-red-800" title="Excluir"><i class="ph ph-trash"></i></button>
+                    <button data-action="edit" class="text-blue-400 hover:text-white" title="Editar"><i class="ph ph-pencil-simple text-lg"></i></button>
+                    <button data-action="delete" class="text-red-400 hover:text-white" title="Excluir"><i class="ph ph-trash text-lg"></i></button>
                 </div>
             </td>
         </tr>
     </template>
     <template id="category-list-item-template">
-        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-100">
+        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-700">
             <div class="flex items-center gap-3">
                 <span class="w-4 h-4 rounded-full" data-color-indicator></span>
-                <span class="font-medium" data-name></span>
+                <span class="font-medium text-slate-200" data-name></span>
             </div>
-            <button data-action="delete-category" class="text-slate-400 hover:text-red-600" title="Excluir Categoria"><i class="ph ph-trash"></i></button>
+            <button data-action="delete-category" class="text-slate-400 hover:text-red-400" title="Excluir Categoria"><i class="ph ph-trash text-lg"></i></button>
         </div>
     </template>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- CONFIGURAÇÃO E ESTADO ---
+    // --- CONFIG & STATE ---
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
     let allExpenses = [];
     let allCategories = [];
     let editingExpenseId = null;
-    let expenseChart = null;
+    let expenseDonutChart = null;
+    let expenseTrendChart = null;
 
-    // --- SELECTORES DE ELEMENTOS ---
+    // --- SELECTORS ---
     const expenseListBody = document.getElementById('expenses-list-body');
     const noExpensesMessage = document.getElementById('no-expenses-message');
     const searchInput = document.getElementById('search-input');
     const categoryFilter = document.getElementById('category-filter');
-    const monthFilter = document.getElementById('month-filter'); // NUEVO SELECTOR
+    const monthFilter = document.getElementById('month-filter');
+    const totalExpensesValueEl = document.getElementById('total-expenses-value');
+    
+    // --- MODAL (EXPENSE) SELECTORS ---
+    const expenseModal = document.getElementById('expense-modal');
+    const addExpenseBtn = document.getElementById('add-expense-btn');
+    const closeExpenseModalBtn = document.getElementById('close-expense-modal');
+    const cancelFormBtn = document.getElementById('cancel-form-btn');
     const expenseForm = document.getElementById('expense-form');
     const formTitle = document.getElementById('form-title');
     const saveButton = document.getElementById('save-button');
-    const clearButton = document.getElementById('clear-button');
-    const logoutButton = document.getElementById('logoutButton');
+
+    // --- MODAL (CATEGORY) SELECTORS ---
     const manageCategoriesBtn = document.getElementById('manage-categories-btn');
     const categoryModal = document.getElementById('category-modal');
     const closeCategoryModalBtn = document.getElementById('close-category-modal');
     const categoryListContainer = document.getElementById('category-list-container');
     const addCategoryForm = document.getElementById('add-category-form');
-    const totalExpensesValueEl = document.getElementById('total-expenses-value');
 
-    // --- LÓGICA DA API ---
+    // --- API LOGIC ---
     function getAuthHeaders() {
         const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        if (!token) { window.location.href = 'index.html'; return null; }
+        if (!token) { window.location.href = 'login.html'; return null; }
         return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
     }
 
@@ -252,10 +272,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return response.json();
     }
 
-    // --- FUNÇÕES DE CARREGAMENTO DE DADOS ---
+    // --- DATA LOADING ---
     async function loadInitialData() {
         try {
-            await Promise.all([fetchCategories(), fetchExpenses()]);
+            // Fetch categories first to use their colors in the charts
+            await fetchCategories();
+            await fetchExpenses();
         } catch (error) {
             alert(`Erro ao carregar dados iniciais: ${error.message}`);
         }
@@ -266,148 +288,189 @@ document.addEventListener('DOMContentLoaded', () => {
         populateCategorySelects();
     }
     
+    async function fetchExpenses() {
+        allExpenses = await fetchApi('/gastos');
+        populateMonthFilter();
+        renderFilteredResults();
+    }
+
+    // --- FILTER & RENDER LOGIC ---
     function populateCategorySelects() {
-        const firstOptionValue = categoryFilter.options[0]?.value;
-        categoryFilter.innerHTML = '';
-        categoryFilter.appendChild(new Option('Todas as Categorias', 'Todos'));
-        allCategories.forEach(cat => categoryFilter.appendChild(new Option(cat.nombre, cat.nombre)));
-        if (firstOptionValue) categoryFilter.value = firstOptionValue;
+        const currentFilterValue = categoryFilter.value;
+        categoryFilter.innerHTML = '<option value="Todos">Todas as Categorias</option>';
+        allCategories.forEach(cat => categoryFilter.appendChild(new Option(cat.nombre, cat.id)));
+        categoryFilter.value = currentFilterValue;
         
-        // También popular el select del formulario
         const expenseCategorySelect = document.getElementById('expense-category');
         expenseCategorySelect.innerHTML = '';
         allCategories.forEach(cat => expenseCategorySelect.appendChild(new Option(cat.nombre, cat.nombre)));
     }
 
-    // NUEVA FUNCIÓN PARA POBLAR EL FILTRO DE MES
     function populateMonthFilter() {
-        const months = [...new Set(allExpenses.map(exp => exp.fecha.substring(0, 7)))]; // Extrai YYYY-MM
-        months.sort().reverse(); // Ordena do mais recente para o mais antigo
-
-        const firstOptionValue = monthFilter.options[0]?.value;
-        monthFilter.innerHTML = '';
-        monthFilter.appendChild(new Option('Todos os Meses', 'Todos'));
-
+        const months = [...new Set(allExpenses.map(exp => exp.fecha.substring(0, 7)))];
+        months.sort().reverse();
+        const currentFilterValue = monthFilter.value;
+        monthFilter.innerHTML = '<option value="Todos">Todos os Meses</option>';
         months.forEach(monthStr => {
             const [year, month] = monthStr.split('-');
             const date = new Date(year, month - 1, 1);
-            const monthName = date.toLocaleString('pt-BR', { month: 'long' });
-            const optionText = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
-            monthFilter.appendChild(new Option(optionText, monthStr));
+            const optionText = date.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+            monthFilter.appendChild(new Option(optionText.charAt(0).toUpperCase() + optionText.slice(1), monthStr));
         });
-
-        if (firstOptionValue) monthFilter.value = firstOptionValue;
+        monthFilter.value = currentFilterValue;
     }
 
-    async function fetchExpenses() {
-        allExpenses = await fetchApi('/gastos');
-        populateMonthFilter(); // Llama a la nueva función después de obtener los gastos
-        renderExpenses();
-    }
-
-    // --- LÓGICA DE RENDERIZAÇÃO ---
-    function renderExpenses() {
+    function renderFilteredResults() {
         const searchTerm = searchInput.value.toLowerCase();
-        const selectedCategory = categoryFilter.value;
-        const selectedMonth = monthFilter.value; // NUEVA VARIABLE PARA EL MES
+        const selectedCategoryId = categoryFilter.value;
+        const selectedMonth = monthFilter.value;
 
         const filteredExpenses = allExpenses.filter(expense => {
             const matchesSearch = expense.descripcion.toLowerCase().includes(searchTerm);
-            const matchesCategory = selectedCategory === 'Todos' || expense.categoria === selectedCategory;
-            const matchesMonth = selectedMonth === 'Todos' || expense.fecha.startsWith(selectedMonth); // NUEVA CONDICIÓN
+            const matchesCategory = selectedCategoryId === 'Todos' || expense.categoria_id == selectedCategoryId;
+            const matchesMonth = selectedMonth === 'Todos' || expense.fecha.startsWith(selectedMonth);
             return matchesSearch && matchesCategory && matchesMonth;
         });
         
-        const totalGastado = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.valor), 0);
-        totalExpensesValueEl.textContent = `R$${totalGastado.toFixed(2)}`;
-        renderExpenseChart(filteredExpenses);
-
-        expenseListBody.innerHTML = '';
-        if (filteredExpenses.length === 0) {
-            noExpensesMessage.classList.remove('hidden');
-        } else {
-            noExpensesMessage.classList.add('hidden');
-            const template = document.getElementById('expense-row-template');
-            filteredExpenses.forEach(expense => {
-                const row = template.content.cloneNode(true).firstElementChild;
-                row.dataset.id = expense.id;
-                row.querySelector('[data-description]').textContent = expense.descripcion;
-                row.querySelector('[data-value]').textContent = `R$${parseFloat(expense.valor).toFixed(2)}`;
-                
-                const categoryEl = row.querySelector('[data-category]');
-                categoryEl.textContent = expense.categoria || 'N/A';
-                const categoryData = allCategories.find(c => c.nombre === expense.categoria);
-                if (categoryData && categoryData.color) {
-                    categoryEl.style.backgroundColor = categoryData.color;
-                    categoryEl.style.color = '#fff';
-                } else {
-                    categoryEl.classList.add('bg-slate-200', 'text-slate-700');
-                }
-
-                row.querySelector('[data-date]').textContent = new Date(expense.fecha + 'T00:00:00').toLocaleDateString('pt-BR');
-                row.querySelector('[data-action="edit"]').addEventListener('click', () => prepareEditForm(expense));
-                row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteExpense(expense.id, expense.descripcion));
-                expenseListBody.appendChild(row);
-            });
-        }
+        renderSummary(filteredExpenses);
+        renderExpensesTable(filteredExpenses);
     }
     
-    function renderExpenseChart(expenses) {
-        const ctx = document.getElementById('expense-chart').getContext('2d');
-        const categoryTotals = expenses.reduce((acc, expense) => {
-            const categoryName = expense.categoria || 'Sem Categoria';
-            if (!acc[categoryName]) {
-                acc[categoryName] = { total: 0, color: '#94a3b8' };
-                const categoryData = allCategories.find(c => c.nombre === categoryName);
-                if (categoryData) acc[categoryName].color = categoryData.color;
+    function renderSummary(expenses) {
+        const totalGastado = expenses.reduce((sum, exp) => sum + parseFloat(exp.valor), 0);
+        totalExpensesValueEl.textContent = `R$${totalGastado.toFixed(2)}`;
+        renderExpenseDonutChart(expenses);
+        renderExpenseTrendChart(expenses);
+    }
+
+    function renderExpensesTable(expenses) {
+        expenseListBody.innerHTML = '';
+        noExpensesMessage.classList.toggle('hidden', expenses.length > 0);
+        
+        const template = document.getElementById('expense-row-template');
+        expenses.forEach(expense => {
+            const row = template.content.cloneNode(true).firstElementChild;
+            row.dataset.id = expense.id;
+            row.querySelector('[data-description]').textContent = expense.descripcion;
+            row.querySelector('[data-value]').textContent = `R$${parseFloat(expense.valor).toFixed(2)}`;
+            
+            const categoryEl = row.querySelector('[data-category]');
+            const categoryData = allCategories.find(c => c.id === expense.categoria_id);
+            categoryEl.textContent = categoryData?.nombre || 'N/A';
+            if (categoryData?.color) {
+                categoryEl.style.backgroundColor = categoryData.color;
+                categoryEl.style.color = '#fff';
+            } else {
+                categoryEl.classList.add('bg-slate-600', 'text-slate-200');
             }
-            acc[categoryName].total += parseFloat(expense.valor);
+
+            row.querySelector('[data-date]').textContent = new Date(expense.fecha + 'T00:00:00').toLocaleDateString('pt-BR');
+            row.querySelector('[data-action="edit"]').addEventListener('click', () => prepareEditForm(expense));
+            row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteExpense(expense.id, expense.descripcion));
+            expenseListBody.appendChild(row);
+        });
+    }
+
+    // --- CHART RENDERING ---
+    function renderExpenseDonutChart(expenses) {
+        const canvas = document.getElementById('expense-donut-chart');
+        const noDataEl = document.getElementById('donut-no-data');
+        const ctx = canvas.getContext('2d');
+        
+        const categoryTotals = expenses.reduce((acc, expense) => {
+            const category = allCategories.find(c => c.id === expense.categoria_id) || { nombre: 'Sem Categoria', color: '#64748b' };
+            if (!acc[category.nombre]) {
+                acc[category.nombre] = { total: 0, color: category.color };
+            }
+            acc[category.nombre].total += parseFloat(expense.valor);
             return acc;
         }, {});
 
         const labels = Object.keys(categoryTotals);
-        const data = labels.map(label => categoryTotals[label].total);
-        const backgroundColors = labels.map(label => categoryTotals[label].color);
+        noDataEl.classList.toggle('hidden', labels.length > 0);
+        canvas.classList.toggle('hidden', labels.length === 0);
 
-        if (expenseChart) {
-            expenseChart.destroy();
-        }
+        if (expenseDonutChart) expenseDonutChart.destroy();
+        if (labels.length === 0) return;
 
-        expenseChart = new Chart(ctx, {
+        expenseDonutChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: labels,
                 datasets: [{
-                    data: data,
-                    backgroundColor: backgroundColors,
-                    borderColor: '#fff',
-                    borderWidth: 2,
-                    hoverOffset: 4
+                    data: labels.map(label => categoryTotals[label].total),
+                    backgroundColor: labels.map(label => categoryTotals[label].color),
+                    borderColor: '#0f172a',
+                    borderWidth: 4,
+                    hoverOffset: 8
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.label || '';
-                                if (label) { label += ': '; }
-                                if (context.parsed !== null) {
-                                    label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed);
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                }
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+    
+    function renderExpenseTrendChart(expenses) {
+        const canvas = document.getElementById('expense-trend-chart');
+        const noDataEl = document.getElementById('trend-no-data');
+        const ctx = canvas.getContext('2d');
+
+        const dailyTotals = expenses.reduce((acc, expense) => {
+            const date = expense.fecha;
+            acc[date] = (acc[date] || 0) + parseFloat(expense.valor);
+            return acc;
+        }, {});
+
+        const sortedDates = Object.keys(dailyTotals).sort((a, b) => new Date(a) - new Date(b));
+        noDataEl.classList.toggle('hidden', sortedDates.length > 0);
+        canvas.classList.toggle('hidden', sortedDates.length === 0);
+        
+        if (expenseTrendChart) expenseTrendChart.destroy();
+        if (sortedDates.length === 0) return;
+        
+        expenseTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sortedDates,
+                datasets: [{
+                    label: 'Gasto por Dia',
+                    data: sortedDates.map(date => dailyTotals[date]),
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    pointBackgroundColor: '#ef4444'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'time', time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy' }, grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+                    y: { beginAtZero: true, grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+                },
+                plugins: { legend: { display: false } }
             }
         });
     }
 
-    // --- LÓGICA DO FORMULÁRIO DE DESPESAS ---
+    // --- MODAL & FORM LOGIC ---
+    function openModal(modal) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    }
+
+    function closeModal(modal) {
+        modal.classList.add('opacity-0');
+        modal.querySelector('.modal-container').classList.add('opacity-0', 'scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+    
     function prepareEditForm(expense) {
         editingExpenseId = expense.id;
         formTitle.textContent = 'Editar Despesa';
@@ -415,27 +478,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('expense-id').value = expense.id;
         document.getElementById('expense-description').value = expense.descripcion;
         document.getElementById('expense-value').value = expense.valor;
-        document.getElementById('expense-category').value = expense.categoria;
+        const categoryData = allCategories.find(c => c.id === expense.categoria_id);
+        document.getElementById('expense-category').value = categoryData?.nombre || '';
         document.getElementById('expense-date').value = expense.fecha;
         document.getElementById('expense-obs').value = expense.observaciones || '';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        openModal(expenseModal);
     }
-
-    function clearForm() {
+    
+    function prepareNewForm() {
         editingExpenseId = null;
         expenseForm.reset();
         formTitle.textContent = 'Adicionar Nova Despesa';
         saveButton.textContent = 'Salvar Despesa';
         document.getElementById('expense-id').value = '';
         document.getElementById('expense-date').valueAsDate = new Date();
+        openModal(expenseModal);
     }
 
     async function handleFormSubmit(e) {
         e.preventDefault();
+        const categoryName = document.getElementById('expense-category').value;
+        const category = allCategories.find(c => c.nombre === categoryName);
+        
         const expenseData = {
             descripcion: document.getElementById('expense-description').value,
             valor: parseFloat(document.getElementById('expense-value').value),
-            categoria: document.getElementById('expense-category').value,
+            categoria_id: category ? category.id : null,
             fecha: document.getElementById('expense-date').value,
             observaciones: document.getElementById('expense-obs').value
         };
@@ -448,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await fetchApi('/gastos', { method: 'POST', body: JSON.stringify(expenseData) });
                 alert('Despesa adicionada com sucesso!');
             }
-            clearForm();
+            closeModal(expenseModal);
             fetchExpenses();
         } catch (error) {
             alert(`Erro ao salvar despesa: ${error.message}`);
@@ -466,16 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- LÓGICA DO MODAL DE CATEGORIAS ---
-    function openCategoryManager() {
-        renderCategoryList();
-        categoryModal.classList.remove('hidden');
-    }
-
-    function closeCategoryManager() {
-        categoryModal.classList.add('hidden');
-    }
-
+    // --- CATEGORY MODAL LOGIC ---
     function renderCategoryList() {
         categoryListContainer.innerHTML = '';
         const template = document.getElementById('category-list-item-template');
@@ -497,12 +556,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const nameInput = document.getElementById('new-category-name');
         const colorInput = document.getElementById('new-category-color');
         const name = nameInput.value.trim();
-        const color = colorInput.value;
-
         if (!name) { alert('O nome da categoria é obrigatório.'); return; }
 
         try {
-            await fetchApi('/gastos/categorias', { method: 'POST', body: JSON.stringify({ nombre: name, color: color }) });
+            await fetchApi('/gastos/categorias', { method: 'POST', body: JSON.stringify({ nombre: name, color: colorInput.value }) });
             nameInput.value = '';
             await fetchCategories();
             renderCategoryList();
@@ -517,29 +574,33 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetchApi(`/gastos/categorias/${id}`, { method: 'DELETE' });
             await fetchCategories();
             renderCategoryList();
+            fetchExpenses(); // Refresh expenses in case some were in the deleted category
         } catch (error) {
             alert(`Erro ao excluir categoria: ${error.message}`);
         }
     }
     
     // --- EVENT LISTENERS ---
-    searchInput.addEventListener('input', renderExpenses);
-    categoryFilter.addEventListener('change', renderExpenses);
-    monthFilter.addEventListener('change', renderExpenses); // NUEVO EVENT LISTENER
+    searchInput.addEventListener('input', renderFilteredResults);
+    categoryFilter.addEventListener('change', renderFilteredResults);
+    monthFilter.addEventListener('change', renderFilteredResults);
     expenseForm.addEventListener('submit', handleFormSubmit);
-    clearButton.addEventListener('click', clearForm);
-    logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('authToken');
-        sessionStorage.removeItem('authToken');
-        window.location.href = 'index.html';
-    });
-    manageCategoriesBtn.addEventListener('click', openCategoryManager);
-    closeCategoryModalBtn.addEventListener('click', closeCategoryManager);
+    
+    addExpenseBtn.addEventListener('click', prepareNewForm);
+    closeExpenseModalBtn.addEventListener('click', () => closeModal(expenseModal));
+    cancelFormBtn.addEventListener('click', () => closeModal(expenseModal));
+
+    manageCategoriesBtn.addEventListener('click', () => openModal(categoryModal));
+    closeCategoryModalBtn.addEventListener('click', () => closeModal(categoryModal));
     addCategoryForm.addEventListener('submit', handleAddNewCategory);
 
-    // --- INICIALIZAÇÃO ---
-    clearForm();
-    loadInitialData();
+    // --- INITIALIZATION ---
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (token) {
+        loadInitialData();
+    } else {
+        window.location.href = 'login.html';
+    }
 });
 </script>
 </body>

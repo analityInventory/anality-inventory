@@ -149,8 +149,11 @@
 
             const response = await fetch(url, { ...options, headers });
             if (response.status === 401) {
-                localStorage.removeItem('accessToken');
+                logoutButton.addEventListener('click', () => {
+                localStorage.removeItem('authToken'); // <-- Correcto
+                sessionStorage.removeItem('authToken'); // Añadir por seguridad
                 window.location.href = 'login.html';
+             });
                 throw new Error('Sesión expirada o no válida. Por favor, inicie sesión de nuevo.');
             }
             return response;

@@ -155,19 +155,19 @@ function initializeAppLogic(autocomplete) {
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
     
     // ===================================================================
-    // ESTRATEGIA DE PRECIOS DINÁMICOS PARA COMPETIR
-    // ¡Ajusta estos valores para maximizar tu competitividad!
+    // ESTRATEGIA DE PRECIOS PARA MOTO-ENTREGA
+    // Tarifas más bajas para competir directamente con apps.
     // ===================================================================
-    const STORE_LOCATION = 'Av. Djalma Batista, 3578 - Flores, Manaus - AM, 69050-010'; // Dirección de tu tienda
-    const DELIVERY_BASE_FEE = 5.0;      // Tarifa de partida: R$5.00
-    const DELIVERY_FEE_PER_KM = 2.00;   // Custo por quilômetro: R$2.00
-    const DELIVERY_MINIMUM_FEE = 8.00;  // Tarifa mínima para qualquer entrega: R$8.00
-    const DELIVERY_MAXIMUM_FEE = 35.00; // Tarifa máxima (para evitar valores absurdos): R$35.00
+    const STORE_LOCATION = 'R. Garça Azul, 193 - São José Operário, Manaus - AM, 69086-692'; // Dirección de tu tienda
+    const DELIVERY_BASE_FEE = 4.0;      // Tarifa de partida: R$4.00
+    const DELIVERY_FEE_PER_KM = 1.50;   // Custo por quilômetro: R$1.50
+    const DELIVERY_MINIMUM_FEE = 7.00;  // Tarifa mínima para qualquer entrega: R$7.00
+    const DELIVERY_MAXIMUM_FEE = 30.00; // Tarifa máxima (para evitar valores absurdos): R$30.00
 
     // Modificadores de Hora Pico
-    const PEAK_HOUR_SURCHARGE = 4.00;   // Recargo adicional en horas pico: R$4.00
+    const PEAK_HOUR_SURCHARGE = 3.00;   // Recargo adicional en horas pico: R$3.00
     // Descuentos en Horas de Baja Demanda
-    const OFF_PEAK_DISCOUNT_PERCENT = 0.15; // 15% de descuento
+    const OFF_PEAK_DISCOUNT_PERCENT = 0.20; // 20% de descuento
 
 
     let allProducts = [], cart = [];

@@ -69,7 +69,11 @@
                         <h3 class="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-3">Dados do Cliente</h3>
                         <div class="space-y-4">
                             <input id="customer-name" type="text" placeholder="Nome do Cliente *" class="form-input">
-                            <input id="customer-address" type="text" placeholder="Endereço (para entrega)" class="form-input">
+                            <!-- Contenedor para el input de dirección y el botón de limpiar -->
+                            <div class="relative w-full">
+                                <input id="customer-address" type="text" placeholder="Endereço (para entrega)" class="form-input pr-10">
+                                <button id="clear-address-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-2xl font-bold" title="Limpar endereço">&times;</button>
+                            </div>
                             <input id="customer-phone" type="tel" placeholder="Telefone" class="form-input">
                         </div>
                         <div id="map-container" class="mt-4 hidden">
@@ -130,32 +134,25 @@
 function initAutocomplete() {
     const addressInput = document.getElementById('customer-address');
     
-    // ===================================================================
-    // LÍMITE DE BÚSQUEDA PARA MANAUS
-    // ===================================================================
-    const MANAUS_BOUNDS = {
-        north: -2.98,
-        south: -3.20,
-        west: -60.10,
-        east: -59.88,
-    };
-
     const options = {
         componentRestrictions: { country: "br" },
-        fields: ["formatted_address", "geometry"],
+        fields: ["address_components", "formatted_address", "geometry"],
         types: ["address"],
-        bounds: MANAUS_BOUNDS, // Prioriza resultados dentro de estos límites
-        strictBounds: false, // Permite buscar fuera de los límites si es necesario
     };
     
     const autocomplete = new google.maps.places.Autocomplete(addressInput, options);
 
     autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
-        if (place && place.geometry) {
-            if (document.getElementById('delivery-type').value === 'delivery') {
-                calculateAndShowRoute(place);
-            }
+        
+        if (!place.geometry || !isAddressInManaus(place)) {
+            alert('Por favor, selecione um endereço válido em Manaus.');
+            addressInput.value = ''; // Limpiar el campo si la dirección no es válida
+            return;
+        }
+
+        if (document.getElementById('delivery-type').value === 'delivery') {
+            calculateAndShowRoute(place);
         }
     });
 
@@ -164,19 +161,10 @@ function initAutocomplete() {
 
 function initializeAppLogic(autocomplete) {
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
-    
-    // ===================================================================
-    // NUEVA DIRECCIÓN DE LA TIENDA
-    // ===================================================================
     const STORE_LOCATION = 'R. Garça Azul, 193 - São José Operário, Manaus - AM, 69086-692';
-
-    // ===================================================================
-    // NUEVA ESTRATEGIA DE PRECIOS POR TRAMOS (MÁS COMPETITIVA)
-    // ===================================================================
-    const DELIVERY_BASE_FEE = 3.00;      // Tarifa de partida
-    const DELIVERY_MINIMUM_FEE = 8.00;  // Tarifa mínima
-    const PEAK_HOUR_SURCHARGE = 3.00;   // Recargo de hora pico
-
+    const DELIVERY_BASE_FEE = 3.00;
+    const DELIVERY_MINIMUM_FEE = 8.00;
+    const PEAK_HOUR_SURCHARGE = 3.00;
 
     let allProducts = [], cart = [];
     let map, directionsService, directionsRenderer, geocoder;
@@ -194,6 +182,7 @@ function initializeAppLogic(autocomplete) {
     const deliveryTypeEl = document.getElementById('delivery-type');
     const mapContainer = document.getElementById('map-container');
     const addressInput = document.getElementById('customer-address');
+    const clearAddressBtn = document.getElementById('clear-address-btn');
     const viewProducts = document.getElementById('view-products');
     const viewCheckout = document.getElementById('view-checkout');
     const checkoutViewBtn = document.getElementById('checkout-view-btn');
@@ -211,21 +200,28 @@ function initializeAppLogic(autocomplete) {
         directionsRenderer.setMap(map);
     }
 
+    // ===================================================================
+    // FUNCIÓN DE VALIDACIÓN PARA MANAUS
+    // ===================================================================
+    function isAddressInManaus(place) {
+        if (!place.address_components) return false;
+        return place.address_components.some(component => 
+            component.long_name === 'Manaus' && 
+            component.types.includes('administrative_area_level_2')
+        );
+    }
+
     function getDynamicFeeModifier() {
         const now = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Manaus"}));
         const day = now.getDay();
         const hour = now.getHours();
 
-        if (day >= 1 && day <= 5 && hour >= 11 && hour < 14) {
-            return { type: 'surcharge', value: PEAK_HOUR_SURCHARGE, message: 'Adicional de pico' };
-        }
-        if (hour >= 18 && hour < 21) {
+        if ((day >= 1 && day <= 5 && hour >= 11 && hour < 14) || (hour >= 18 && hour < 21)) {
             return { type: 'surcharge', value: PEAK_HOUR_SURCHARGE, message: 'Adicional de pico' };
         }
         
         return { type: 'none', value: 0, message: '' };
     }
-
 
     function calculateAndShowRoute(destinationPlace) {
         if (!destinationPlace || !destinationPlace.geometry) return;
@@ -243,16 +239,13 @@ function initializeAppLogic(autocomplete) {
                 const route = result.routes[0].legs[0];
                 const distanceInKm = route.distance.value / 1000;
                 
-                // ===================================================================
-                // LÓGICA DE PRECIOS POR TRAMOS
-                // ===================================================================
                 let kmCost = 0;
                 if (distanceInKm <= 5) {
-                    kmCost = distanceInKm * 2.00; // R$2.00/km para los primeros 5km
+                    kmCost = distanceInKm * 2.00;
                 } else if (distanceInKm <= 15) {
-                    kmCost = (5 * 2.00) + ((distanceInKm - 5) * 1.20); // Tarifa del primer tramo + R$1.20/km para el resto
+                    kmCost = (5 * 2.00) + ((distanceInKm - 5) * 1.20);
                 } else {
-                    kmCost = (5 * 2.00) + (10 * 1.20) + ((distanceInKm - 15) * 0.70); // Tarifa de los dos primeros tramos + R$0.90/km para el resto
+                    kmCost = (5 * 2.00) + (10 * 1.20) + ((distanceInKm - 15) * 0.90);
                 }
 
                 let fee = DELIVERY_BASE_FEE + kmCost;
@@ -286,13 +279,29 @@ function initializeAppLogic(autocomplete) {
 
         geocoder.geocode({ 'address': addressText, componentRestrictions: { country: 'br' } }, (results, status) => {
             if (status === 'OK' && results[0]) {
+                if (!isAddressInManaus(results[0])) {
+                    alert('O endereço digitado não foi encontrado em Manaus. Por favor, tente novamente.');
+                    addressInput.value = '';
+                    return;
+                }
                 lastGeocodedAddress = results[0].formatted_address;
                 addressInput.value = lastGeocodedAddress;
                 calculateAndShowRoute(results[0]);
             } else {
+                alert('Endereço não encontrado. Por favor, verifique e tente novamente.');
                 console.error('Geocode was not successful for the following reason: ' + status);
             }
         });
+    }
+
+    function clearAddress() {
+        addressInput.value = '';
+        deliveryFeeEl.value = '0.00';
+        updateTotals();
+        mapContainer.style.display = 'none';
+        if (directionsRenderer) directionsRenderer.set('directions', null);
+        clearAddressBtn.classList.add('hidden');
+        lastGeocodedAddress = '';
     }
 
     function getAuthHeaders() { /* ... sin cambios ... */ return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}` }; }
@@ -310,7 +319,7 @@ function initializeAppLogic(autocomplete) {
     function updateAllProductCardSelections() { /* ... sin cambios ... */ allProducts.forEach(p=>updateProductCardSelection(p.id)) }
     function updateCheckoutButtonVisibility() { /* ... sin cambios ... */ checkoutViewBtn.classList.toggle('hidden',cart.length===0) }
     async function finalizeSale() { /* ... sin cambios ... */ const c=document.getElementById('customer-name').value.trim();if(cart.length===0){alert('...');return}if(!c){alert('...');return}const d=document.getElementById('delivery-type').value;const o=d==='delivery'?'Pendiente':'Entregado';const p={customer_name:c,customer_address:document.getElementById('customer-address').value.trim(),customer_phone:document.getElementById('customer-phone').value.trim(),total:cart.reduce((s,i)=>s+(i.price*i.quantity),0)+(parseFloat(deliveryFeeEl.value)||0),payment_method:document.getElementById('payment-method').value,delivery_fee:parseFloat(deliveryFeeEl.value)||0,status:o,items:cart.map(i=>({id:i.id,quantity:i.quantity,price:i.price,costo:i.costo||0}))};const h=getAuthHeaders();if(!h)return;finalizeButton.disabled=true;finalizeButton.innerHTML='...';try{const r=await fetch(`${API_BASE_URL}/orders`,{method:'POST',headers:h,body:JSON.stringify(p)});if(!r.ok)throw new Error((await r.json()).detail||'...');const res=await r.json();alert(`Sucesso! Pedido #${res.order_id} criado.`);resetForm()}catch(e){alert(`Erro: ${e.message}`)}finally{finalizeButton.disabled=false;finalizeButton.innerHTML='...'}}
-    function resetForm() { cart = []; document.getElementById('customer-name').value = ''; addressInput.value = ''; document.getElementById('customer-phone').value = ''; deliveryFeeEl.value = '0.00'; deliveryFeeModifierEl.classList.add('hidden'); mapContainer.style.display = 'none'; if(directionsRenderer) directionsRenderer.set('directions', null); renderCart(); showProductsView(); fetchProducts(); }
+    function resetForm() { cart = []; document.getElementById('customer-name').value = ''; clearAddress(); document.getElementById('customer-phone').value = ''; renderCart(); showProductsView(); fetchProducts(); }
 
     searchInput.addEventListener('input', (e) => { const s=e.target.value.toLowerCase();const f=allProducts.filter(p=>p.name.toLowerCase().includes(s)||p.brand&&p.brand.toLowerCase().includes(s)||p.id.toString().includes(s));renderProducts(f) });
     productListContainer.addEventListener('click', (e) => { const c=e.target.closest('.product-card');if(c)handleProductClick(parseInt(c.dataset.productId)) });
@@ -325,24 +334,27 @@ function initializeAppLogic(autocomplete) {
     deliveryTypeEl.addEventListener('change', (e) => {
         if (e.target.value === 'delivery') {
             const place = autocomplete.getPlace();
-            if (place && place.geometry) {
+            if (place && place.geometry && isAddressInManaus(place)) {
                 calculateAndShowRoute(place);
             } else {
                 geocodeAddressAndCalculate();
             }
         } else {
-            deliveryFeeEl.value = '0.00';
-            deliveryFeeModifierEl.classList.add('hidden');
-            updateTotals();
-            mapContainer.style.display = 'none';
+            clearAddress();
         }
     });
 
+    addressInput.addEventListener('input', () => {
+        clearAddressBtn.classList.toggle('hidden', addressInput.value.length === 0);
+    });
+
     addressInput.addEventListener('blur', () => {
-        if (deliveryTypeEl.value === 'delivery') {
+        if (deliveryTypeEl.value === 'delivery' && addressInput.value.trim() !== lastGeocodedAddress) {
             geocodeAddressAndCalculate();
         }
     });
+
+    clearAddressBtn.addEventListener('click', clearAddress);
 
     fetchProducts();
 }

@@ -8,7 +8,8 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC17UyZO3QivEHPwYGz_2CmEkkiLy_DLlg&libraries=places&callback=initAutocomplete" async defer></script>
+    <!-- El script de Google Maps sigue siendo necesario para el cálculo de distancia -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC17UyZO3QivEHPwYGz_2CmEkkiLy_DLlg&libraries=places&callback=initMap" async defer></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
@@ -20,19 +21,12 @@
         .view-hidden-right { transform: translateX(100%); opacity: 0; pointer-events: none; }
         .form-input { width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.5rem; background-color: #334155; color: #f1f5f9; transition: all 0.2s; }
         .form-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4); }
+        .form-input[readonly] { background-color: #475569; cursor: not-allowed; }
         .spinner { border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: #fff; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .selection-badge { position: absolute; top: -10px; right: -10px; background-color: #3b82f6; color: white; font-weight: bold; font-size: 0.75rem; width: 28px; height: 28px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; border: 2px solid #0f172a; transform: scale(0); transition: transform 0.2s ease-out; }
         .product-card.selected .selection-badge { transform: scale(1); }
         .product-card.selected { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4); }
-        .pac-container {
-            background-color: #1e293b; border: 1px solid #475569; border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000 !important;
-        }
-        .pac-item { padding: 10px; font-size: 1rem; color: #e2e8f0; border-top: 1px solid #334155; cursor: pointer; }
-        .pac-item:first-child { border-top: none; }
-        .pac-item:hover { background-color: #334155; }
-        .pac-item-query { font-size: 1rem; color: #f1f5f9; }
     </style>
 </head>
 <body class="overflow-x-hidden">
@@ -66,14 +60,39 @@
                         </div>
                     </div>
                      <div class="bg-slate-800 p-5 rounded-xl shadow-lg">
-                        <h3 class="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-3">Dados do Cliente</h3>
+                        <h3 class="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-3">Dados do Cliente e Entrega</h3>
                         <div class="space-y-4">
                             <input id="customer-name" type="text" placeholder="Nome do Cliente *" class="form-input">
-                            <div class="relative w-full">
-                                <input id="customer-address" type="text" placeholder="Endereço (para entrega)" class="form-input pr-10">
-                                <button id="clear-address-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-2xl font-bold" title="Limpar endereço">&times;</button>
-                            </div>
                             <input id="customer-phone" type="tel" placeholder="Telefone" class="form-input">
+                            
+                            <!-- NUEVA ESTRUCTURA DE DIRECCIÓN POR CEP -->
+                            <div class="grid grid-cols-3 gap-4 pt-2">
+                                <div class="col-span-1">
+                                    <label for="customer-cep" class="text-sm font-medium text-slate-400">CEP *</label>
+                                    <input id="customer-cep" type="tel" placeholder="00000-000" class="form-input mt-1">
+                                </div>
+                                <div class="col-span-2">
+                                    <label for="customer-street" class="text-sm font-medium text-slate-400">Rua</label>
+                                    <input id="customer-street" type="text" class="form-input mt-1" readonly>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="col-span-1">
+                                    <label for="customer-number" class="text-sm font-medium text-slate-400">Número *</label>
+                                    <input id="customer-number" type="text" class="form-input mt-1">
+                                </div>
+                                <div class="col-span-2">
+                                    <label for="customer-complement" class="text-sm font-medium text-slate-400">Complemento</label>
+                                    <input id="customer-complement" type="text" placeholder="Apto, Bloco, etc." class="form-input mt-1">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="customer-neighborhood" class="text-sm font-medium text-slate-400">Bairro</label>
+                                <input id="customer-neighborhood" type="text" class="form-input mt-1" readonly>
+                            </div>
+                             <!-- Campos ocultos para ciudad y estado -->
+                            <input type="hidden" id="customer-city">
+                            <input type="hidden" id="customer-state">
                         </div>
                         <div id="map-container" class="mt-4 hidden">
                             <div id="map" class="h-48 w-full rounded-lg bg-slate-700 border border-slate-600"></div>
@@ -130,53 +149,24 @@
     </template>
 
 <script>
-function initAutocomplete() {
-    const addressInput = document.getElementById('customer-address');
-    
-    // ===================================================================
-    // BÚSQUEDA MEJORADA Y ESTRICTA PARA MANAUS
-    // ===================================================================
-    const MANAUS_BOUNDS = {
-        north: -2.98,
-        south: -3.20,
-        west: -60.10,
-        east: -59.88,
-    };
+// Variables globales de Google Maps
+let map, directionsService, geocoder;
 
-    const options = {
-        componentRestrictions: { country: "br" },
-        fields: ["address_components", "formatted_address", "geometry"],
-        bounds: MANAUS_BOUNDS, // Prioriza resultados dentro de estos límites
-        strictBounds: true,    // ¡IMPORTANTE! Solo muestra resultados dentro de los límites
-    };
-    
-    const autocomplete = new google.maps.places.Autocomplete(addressInput, options);
-
-    autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        
-        if (!place.geometry || !isAddressInManaus(place)) {
-            alert('Por favor, selecione um endereço válido em Manaus.');
-            addressInput.value = '';
-            return;
-        }
-
-        if (document.getElementById('delivery-type').value === 'delivery') {
-            calculateAndShowRoute(place);
-        }
-    });
-
-    initializeAppLogic(autocomplete);
+// Función de inicialización de Google Maps, llamada por el script en el <head>
+function initMap() {
+    directionsService = new google.maps.DirectionsService();
+    geocoder = new google.maps.Geocoder();
+    // Llama a la lógica principal de la aplicación una vez que Google Maps está listo
+    initializeAppLogic();
 }
 
-function initializeAppLogic(autocomplete) {
+function initializeAppLogic() {
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
     const STORE_LOCATION = 'R. Garça Azul, 193 - São José Operário, Manaus - AM, 69086-692';
 
     let allProducts = [], cart = [];
-    let map, directionsService, directionsRenderer, geocoder;
-    let lastGeocodedAddress = '';
 
+    // Selectores de elementos del DOM
     const productListContainer = document.getElementById('product-list');
     const searchInput = document.getElementById('product-search');
     const cartItemsContainer = document.getElementById('cart-items');
@@ -188,65 +178,95 @@ function initializeAppLogic(autocomplete) {
     const finalizeButton = document.getElementById('finalize-button');
     const deliveryTypeEl = document.getElementById('delivery-type');
     const mapContainer = document.getElementById('map-container');
-    const addressInput = document.getElementById('customer-address');
-    const clearAddressBtn = document.getElementById('clear-address-btn');
     const viewProducts = document.getElementById('view-products');
     const viewCheckout = document.getElementById('view-checkout');
     const checkoutViewBtn = document.getElementById('checkout-view-btn');
     const productsViewBtn = document.getElementById('products-view-btn');
 
-    function initMap() {
-        directionsService = new google.maps.DirectionsService();
-        geocoder = new google.maps.Geocoder();
-        directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
-        const mapOptions = {
-            zoom: 12, center: { lat: -3.07, lng: -59.98 }, disableDefaultUI: true,
-            styles: [ { elementType: "geometry", stylers: [{ color: "#242f3e" }] }, { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] }, { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] }, { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] }, { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] }, { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] }, { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] }, { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b3" }] }, { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#746855" }] }, { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2835" }] }, { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#f3d19c" }] }, { featureType: "transit", elementType: "geometry", stylers: [{ color: "#2f3948" }] }, { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] }, { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#515c6d" }] }, ],
-        };
-        map = new google.maps.Map(document.getElementById("map"), mapOptions);
-        directionsRenderer.setMap(map);
-    }
-
-    function isAddressInManaus(place) {
-        if (!place.address_components) return false;
-        return place.address_components.some(component => 
-            component.long_name === 'Manaus' && 
-            component.types.includes('administrative_area_level_2')
-        );
-    }
+    // Selectores de campos de dirección
+    const cepInput = document.getElementById('customer-cep');
+    const streetInput = document.getElementById('customer-street');
+    const numberInput = document.getElementById('customer-number');
+    const complementInput = document.getElementById('customer-complement');
+    const neighborhoodInput = document.getElementById('customer-neighborhood');
+    const cityInput = document.getElementById('customer-city');
+    const stateInput = document.getElementById('customer-state');
 
     // ===================================================================
-    // MODELO ACTUALIZADO: TARIFAS FIJAS POR ZONA CON MÁS TRAMOS
+    // LÓGICA DE BÚSQUEDA DE DIRECCIÓN POR CEP (ViaCEP API)
     // ===================================================================
-    function getFeeByZone(distanceInKm) {
-        if (distanceInKm <= 4) {
-            return { fee: 8.00, name: 'Zona 1', color: 'bg-green-500/20 text-green-300' };
-        } else if (distanceInKm <= 8) {
-            return { fee: 12.00, name: 'Zona 2', color: 'bg-blue-500/20 text-blue-300' };
-        } else if (distanceInKm <= 12) { // Nuevo tramo de R$15
-            return { fee: 15.00, name: 'Zona 3', color: 'bg-cyan-500/20 text-cyan-300' };
-        } else if (distanceInKm <= 18) {
-            return { fee: 18.00, name: 'Zona 4', color: 'bg-yellow-500/20 text-yellow-300' };
-        } else if (distanceInKm <= 25) { 
-            return { fee: 22.00, name: 'Zona 5', color: 'bg-orange-500/20 text-orange-300' };
-        } else { // Tramo final
-            return { fee: 28.00, name: 'Zona 6', color: 'bg-red-500/20 text-red-300' };
+    async function searchCep() {
+        const cep = cepInput.value.replace(/\D/g, ''); // Limpia el CEP
+        if (cep.length !== 8) {
+            clearAddressFields();
+            return;
+        }
+
+        // Muestra un spinner o estado de carga si lo deseas
+        streetInput.value = "Buscando...";
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            if (!response.ok) throw new Error('Falha na busca do CEP.');
+            const data = await response.json();
+
+            if (data.erro) {
+                clearAddressFields();
+                streetInput.value = "CEP não encontrado.";
+                return;
+            }
+            
+            // Rellena los campos con la información obtenida
+            streetInput.value = data.logradouro;
+            neighborhoodInput.value = data.bairro;
+            cityInput.value = data.localidade;
+            stateInput.value = data.uf;
+
+            // Mueve el foco al campo de número para agilizar
+            numberInput.focus();
+
+        } catch (error) {
+            console.error(error);
+            clearAddressFields();
+            streetInput.value = "Erro ao buscar CEP.";
         }
     }
 
-    function calculateAndShowRoute(destinationPlace) {
-        if (!destinationPlace || !destinationPlace.geometry) return;
+    function clearAddressFields() {
+        streetInput.value = '';
+        neighborhoodInput.value = '';
+        cityInput.value = '';
+        stateInput.value = '';
+    }
+
+    // ===================================================================
+    // LÓGICA DE CÁLCULO DE RUTA Y TARIFA
+    // ===================================================================
+    function getFeeByZone(distanceInKm) {
+        if (distanceInKm <= 4) return { fee: 8.00, name: 'Zona 1', color: 'bg-green-500/20 text-green-300' };
+        if (distanceInKm <= 8) return { fee: 12.00, name: 'Zona 2', color: 'bg-blue-500/20 text-blue-300' };
+        if (distanceInKm <= 15) return { fee: 18.00, name: 'Zona 3', color: 'bg-yellow-500/20 text-yellow-300' };
+        if (distanceInKm <= 20) return { fee: 22.00, name: 'Zona 4', color: 'bg-orange-500/20 text-orange-300' };
+        return { fee: 28.00, name: 'Zona 5', color: 'bg-red-500/20 text-red-300' };
+    }
+
+    async function calculateRouteFromAddress() {
+        if (deliveryTypeEl.value !== 'delivery') return;
+
+        const fullAddress = `${streetInput.value}, ${numberInput.value}, ${neighborhoodInput.value}, ${cityInput.value} - ${stateInput.value}`;
         
+        if (!streetInput.value || !numberInput.value) {
+            return; // No calcula si no hay calle o número
+        }
+
         mapContainer.style.display = 'block';
-        if (!map) initMap();
 
-        const request = { origin: STORE_LOCATION, destination: destinationPlace.geometry.location, travelMode: 'DRIVING' };
+        const request = { origin: STORE_LOCATION, destination: fullAddress, travelMode: 'DRIVING' };
 
-        directionsService.route(request, (result, status) => {
+        try {
+            const result = await directionsService.route(request);
             deliveryZoneLabelEl.classList.add('hidden');
 
-            if (status == 'OK') {
-                directionsRenderer.setDirections(result);
+            if (result.routes.length > 0) {
                 const route = result.routes[0].legs[0];
                 const distanceInKm = route.distance.value / 1000;
                 
@@ -258,65 +278,62 @@ function initializeAppLogic(autocomplete) {
                 deliveryZoneLabelEl.classList.remove('hidden');
 
                 updateTotals();
-                new google.maps.Marker({ position: route.start_location, map: map, title: 'Sua Loja' });
-                new google.maps.Marker({ position: route.end_location, map: map, title: 'Cliente' });
+                
+                // Renderiza el mapa
+                if (!map) {
+                    map = new google.maps.Map(document.getElementById("map"), { zoom: 15, center: route.start_location, disableDefaultUI: true });
+                }
+                const directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
+                directionsRenderer.setDirections(result);
+
             } else {
-                alert('Não foi possível calcular a rota. Verifique o endereço.');
-                mapContainer.style.display = 'none';
+                 throw new Error("Não foi possível encontrar a rota.");
             }
-        });
+        } catch (error) {
+            console.error('Error al calcular la ruta:', error);
+            alert('Não foi possível calcular a rota. Verifique o endereço e o número.');
+            mapContainer.style.display = 'none';
+        }
     }
     
-    function geocodeAddressAndCalculate() {
-        const addressText = addressInput.value.trim();
-        if (!addressText || addressText === lastGeocodedAddress) return;
+    // --- Lógica de la aplicación (sin cambios significativos) ---
+    function getAuthHeaders() { return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}` }; }
+    async function fetchProducts() { const h=getAuthHeaders();if(!h)return;try{const r=await fetch(`${API_BASE_URL}/products?out_of_stock=false`,{headers:h});if(!r.ok)throw new Error('...');allProducts=await r.json();renderProducts(allProducts)}catch(e){alert(e.message)}}
+    function showCheckoutView() { viewProducts.classList.add('view-hidden-left');viewCheckout.classList.remove('view-hidden-right');checkoutViewBtn.classList.add('hidden');productsViewBtn.classList.remove('hidden'); }
+    function showProductsView() { viewProducts.classList.remove('view-hidden-left');viewCheckout.classList.add('view-hidden-right');productsViewBtn.classList.add('hidden');updateCheckoutButtonVisibility(); }
+    function renderProducts(productsToRender) { productListContainer.innerHTML='';const t=document.getElementById('product-card-template');productsToRender.forEach(p=>{const c=t.content.cloneNode(true).firstElementChild;c.querySelector('h3').textContent=p.name;c.querySelector('[data-brand]').textContent=p.brand||'Sem Marca';c.querySelector('[data-price]').textContent=`R$${p.price.toFixed(2)}`;const s=c.querySelector('[data-stock]');s.textContent=`Estoque: ${p.stock}`;if(p.stock<5){s.classList.replace('bg-slate-700','bg-yellow-500/30');s.classList.replace('text-slate-300','text-yellow-300')}c.dataset.productId=p.id;productListContainer.appendChild(c)});updateAllProductCardSelections() }
+    function renderCart() { cartItemsContainer.innerHTML='';if(cart.length===0){cartItemsContainer.appendChild(cartEmptyMessage);cartEmptyMessage.hidden=false}else{cartEmptyMessage.hidden=true;const t=document.getElementById('cart-item-template');cart.forEach(i=>{const c=t.content.cloneNode(true).firstElementChild;c.querySelector('p').textContent=i.name;c.querySelector('[data-price]').textContent=`R$${i.price.toFixed(2)}`;const q=c.querySelector('input');q.value=i.quantity;q.max=i.stock;q.dataset.itemId=i.id;c.querySelector('[data-action="remove"]').dataset.itemId=i.id;cartItemsContainer.appendChild(c)})}updateTotals();updateCheckoutButtonVisibility() }
+    function handleProductClick(productId) { const p=allProducts.find(p=>p.id===productId);if(!p)return;const e=cart.find(i=>i.id===productId);if(e){if(e.quantity<p.stock){e.quantity++}else{alert('...')}}else{cart.push({...p,quantity:1})}renderCart();updateProductCardSelection(productId) }
+    function handleProductLongPress(productId) { const e=cart.find(i=>i.id===productId);if(e){cart=cart.filter(i=>i.id!==productId);renderCart();updateProductCardSelection(productId)} }
+    function updateCartItemQuantity(productId, newQuantity) { const c=cart.find(i=>i.id===productId);const p=allProducts.find(p=>p.id===productId);if(!c||!p)return;if(newQuantity<=0){removeFromCart(productId)}else if(newQuantity>p.stock){alert(`...`);c.quantity=p.stock;renderCart()}else{c.quantity=newQuantity}updateTotals();updateProductCardSelection(productId) }
+    function removeFromCart(productId) { cart=cart.filter(i=>i.id!==productId);renderCart();updateProductCardSelection(productId);if(cart.length===0){showProductsView()} }
+    function updateTotals() { const s=cart.reduce((s,i)=>s+(i.price*i.quantity),0);const d=parseFloat(deliveryFeeEl.value)||0;const g=s+d;subtotalValueEl.textContent=`R$${s.toFixed(2)}`;grandTotalValueEl.textContent=`R$${g.toFixed(2)}` }
+    function updateProductCardSelection(productId) { const c=productListContainer.querySelector(`[data-product-id='${productId}']`);if(!c)return;const i=cart.find(i=>i.id===productId);const b=c.querySelector('.selection-badge');if(i){c.classList.add('selected');b.textContent=`${i.quantity}x`}else{c.classList.remove('selected')} }
+    function updateAllProductCardSelections() { allProducts.forEach(p=>updateProductCardSelection(p.id)) }
+    function updateCheckoutButtonVisibility() { checkoutViewBtn.classList.toggle('hidden',cart.length===0) }
+    async function finalizeSale() {
+        const customerName = document.getElementById('customer-name').value.trim();
+        if (cart.length === 0) { alert('O carrinho está vazio.'); return; }
+        if (!customerName) { alert('O nome do cliente é obrigatório.'); return; }
+        const fullAddress = `${streetInput.value}, ${numberInput.value}, ${complementInput.value} - ${neighborhoodInput.value}, ${cityInput.value} - ${stateInput.value}`.replace(/, ,/g, ',');
 
-        if (!geocoder) initMap();
+        const payload = {
+            customer_name: customerName,
+            customer_address: fullAddress,
+            customer_phone: document.getElementById('customer-phone').value.trim(),
+            total: cart.reduce((s, i) => s + (i.price * i.quantity), 0) + (parseFloat(deliveryFeeEl.value) || 0),
+            payment_method: document.getElementById('payment-method').value,
+            delivery_fee: parseFloat(deliveryFeeEl.value) || 0,
+            status: deliveryTypeEl.value === 'delivery' ? 'Pendiente' : 'Entregado',
+            items: cart.map(i=>({id:i.id,quantity:i.quantity,price:i.price,costo:i.costo||0}))
+        };
+        const h=getAuthHeaders();if(!h)return;finalizeButton.disabled=true;finalizeButton.innerHTML='...';try{const r=await fetch(`${API_BASE_URL}/orders`,{method:'POST',headers:h,body:JSON.stringify(p)});if(!r.ok)throw new Error((await r.json()).detail||'...');const res=await r.json();alert(`Sucesso! Pedido #${res.order_id} criado.`);resetForm()}catch(e){alert(`Erro: ${e.message}`)}finally{finalizeButton.disabled=false;finalizeButton.innerHTML='...'}}
+    function resetForm() { cart = []; document.getElementById('customer-name').value = ''; document.getElementById('customer-phone').value = ''; cepInput.value = ''; numberInput.value = ''; complementInput.value = ''; clearAddressFields(); deliveryFeeEl.value = '0.00'; deliveryZoneLabelEl.classList.add('hidden'); mapContainer.style.display = 'none'; renderCart(); showProductsView(); fetchProducts(); }
 
-        geocoder.geocode({ 'address': addressText, componentRestrictions: { country: 'br' } }, (results, status) => {
-            if (status === 'OK' && results[0]) {
-                if (!isAddressInManaus(results[0])) {
-                    alert('O endereço digitado não foi encontrado em Manaus. Por favor, tente novamente.');
-                    addressInput.value = '';
-                    return;
-                }
-                lastGeocodedAddress = results[0].formatted_address;
-                addressInput.value = lastGeocodedAddress;
-                calculateAndShowRoute(results[0]);
-            } else {
-                alert('Endereço não encontrado. Por favor, verifique e tente novamente.');
-                console.error('Geocode was not successful for the following reason: ' + status);
-            }
-        });
-    }
-
-    function clearAddress() {
-        addressInput.value = '';
-        deliveryFeeEl.value = '0.00';
-        deliveryZoneLabelEl.classList.add('hidden');
-        updateTotals();
-        mapContainer.style.display = 'none';
-        if (directionsRenderer) directionsRenderer.set('directions', null);
-        clearAddressBtn.classList.add('hidden');
-        lastGeocodedAddress = '';
-    }
-
-    function getAuthHeaders() { /* ... sin cambios ... */ return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}` }; }
-    async function fetchProducts() { /* ... sin cambios ... */ const h=getAuthHeaders();if(!h)return;try{const r=await fetch(`${API_BASE_URL}/products?out_of_stock=false`,{headers:h});if(!r.ok)throw new Error('...');allProducts=await r.json();renderProducts(allProducts)}catch(e){alert(e.message)}}
-    function showCheckoutView() { /* ... sin cambios ... */ viewProducts.classList.add('view-hidden-left');viewCheckout.classList.remove('view-hidden-right');checkoutViewBtn.classList.add('hidden');productsViewBtn.classList.remove('hidden'); }
-    function showProductsView() { /* ... sin cambios ... */ viewProducts.classList.remove('view-hidden-left');viewCheckout.classList.add('view-hidden-right');productsViewBtn.classList.add('hidden');updateCheckoutButtonVisibility(); }
-    function renderProducts(productsToRender) { /* ... sin cambios ... */ productListContainer.innerHTML='';const t=document.getElementById('product-card-template');productsToRender.forEach(p=>{const c=t.content.cloneNode(true).firstElementChild;c.querySelector('h3').textContent=p.name;c.querySelector('[data-brand]').textContent=p.brand||'Sem Marca';c.querySelector('[data-price]').textContent=`R$${p.price.toFixed(2)}`;const s=c.querySelector('[data-stock]');s.textContent=`Estoque: ${p.stock}`;if(p.stock<5){s.classList.replace('bg-slate-700','bg-yellow-500/30');s.classList.replace('text-slate-300','text-yellow-300')}c.dataset.productId=p.id;productListContainer.appendChild(c)});updateAllProductCardSelections() }
-    function renderCart() { /* ... sin cambios ... */ cartItemsContainer.innerHTML='';if(cart.length===0){cartItemsContainer.appendChild(cartEmptyMessage);cartEmptyMessage.hidden=false}else{cartEmptyMessage.hidden=true;const t=document.getElementById('cart-item-template');cart.forEach(i=>{const c=t.content.cloneNode(true).firstElementChild;c.querySelector('p').textContent=i.name;c.querySelector('[data-price]').textContent=`R$${i.price.toFixed(2)}`;const q=c.querySelector('input');q.value=i.quantity;q.max=i.stock;q.dataset.itemId=i.id;c.querySelector('[data-action="remove"]').dataset.itemId=i.id;cartItemsContainer.appendChild(c)})}updateTotals();updateCheckoutButtonVisibility() }
-    function handleProductClick(productId) { /* ... sin cambios ... */ const p=allProducts.find(p=>p.id===productId);if(!p)return;const e=cart.find(i=>i.id===productId);if(e){if(e.quantity<p.stock){e.quantity++}else{alert('...')}}else{cart.push({...p,quantity:1})}renderCart();updateProductCardSelection(productId) }
-    function handleProductLongPress(productId) { /* ... sin cambios ... */ const e=cart.find(i=>i.id===productId);if(e){cart=cart.filter(i=>i.id!==productId);renderCart();updateProductCardSelection(productId)} }
-    function updateCartItemQuantity(productId, newQuantity) { /* ... sin cambios ... */ const c=cart.find(i=>i.id===productId);const p=allProducts.find(p=>p.id===productId);if(!c||!p)return;if(newQuantity<=0){removeFromCart(productId)}else if(newQuantity>p.stock){alert(`...`);c.quantity=p.stock;renderCart()}else{c.quantity=newQuantity}updateTotals();updateProductCardSelection(productId) }
-    function removeFromCart(productId) { /* ... sin cambios ... */ cart=cart.filter(i=>i.id!==productId);renderCart();updateProductCardSelection(productId);if(cart.length===0){showProductsView()} }
-    function updateTotals() { /* ... sin cambios ... */ const s=cart.reduce((s,i)=>s+(i.price*i.quantity),0);const d=parseFloat(deliveryFeeEl.value)||0;const g=s+d;subtotalValueEl.textContent=`R$${s.toFixed(2)}`;grandTotalValueEl.textContent=`R$${g.toFixed(2)}` }
-    function updateProductCardSelection(productId) { /* ... sin cambios ... */ const c=productListContainer.querySelector(`[data-product-id='${productId}']`);if(!c)return;const i=cart.find(i=>i.id===productId);const b=c.querySelector('.selection-badge');if(i){c.classList.add('selected');b.textContent=`${i.quantity}x`}else{c.classList.remove('selected')} }
-    function updateAllProductCardSelections() { /* ... sin cambios ... */ allProducts.forEach(p=>updateProductCardSelection(p.id)) }
-    function updateCheckoutButtonVisibility() { /* ... sin cambios ... */ checkoutViewBtn.classList.toggle('hidden',cart.length===0) }
-    async function finalizeSale() { /* ... sin cambios ... */ const c=document.getElementById('customer-name').value.trim();if(cart.length===0){alert('...');return}if(!c){alert('...');return}const d=document.getElementById('delivery-type').value;const o=d==='delivery'?'Pendiente':'Entregado';const p={customer_name:c,customer_address:document.getElementById('customer-address').value.trim(),customer_phone:document.getElementById('customer-phone').value.trim(),total:cart.reduce((s,i)=>s+(i.price*i.quantity),0)+(parseFloat(deliveryFeeEl.value)||0),payment_method:document.getElementById('payment-method').value,delivery_fee:parseFloat(deliveryFeeEl.value)||0,status:o,items:cart.map(i=>({id:i.id,quantity:i.quantity,price:i.price,costo:i.costo||0}))};const h=getAuthHeaders();if(!h)return;finalizeButton.disabled=true;finalizeButton.innerHTML='...';try{const r=await fetch(`${API_BASE_URL}/orders`,{method:'POST',headers:h,body:JSON.stringify(p)});if(!r.ok)throw new Error((await r.json()).detail||'...');const res=await r.json();alert(`Sucesso! Pedido #${res.order_id} criado.`);resetForm()}catch(e){alert(`Erro: ${e.message}`)}finally{finalizeButton.disabled=false;finalizeButton.innerHTML='...'}}
-    function resetForm() { cart = []; document.getElementById('customer-name').value = ''; clearAddress(); document.getElementById('customer-phone').value = ''; renderCart(); showProductsView(); fetchProducts(); }
+    // Event Listeners
+    cepInput.addEventListener('blur', searchCep);
+    numberInput.addEventListener('blur', calculateRouteFromAddress);
+    deliveryTypeEl.addEventListener('change', calculateRouteFromAddress);
 
     searchInput.addEventListener('input', (e) => { const s=e.target.value.toLowerCase();const f=allProducts.filter(p=>p.name.toLowerCase().includes(s)||p.brand&&p.brand.toLowerCase().includes(s)||p.id.toString().includes(s));renderProducts(f) });
     productListContainer.addEventListener('click', (e) => { const c=e.target.closest('.product-card');if(c)handleProductClick(parseInt(c.dataset.productId)) });
@@ -328,31 +345,7 @@ function initializeAppLogic(autocomplete) {
     checkoutViewBtn.addEventListener('click', showCheckoutView);
     productsViewBtn.addEventListener('click', showProductsView);
 
-    deliveryTypeEl.addEventListener('change', (e) => {
-        if (e.target.value === 'delivery') {
-            const place = autocomplete.getPlace();
-            if (place && place.geometry && isAddressInManaus(place)) {
-                calculateAndShowRoute(place);
-            } else {
-                geocodeAddressAndCalculate();
-            }
-        } else {
-            clearAddress();
-        }
-    });
-
-    addressInput.addEventListener('input', () => {
-        clearAddressBtn.classList.toggle('hidden', addressInput.value.length === 0);
-    });
-
-    addressInput.addEventListener('blur', () => {
-        if (deliveryTypeEl.value === 'delivery' && addressInput.value.trim() !== lastGeocodedAddress) {
-            geocodeAddressAndCalculate();
-        }
-    });
-
-    clearAddressBtn.addEventListener('click', clearAddress);
-
+    // Inicialización
     fetchProducts();
 }
 </script>

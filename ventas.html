@@ -69,7 +69,6 @@
                         <h3 class="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-3">Dados do Cliente</h3>
                         <div class="space-y-4">
                             <input id="customer-name" type="text" placeholder="Nome do Cliente *" class="form-input">
-                            <!-- Contenedor para el input de dirección y el botón de limpiar -->
                             <div class="relative w-full">
                                 <input id="customer-address" type="text" placeholder="Endereço (para entrega)" class="form-input pr-10">
                                 <button id="clear-address-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-2xl font-bold" title="Limpar endereço">&times;</button>
@@ -88,7 +87,7 @@
                         <div class="flex justify-between items-center">
                             <span class="text-slate-400">Entrega:</span>
                             <div class="flex items-center gap-2">
-                                <span id="delivery-fee-modifier" class="text-xs font-semibold hidden"></span>
+                                <span id="delivery-zone-label" class="text-xs font-semibold hidden rounded-full px-2 py-0.5"></span>
                                 <input id="delivery-fee" type="number" value="0.00" min="0" step="0.50" class="w-28 font-semibold text-right form-input py-1">
                             </div>
                         </div>
@@ -147,7 +146,7 @@ function initAutocomplete() {
         
         if (!place.geometry || !isAddressInManaus(place)) {
             alert('Por favor, selecione um endereço válido em Manaus.');
-            addressInput.value = ''; // Limpiar el campo si la dirección no es válida
+            addressInput.value = '';
             return;
         }
 
@@ -162,9 +161,6 @@ function initAutocomplete() {
 function initializeAppLogic(autocomplete) {
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
     const STORE_LOCATION = 'R. Garça Azul, 193 - São José Operário, Manaus - AM, 69086-692';
-    const DELIVERY_BASE_FEE = 3.00;
-    const DELIVERY_MINIMUM_FEE = 8.00;
-    const PEAK_HOUR_SURCHARGE = 3.00;
 
     let allProducts = [], cart = [];
     let map, directionsService, directionsRenderer, geocoder;
@@ -176,7 +172,7 @@ function initializeAppLogic(autocomplete) {
     const cartEmptyMessage = document.getElementById('cart-empty-message');
     const subtotalValueEl = document.getElementById('subtotal-value');
     const deliveryFeeEl = document.getElementById('delivery-fee');
-    const deliveryFeeModifierEl = document.getElementById('delivery-fee-modifier');
+    const deliveryZoneLabelEl = document.getElementById('delivery-zone-label');
     const grandTotalValueEl = document.getElementById('grand-total-value');
     const finalizeButton = document.getElementById('finalize-button');
     const deliveryTypeEl = document.getElementById('delivery-type');
@@ -200,9 +196,6 @@ function initializeAppLogic(autocomplete) {
         directionsRenderer.setMap(map);
     }
 
-    // ===================================================================
-    // FUNCIÓN DE VALIDACIÓN PARA MANAUS
-    // ===================================================================
     function isAddressInManaus(place) {
         if (!place.address_components) return false;
         return place.address_components.some(component => 
@@ -211,16 +204,21 @@ function initializeAppLogic(autocomplete) {
         );
     }
 
-    function getDynamicFeeModifier() {
-        const now = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Manaus"}));
-        const day = now.getDay();
-        const hour = now.getHours();
-
-        if ((day >= 1 && day <= 5 && hour >= 11 && hour < 14) || (hour >= 18 && hour < 21)) {
-            return { type: 'surcharge', value: PEAK_HOUR_SURCHARGE, message: 'Adicional de pico' };
+    // ===================================================================
+    // MODELO ACTUALIZADO: TARIFAS FIJAS POR ZONA CON MÁS TRAMOS
+    // ===================================================================
+    function getFeeByZone(distanceInKm) {
+        if (distanceInKm <= 4) {
+            return { fee: 8.00, name: 'Zona 1', color: 'bg-green-500/20 text-green-300' };
+        } else if (distanceInKm <= 8) {
+            return { fee: 12.00, name: 'Zona 2', color: 'bg-blue-500/20 text-blue-300' };
+        } else if (distanceInKm <= 15) {
+            return { fee: 18.00, name: 'Zona 3', color: 'bg-yellow-500/20 text-yellow-300' };
+        } else if (distanceInKm <= 20) { // Nuevo tramo intermedio
+            return { fee: 22.00, name: 'Zona 4', color: 'bg-orange-500/20 text-orange-300' };
+        } else { // Tramo final
+            return { fee: 28.00, name: 'Zona 5', color: 'bg-red-500/20 text-red-300' };
         }
-        
-        return { type: 'none', value: 0, message: '' };
     }
 
     function calculateAndShowRoute(destinationPlace) {
@@ -232,35 +230,20 @@ function initializeAppLogic(autocomplete) {
         const request = { origin: STORE_LOCATION, destination: destinationPlace.geometry.location, travelMode: 'DRIVING' };
 
         directionsService.route(request, (result, status) => {
-            deliveryFeeModifierEl.classList.add('hidden');
+            deliveryZoneLabelEl.classList.add('hidden');
 
             if (status == 'OK') {
                 directionsRenderer.setDirections(result);
                 const route = result.routes[0].legs[0];
                 const distanceInKm = route.distance.value / 1000;
                 
-                let kmCost = 0;
-                if (distanceInKm <= 5) {
-                    kmCost = distanceInKm * 2.00;
-                } else if (distanceInKm <= 15) {
-                    kmCost = (5 * 2.00) + ((distanceInKm - 5) * 1.20);
-                } else {
-                    kmCost = (5 * 2.00) + (10 * 1.20) + ((distanceInKm - 15) * 0.90);
-                }
-
-                let fee = DELIVERY_BASE_FEE + kmCost;
+                const zoneInfo = getFeeByZone(distanceInKm);
                 
-                const modifier = getDynamicFeeModifier();
-                if (modifier.type === 'surcharge') {
-                    fee += modifier.value;
-                    deliveryFeeModifierEl.textContent = modifier.message;
-                    deliveryFeeModifierEl.className = 'text-xs font-semibold text-red-400';
-                    deliveryFeeModifierEl.classList.remove('hidden');
-                }
+                deliveryFeeEl.value = zoneInfo.fee.toFixed(2);
+                deliveryZoneLabelEl.textContent = zoneInfo.name;
+                deliveryZoneLabelEl.className = `text-xs font-semibold rounded-full px-2 py-0.5 ${zoneInfo.color}`;
+                deliveryZoneLabelEl.classList.remove('hidden');
 
-                if (fee < DELIVERY_MINIMUM_FEE) fee = DELIVERY_MINIMUM_FEE;
-                
-                deliveryFeeEl.value = fee.toFixed(2);
                 updateTotals();
                 new google.maps.Marker({ position: route.start_location, map: map, title: 'Sua Loja' });
                 new google.maps.Marker({ position: route.end_location, map: map, title: 'Cliente' });
@@ -297,6 +280,7 @@ function initializeAppLogic(autocomplete) {
     function clearAddress() {
         addressInput.value = '';
         deliveryFeeEl.value = '0.00';
+        deliveryZoneLabelEl.classList.add('hidden');
         updateTotals();
         mapContainer.style.display = 'none';
         if (directionsRenderer) directionsRenderer.set('directions', null);

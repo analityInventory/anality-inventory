@@ -183,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     if (token) {
-        // Podríamos verificar el rol aquí, pero es más seguro que el backend lo haga.
         window.location.href = 'index.html';
         return;
     }
@@ -204,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // El campo 'username' ahora se usa para el email
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         const rememberMe = rememberMeCheckbox.checked;
@@ -216,7 +214,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loginButton.disabled = true;
 
         try {
-            // El endpoint ahora es /users/token
+            // ===================================================================
+            // CORRECCIÓN: Se añade el prefijo /users/ a la URL del token
+            // ===================================================================
             const response = await fetch(`${API_BASE_URL}/users/token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -226,8 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const data = await response.json();
             
-                // La lógica de redirección ya no es necesaria aquí,
-                // el backend ya ha validado que es un admin.
                 if (rememberMe) {
                    localStorage.setItem('authToken', data.access_token);
                 } else {
@@ -250,9 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
-
-</body>
-</html>
 
 </body>
 </html>

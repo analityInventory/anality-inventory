@@ -47,7 +47,6 @@
     </header>
 
     <main class="relative">
-        <!-- Vista 1: Selección de Productos -->
         <div id="view-products" class="view">
             <div class="max-w-7xl mx-auto p-4 lg:p-6">
                 <div class="sticky top-[88px] bg-slate-900/80 backdrop-blur-sm py-4 z-10">
@@ -57,7 +56,6 @@
             </div>
         </div>
 
-        <!-- Vista 2: Carrito y Finalización -->
         <div id="view-checkout" class="view view-hidden-right">
             <div class="max-w-7xl mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="space-y-6">
@@ -131,10 +129,23 @@
 <script>
 function initAutocomplete() {
     const addressInput = document.getElementById('customer-address');
+    
+    // ===================================================================
+    // LÍMITE DE BÚSQUEDA PARA MANAUS
+    // ===================================================================
+    const MANAUS_BOUNDS = {
+        north: -2.98,
+        south: -3.20,
+        west: -60.10,
+        east: -59.88,
+    };
+
     const options = {
         componentRestrictions: { country: "br" },
         fields: ["formatted_address", "geometry"],
         types: ["address"],
+        bounds: MANAUS_BOUNDS, // Prioriza resultados dentro de estos límites
+        strictBounds: false, // Permite buscar fuera de los límites si es necesario
     };
     
     const autocomplete = new google.maps.places.Autocomplete(addressInput, options);
@@ -155,19 +166,16 @@ function initializeAppLogic(autocomplete) {
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
     
     // ===================================================================
-    // ESTRATEGIA DE PRECIOS PARA MOTO-ENTREGA
-    // Tarifas más bajas para competir directamente con apps.
+    // NUEVA DIRECCIÓN DE LA TIENDA
     // ===================================================================
-    const STORE_LOCATION = 'R. Garça Azul, 193 - São José Operário, Manaus - AM, 69086-692'; // Dirección de tu tienda
-    const DELIVERY_BASE_FEE = 4.0;      // Tarifa de partida: R$4.00
-    const DELIVERY_FEE_PER_KM = 1.50;   // Custo por quilômetro: R$1.50
-    const DELIVERY_MINIMUM_FEE = 7.00;  // Tarifa mínima para qualquer entrega: R$7.00
-    const DELIVERY_MAXIMUM_FEE = 30.00; // Tarifa máxima (para evitar valores absurdos): R$30.00
+    const STORE_LOCATION = 'R. Garça Azul, 193 - São José Operário, Manaus - AM, 69086-692';
 
-    // Modificadores de Hora Pico
-    const PEAK_HOUR_SURCHARGE = 3.00;   // Recargo adicional en horas pico: R$3.00
-    // Descuentos en Horas de Baja Demanda
-    const OFF_PEAK_DISCOUNT_PERCENT = 0.20; // 20% de descuento
+    // ===================================================================
+    // NUEVA ESTRATEGIA DE PRECIOS POR TRAMOS (MÁS COMPETITIVA)
+    // ===================================================================
+    const DELIVERY_BASE_FEE = 3.00;      // Tarifa de partida
+    const DELIVERY_MINIMUM_FEE = 8.00;  // Tarifa mínima
+    const PEAK_HOUR_SURCHARGE = 3.00;   // Recargo de hora pico
 
 
     let allProducts = [], cart = [];
@@ -196,36 +204,26 @@ function initializeAppLogic(autocomplete) {
         geocoder = new google.maps.Geocoder();
         directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
         const mapOptions = {
-            zoom: 15, center: { lat: -3.09, lng: -60.02 }, disableDefaultUI: true,
+            zoom: 12, center: { lat: -3.07, lng: -59.98 }, disableDefaultUI: true,
             styles: [ { elementType: "geometry", stylers: [{ color: "#242f3e" }] }, { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] }, { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] }, { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] }, { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] }, { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] }, { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] }, { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b3" }] }, { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#746855" }] }, { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2835" }] }, { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#f3d19c" }] }, { featureType: "transit", elementType: "geometry", stylers: [{ color: "#2f3948" }] }, { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] }, { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#515c6d" }] }, ],
         };
         map = new google.maps.Map(document.getElementById("map"), mapOptions);
         directionsRenderer.setMap(map);
     }
 
-    // ===================================================================
-    // FUNCIÓN CLAVE: Obtiene el modificador de precio según la hora.
-    // ===================================================================
     function getDynamicFeeModifier() {
-        // Obtiene la hora actual en la zona horaria de Manaus (UTC-4)
         const now = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Manaus"}));
-        const day = now.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
+        const day = now.getDay();
         const hour = now.getHours();
 
-        // Horario de almuerzo (Lunes a Viernes)
         if (day >= 1 && day <= 5 && hour >= 11 && hour < 14) {
             return { type: 'surcharge', value: PEAK_HOUR_SURCHARGE, message: 'Adicional de pico' };
         }
-        // Horario de cena (Todos los días)
         if (hour >= 18 && hour < 21) {
             return { type: 'surcharge', value: PEAK_HOUR_SURCHARGE, message: 'Adicional de pico' };
         }
-        // Horario de descuento (Lunes a Viernes)
-        if (day >= 1 && day <= 5 && hour >= 14 && hour < 17) {
-            return { type: 'discount', value: OFF_PEAK_DISCOUNT_PERCENT, message: 'Desconto!' };
-        }
         
-        return { type: 'none', value: 0, message: '' }; // Sin modificador
+        return { type: 'none', value: 0, message: '' };
     }
 
 
@@ -238,14 +236,26 @@ function initializeAppLogic(autocomplete) {
         const request = { origin: STORE_LOCATION, destination: destinationPlace.geometry.location, travelMode: 'DRIVING' };
 
         directionsService.route(request, (result, status) => {
-            deliveryFeeModifierEl.classList.add('hidden'); // Ocultar por defecto
+            deliveryFeeModifierEl.classList.add('hidden');
 
             if (status == 'OK') {
                 directionsRenderer.setDirections(result);
                 const route = result.routes[0].legs[0];
                 const distanceInKm = route.distance.value / 1000;
                 
-                let fee = DELIVERY_BASE_FEE + (distanceInKm * DELIVERY_FEE_PER_KM);
+                // ===================================================================
+                // LÓGICA DE PRECIOS POR TRAMOS
+                // ===================================================================
+                let kmCost = 0;
+                if (distanceInKm <= 5) {
+                    kmCost = distanceInKm * 2.00; // R$2.00/km para los primeros 5km
+                } else if (distanceInKm <= 15) {
+                    kmCost = (5 * 2.00) + ((distanceInKm - 5) * 1.20); // Tarifa del primer tramo + R$1.20/km para el resto
+                } else {
+                    kmCost = (5 * 2.00) + (10 * 1.20) + ((distanceInKm - 15) * 0.90); // Tarifa de los dos primeros tramos + R$0.90/km para el resto
+                }
+
+                let fee = DELIVERY_BASE_FEE + kmCost;
                 
                 const modifier = getDynamicFeeModifier();
                 if (modifier.type === 'surcharge') {
@@ -253,16 +263,10 @@ function initializeAppLogic(autocomplete) {
                     deliveryFeeModifierEl.textContent = modifier.message;
                     deliveryFeeModifierEl.className = 'text-xs font-semibold text-red-400';
                     deliveryFeeModifierEl.classList.remove('hidden');
-                } else if (modifier.type === 'discount') {
-                    fee -= fee * modifier.value;
-                    deliveryFeeModifierEl.textContent = modifier.message;
-                    deliveryFeeModifierEl.className = 'text-xs font-semibold text-green-400';
-                    deliveryFeeModifierEl.classList.remove('hidden');
                 }
 
                 if (fee < DELIVERY_MINIMUM_FEE) fee = DELIVERY_MINIMUM_FEE;
-                if (fee > DELIVERY_MAXIMUM_FEE) fee = DELIVERY_MAXIMUM_FEE;
-
+                
                 deliveryFeeEl.value = fee.toFixed(2);
                 updateTotals();
                 new google.maps.Marker({ position: route.start_location, map: map, title: 'Sua Loja' });

@@ -84,7 +84,8 @@
         </div>
 
         <!-- Dashboard de Gráficos -->
-        <div class="space-y-6">
+        <!-- **** CLASE CORREGIDA AÑADIDA AQUÍ **** -->
+        <div class="space-y-6 dashboard-container">
             <!-- KPIs Principales -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="kpi-card">
@@ -140,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateToInput = document.getElementById('date-to');
     const generateBtn = document.getElementById('generate-report-btn');
     const noDataMessage = document.getElementById('no-data-message');
+    const dashboardContainer = document.querySelector('.dashboard-container');
     
     // KPI Selectors
     const kpiTotalSales = document.getElementById('kpi-total-sales');
@@ -201,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const hasData = Object.keys(financialData).length > 0 || topProductsData.length > 0 || expensesByCategoryData.length > 0;
             noDataMessage.classList.toggle('hidden', hasData);
-            document.querySelector('.dashboard-container')?.classList.toggle('hidden', !hasData);
+            dashboardContainer.classList.toggle('hidden', !hasData);
 
             if(hasData) {
                 updateKPIs(financialData);
@@ -212,11 +214,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             alert(`Erro ao gerar relatório: ${error.message}`);
+            dashboardContainer.classList.add('hidden');
             noDataMessage.classList.remove('hidden');
         }
     }
     
+    // --- FUNCIÓN CORREGIDA ---
     function updateKPIs(data) {
+        if (!data || Object.keys(data).length === 0) {
+            kpiTotalSales.textContent = 'R$0.00';
+            kpiTotalExpenses.textContent = 'R$0.00';
+            kpiNetProfit.textContent = 'R$0.00';
+            return;
+        }
+
         const totalSales = Object.values(data).reduce((sum, month) => sum + month.ventas, 0);
         const totalExpenses = Object.values(data).reduce((sum, month) => sum + month.gastos, 0);
         const totalInvestments = Object.values(data).reduce((sum, month) => sum + month.inversiones, 0);

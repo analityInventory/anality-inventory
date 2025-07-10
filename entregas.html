@@ -43,7 +43,6 @@
             </div>
         </header>
         
-        <!-- NUEVO: Contenedor para el botón de optimización -->
         <div id="optimization-controls" class="max-w-4xl mx-auto p-4 hidden">
             <button id="optimize-route-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
                 <i class="ph ph-path text-xl"></i>
@@ -89,7 +88,6 @@
             <div class="p-5">
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-sm font-semibold bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full">Pedido ID: <span class="font-bold" data-id></span></span>
-                    <!-- NUEVO: Checkbox para selección -->
                     <div class="flex items-center gap-3">
                         <div class="loader-card hidden w-6 h-6 border-4 border-t-4 border-gray-600 rounded-full animate-spin"></div>
                         <label class="selection-container hidden items-center space-x-2 cursor-pointer">
@@ -108,7 +106,6 @@
                         <i class="ph ph-map-pin text-2xl text-slate-400 group-hover:text-blue-400 transition"></i>
                         <div>
                             <p class="font-semibold text-slate-200 group-hover:text-blue-400 transition" data-direccion></p>
-                            <!-- NUEVO: Contenedor para ETA -->
                             <span class="eta-label text-sm text-sky-400 hidden"></span>
                             <span class="text-sm text-blue-500">Toque para abrir no mapa</span>
                         </div>
@@ -124,10 +121,8 @@
     </template>
 
 <script>
-// Variables globales de Google Maps
 let map, directionsService, geocoder;
 
-// Función de inicialización de Google Maps, llamada por el script en el <head>
 function initMap() {
     directionsService = new google.maps.DirectionsService();
     geocoder = new google.maps.Geocoder();
@@ -146,8 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalContainer = document.getElementById('modal-container');
     const modalContent = document.getElementById('modal-content');
     const modalBox = document.getElementById('modal-box');
-
-    // Controles de optimización
     const optimizationControls = document.getElementById('optimization-controls');
     const optimizeRouteBtn = document.getElementById('optimize-route-btn');
     const selectedCountSpan = document.getElementById('selected-count');
@@ -170,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showLoader(visible) { loaderGlobal.classList.toggle('hidden', !visible); }
+    
     function showMessage(iconClass, text, visible) {
         mensajeVacio.classList.toggle('hidden', !visible);
         document.getElementById('mensaje-vacio-icono').className = `ph ${iconClass} text-6xl text-slate-500`;
@@ -177,11 +171,34 @@ document.addEventListener('DOMContentLoaded', () => {
         listaEntregasContainer.classList.toggle('hidden', visible);
     }
 
-    function showConfirmationModal(message, onConfirm) { /* ... sin cambios ... */ }
+    // ===================================================================
+    // FUNCIÓN RESTAURADA: Modal de confirmación
+    // ===================================================================
+    function showConfirmationModal(message, onConfirm) {
+        modalContent.innerHTML = `
+            <i class="ph ph-question text-5xl text-yellow-400 mb-4 inline-block"></i>
+            <p class="text-xl font-semibold text-white mb-6">${message}</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancelModal" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-6 rounded-lg transition">Cancelar</button>
+                <button id="confirmModal" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition">Confirmar</button>
+            </div>
+        `;
+        modalContainer.classList.remove('hidden', 'opacity-0');
+        modalBox.classList.remove('opacity-0', 'scale-95');
+        
+        document.getElementById('cancelModal').onclick = () => {
+            modalContainer.classList.add('opacity-0');
+            modalBox.classList.add('opacity-0', 'scale-95');
+            modalContainer.addEventListener('transitionend', () => modalContainer.classList.add('hidden'), { once: true });
+        };
+        document.getElementById('confirmModal').onclick = () => {
+            onConfirm();
+            modalContainer.classList.add('opacity-0');
+            modalBox.classList.add('opacity-0', 'scale-95');
+            modalContainer.addEventListener('transitionend', () => modalContainer.classList.add('hidden'), { once: true });
+        };
+    }
 
-    // ===================================================================
-    // NUEVO: Lógica para ETA (Tiempo Estimado de Llegada)
-    // ===================================================================
     async function fetchETA(address, etaLabel) {
         if (!directionsService || !address || !etaLabel) return;
         
@@ -284,11 +301,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function handleAction(entrega, accion, cardElement) { /* ... sin cambios ... */ }
+    // ===================================================================
+    // FUNCIÓN RESTAURADA: Maneja las acciones de los botones
+    // ===================================================================
+    async function handleAction(entrega, accion, cardElement) {
+        const loaderCard = cardElement.querySelector('.loader-card');
+        const buttons = cardElement.querySelectorAll('.btn-accion');
+        
+        const performAction = async () => {
+            loaderCard.classList.remove('hidden');
+            buttons.forEach(b => b.disabled = true);
+            try {
+                await fetchApi(`${API_BASE_URL}/orders/${entrega.id}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: accion })
+                });
+                
+                cardElement.classList.add('card-exit', 'card-exit-active');
+                cardElement.addEventListener('transitionend', () => {
+                    cardElement.remove();
+                    // Si la lista queda vacía, recargar para mostrar el mensaje
+                    if (listaEntregasContainer.children.length === 0) {
+                        fetchAllEntregas();
+                    }
+                }, { once: true });
 
-    // ===================================================================
-    // NUEVO: Lógica para Optimización de Ruta
-    // ===================================================================
+            } catch (error) {
+                loaderCard.classList.add('hidden');
+                buttons.forEach(b => b.disabled = false);
+                alert(`Falha ao atualizar o pedido: ${error.message}`);
+            }
+        };
+
+        if (accion === 'Cancelado') {
+            showConfirmationModal(`Tem certeza que deseja CANCELAR o Pedido #${entrega.id}?`, performAction);
+        } else {
+            performAction();
+        }
+    }
+
     function updateSelectedCount() {
         const count = document.querySelectorAll('.delivery-checkbox:checked').length;
         selectedCountSpan.textContent = count;
@@ -349,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         modalContent.innerHTML = summaryHtml;
         modalContainer.classList.remove('hidden', 'opacity-0');
-        modalContainer.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
+        modalBox.classList.remove('opacity-0', 'scale-95');
 
         const mapCanvas = document.getElementById('map-canvas');
         const map = new google.maps.Map(mapCanvas, {
@@ -362,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('closeModal').onclick = () => {
             modalContainer.classList.add('opacity-0');
-            modalContainer.querySelector('.modal-container').classList.add('opacity-0', 'scale-95');
+            modalBox.classList.add('opacity-0', 'scale-95');
             modalContainer.addEventListener('transitionend', () => {
                 modalContainer.classList.add('hidden');
                 modalBox.className = 'bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 text-center modal-container opacity-0 scale-95 border border-slate-700';
@@ -399,4 +450,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-

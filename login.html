@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AnalityInventory - Login</title>
+    <title>AnalityInventory - Login Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- SCRIPT DE RECAPTCHA -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         body {
@@ -96,43 +96,21 @@
             justify-content: center;
             margin-top: 1.5rem;
         }
-
-        /* Estilos para o modal personalizado */
         .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); display: flex;
+            justify-content: center; align-items: center; z-index: 1000;
+            opacity: 0; transition: opacity 0.3s ease;
         }
         .modal-container {
-            background-color: #1e293b;
-            padding: 2rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            transform: scale(0.9);
-            opacity: 0;
+            background-color: #1e293b; padding: 2rem; border-radius: 0.75rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2); text-align: center;
+            max-width: 400px; width: 90%; transform: scale(0.9); opacity: 0;
             transition: transform 0.3s ease, opacity 0.3s ease;
-            border: 1px solid #334155;
-            color: #e2e8f0;
+            border: 1px solid #334155; color: #e2e8f0;
         }
-        .modal-overlay.show {
-            opacity: 1;
-        }
-        .modal-overlay.show .modal-container {
-            transform: scale(1);
-            opacity: 1;
-        }
+        .modal-overlay.show { opacity: 1; }
+        .modal-overlay.show .modal-container { transform: scale(1); opacity: 1; }
     </style>
 </head>
 <body>
@@ -141,8 +119,8 @@
         <h1 class="logo">AnalityInventory</h1>
         <form id="loginForm">
             <div class="mb-4">
-                <label for="username" class="form-label">Usuário</label>
-                <input type="text" id="username" class="form-input" placeholder="Seu nome de usuário" required>
+                <label for="username" class="form-label">Email de Administrador</label>
+                <input type="email" id="username" class="form-input" placeholder="seu.email@admin.com" required>
             </div>
             <div class="mb-4">
                 <label for="password" class="form-label">Senha</label>
@@ -154,8 +132,6 @@
                 <label for="remember-me" class="ml-2 block text-sm text-slate-400">Lembrar-me</label>
             </div>
 
-            <!-- WIDGET DE RECAPTCHA -->
-            <!-- IMPORTANTE! Substitua com sua chave de site real -->
             <div class="g-recaptcha" data-sitekey="6LdVrXcrAAAAAC41CuesKaE1vj-xPO9JhCc2iQvU"></div>
 
             <button type="submit" id="login-button" class="btn-primary flex items-center justify-center">
@@ -166,31 +142,22 @@
     </div>
 
     <div class="footer">
-        <span id="copyright"></span>. Todos os direitos reservados. Versão 5.1.0
+        <span id="copyright"></span>. Todos os direitos reservados.
     </div>
 
-    <!-- Modal Personalizado para Mensagens -->
     <div id="custom-modal-overlay" class="modal-overlay hidden">
         <div class="modal-container">
-            <div id="modal-content">
-                <!-- Conteúdo do modal será inserido aqui -->
-            </div>
+            <div id="modal-content"></div>
             <button id="close-modal-btn" class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">Fechar</button>
         </div>
     </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Funções para o Modal Personalizado ---
     const customModalOverlay = document.getElementById('custom-modal-overlay');
     const modalContent = document.getElementById('modal-content');
     const closeModalBtn = document.getElementById('close-modal-btn');
 
-    /**
-     * Exibe o modal personalizado com a mensagem e ícone apropriados.
-     * @param {string} message - A mensagem a ser exibida.
-     * @param {boolean} isError - Se true, exibe um ícone de erro; caso contrário, um ícone de sucesso.
-     */
     function showCustomModal(message, isError = false) {
         modalContent.innerHTML = `
             <i class="ph ${isError ? 'ph-x-circle text-red-500' : 'ph-check-circle text-green-500'} text-6xl mb-4"></i>
@@ -201,41 +168,33 @@ document.addEventListener('DOMContentLoaded', () => {
         customModalOverlay.classList.remove('hidden');
     }
 
-    /**
-     * Oculta o modal personalizado.
-     */
     function hideCustomModal() {
         customModalOverlay.classList.remove('show');
         setTimeout(() => {
             customModalOverlay.classList.add('hidden');
-            modalContent.innerHTML = ''; // Limpa o conteúdo
-        }, 300); // Tempo da transição CSS
+            modalContent.innerHTML = '';
+        }, 300);
     }
 
-    // Event listener para fechar o modal
     closeModalBtn.addEventListener('click', hideCustomModal);
     customModalOverlay.addEventListener('click', (e) => {
-        if (e.target === customModalOverlay) {
-            hideCustomModal();
-        }
+        if (e.target === customModalOverlay) hideCustomModal();
     });
 
-    // --- Redirecionamento se já estiver logado ---
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     if (token) {
-        window.location.href = 'index.html'; // Redireciona para o menu principal
+        // Podríamos verificar el rol aquí, pero es más seguro que el backend lo haga.
+        window.location.href = 'index.html';
         return;
     }
 
-    // --- Elementos do DOM ---
     const loginForm = document.getElementById('loginForm');
     const loginButton = document.getElementById('login-button');
     const loginText = document.getElementById('login-text');
     const loginSpinner = document.getElementById('login-spinner');
-    const rememberMeCheckbox = document.getElementById('remember-me'); // Novo seletor
+    const rememberMeCheckbox = document.getElementById('remember-me');
     document.getElementById('copyright').textContent = `© ${new Date().getFullYear()} AnalityInventory`;
 
-    // --- Lógica de Login ---
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         
@@ -245,11 +204,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // El campo 'username' ahora se usa para el email
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-        const rememberMe = rememberMeCheckbox.checked; // Pega o estado do checkbox
+        const rememberMe = rememberMeCheckbox.checked;
         
-        // CORREÇÃO CRÍTICA AQUI: Use a URL CORRETA da sua API
         const API_BASE_URL = 'https://mi-primera-app.fly.dev'; 
         
         loginText.classList.add('hidden');
@@ -257,7 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loginButton.disabled = true;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/token`, {
+            // El endpoint ahora es /users/token
+            const response = await fetch(`${API_BASE_URL}/users/token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({ grant_type: 'password', username, password }).toString()
@@ -266,12 +226,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const data = await response.json();
             
+                // La lógica de redirección ya no es necesaria aquí,
+                // el backend ya ha validado que es un admin.
                 if (rememberMe) {
                    localStorage.setItem('authToken', data.access_token);
                 } else {
                    sessionStorage.setItem('authToken', data.access_token);
                 }
-                window.location.href = 'index.html'; // Redireciona para o menu principal
+                window.location.href = 'index.html';
             } else {
                 const errorData = await response.json().catch(() => ({ detail: 'Erro de comunicação.' }));
                 showCustomModal(`Erro ao iniciar sessão: ${errorData.detail}`, true);

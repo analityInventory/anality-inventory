@@ -252,7 +252,7 @@ function initializeAppLogic(autocomplete) {
                 } else if (distanceInKm <= 15) {
                     kmCost = (5 * 2.00) + ((distanceInKm - 5) * 1.20); // Tarifa del primer tramo + R$1.20/km para el resto
                 } else {
-                    kmCost = (5 * 2.00) + (10 * 1.20) + ((distanceInKm - 15) * 0.90); // Tarifa de los dos primeros tramos + R$0.90/km para el resto
+                    kmCost = (5 * 2.00) + (10 * 1.20) + ((distanceInKm - 15) * 0.70); // Tarifa de los dos primeros tramos + R$0.90/km para el resto
                 }
 
                 let fee = DELIVERY_BASE_FEE + kmCost;

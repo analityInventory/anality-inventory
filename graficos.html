@@ -84,7 +84,6 @@
         </div>
 
         <!-- Dashboard de Gráficos -->
-        <!-- **** CLASE CORREGIDA AÑADIDA AQUÍ **** -->
         <div class="space-y-6 dashboard-container">
             <!-- KPIs Principales -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -219,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- FUNCIÓN CORREGIDA ---
     function updateKPIs(data) {
         if (!data || Object.keys(data).length === 0) {
             kpiTotalSales.textContent = 'R$0.00';

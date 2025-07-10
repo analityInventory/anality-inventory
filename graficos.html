@@ -65,6 +65,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto p-4 lg:p-6">
+        <!-- Filtros -->
         <div class="bg-slate-800 p-4 rounded-xl shadow-lg border border-slate-700 mb-6">
             <div class="flex flex-wrap items-end gap-4">
                 <div class="flex-grow">
@@ -82,7 +83,9 @@
             </div>
         </div>
 
+        <!-- Dashboard de Gráficos -->
         <div class="space-y-6 dashboard-container">
+            <!-- KPIs Principales -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="kpi-card">
                     <p class="text-slate-400 text-sm">Total de Vendas</p>
@@ -98,6 +101,7 @@
                 </div>
             </div>
 
+            <!-- Gráficos Detallados -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="chart-card">
                     <h3 class="text-lg font-bold text-white mb-4">Rendimento Mensal</h3>
@@ -214,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // --- FUNCIÓN CORREGIDA ---
     function updateKPIs(data) {
         if (!data || Object.keys(data).length === 0) {
             kpiTotalSales.textContent = 'R$0.00';
@@ -222,9 +227,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const totalSales = Object.values(data).reduce((sum, month) => sum + month.ventas, 0);
-        const totalExpenses = Object.values(data).reduce((sum, month) => sum + month.gastos, 0);
-        const totalInvestments = Object.values(data).reduce((sum, month) => sum + month.inversiones, 0);
+        // Convertir valores a números antes de sumar
+        const totalSales = Object.values(data).reduce((sum, month) => sum + parseFloat(month.ventas || 0), 0);
+        const totalExpenses = Object.values(data).reduce((sum, month) => sum + parseFloat(month.gastos || 0), 0);
+        const totalInvestments = Object.values(data).reduce((sum, month) => sum + parseFloat(month.inversiones || 0), 0);
         const netProfit = totalSales - totalExpenses - totalInvestments;
         
         kpiTotalSales.textContent = `R$${totalSales.toFixed(2)}`;
@@ -235,8 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderMonthlyPerformanceChart(data) {
         const labels = Object.keys(data).map(m => new Date(m + '-02').toLocaleString('pt-BR', { month: 'short', year: '2-digit' }));
-        const salesData = Object.values(data).map(d => d.ventas);
-        const netProfitData = Object.values(data).map(d => d.ventas - d.gastos - d.inversiones);
+        const salesData = Object.values(data).map(d => parseFloat(d.ventas || 0));
+        const netProfitData = Object.values(data).map(d => parseFloat(d.ventas || 0) - parseFloat(d.gastos || 0) - parseFloat(d.inversiones || 0));
 
         charts.monthlyPerformance = new Chart(monthlyPerformanceCanvas.getContext('2d'), {
             type: 'bar',
@@ -280,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderTopProductsChart(data) {
         const labels = data.map(d => d.product_name);
-        const values = data.map(d => d.total_revenue);
+        const values = data.map(d => parseFloat(d.total_revenue || 0));
         
         charts.topProducts = new Chart(topProductsCanvas.getContext('2d'), {
             type: 'bar',
@@ -311,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderExpensesByCategoryChart(data) {
         const labels = data.map(d => d.categoria);
-        const values = data.map(d => d.total_categoria);
+        const values = data.map(d => parseFloat(d.total_categoria || 0));
 
         charts.expensesByCategory = new Chart(expensesByCategoryCanvas.getContext('2d'), {
             type: 'doughnut',

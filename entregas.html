@@ -6,7 +6,7 @@
     <title>AnalityInventory - Gestão de Entregas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC17UyZO3QivEHPwYGz_2CmEkkiLy_DLlg&libraries=places,visualization&callback=initMap" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=TU_CLAVE_DE_API&libraries=places,visualization&callback=initMap" async defer></script>
     <style>
         body { 
             font-family: 'Inter', sans-serif;
@@ -202,7 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
             origin: STORE_LOCATION,
             destination: address,
             travelMode: 'DRIVING',
-            // Pide explícitamente la duración en el tráfico
             drivingOptions: {
                 departureTime: new Date(),
                 trafficModel: 'best_guess'
@@ -212,7 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const result = await directionsService.route(request);
             if (result.routes.length > 0) {
-                // La API devuelve duration_in_traffic si se le pide
                 const duration = result.routes[0].legs[0].duration_in_traffic || result.routes[0].legs[0].duration;
                 etaLabel.textContent = `(Aprox. ${duration.text})`;
                 etaLabel.classList.remove('hidden');
@@ -278,10 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
             btnsContainer.innerHTML = '';
             let actionsHtml = '';
             if (currentVista === 'Pendiente') {
-                btnsContainer.classList.add('grid-cols-1');
-                actionsHtml = `<button data-accion="Enviado" class="btn-accion bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 transition flex items-center justify-center gap-2"><i class="ph-fill ph-truck text-xl"></i>Marcar como Enviado</button>`;
+                btnsContainer.classList.add('grid-cols-2', 'gap-2', 'p-2');
+                actionsHtml = `
+                    <button data-accion="Cancelado" class="btn-accion bg-red-600/80 hover:bg-red-600 text-white font-bold py-3 transition flex items-center justify-center gap-2 rounded-md"><i class="ph-fill ph-x-circle text-xl"></i>Cancelar</button>
+                    <button data-accion="Enviado" class="btn-accion bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 transition flex items-center justify-center gap-2 rounded-md"><i class="ph-fill ph-truck text-xl"></i>Enviar</button>
+                `;
             } else if (currentVista === 'Enviado') {
-                // NUEVO: Grid de 2 columnas para los botones
                 btnsContainer.classList.add('grid-cols-2', 'gap-2', 'p-2');
                 actionsHtml = `
                     <button data-accion="Cancelado" class="btn-accion bg-red-600/80 hover:bg-red-600 text-white font-bold py-3 transition flex items-center justify-center gap-2 rounded-md"><i class="ph-fill ph-x-circle text-xl"></i>Cancelar</button>
@@ -317,6 +317,18 @@ document.addEventListener('DOMContentLoaded', () => {
             loaderCard.classList.remove('hidden');
             buttons.forEach(b => b.disabled = true);
             try {
+                // ===================================================================
+                // LÓGICA DE REABASTECIMIENTO AÑADIDA
+                // ===================================================================
+                if (accion === 'Cancelado') {
+                    // Llama a un nuevo endpoint para reabastecer el stock.
+                    // Este endpoint debe ser creado en el backend.
+                    await fetchApi(`${API_BASE_URL}/orders/${entrega.id}/restock`, {
+                        method: 'POST'
+                    });
+                }
+
+                // Actualiza el estado del pedido como antes
                 await fetchApi(`${API_BASE_URL}/orders/${entrega.id}/status`, {
                     method: 'PUT',
                     body: JSON.stringify({ status: accion })
@@ -338,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         if (accion === 'Cancelado') {
-            showConfirmationModal(`Tem certeza que deseja CANCELAR o Pedido #${entrega.id}?`, performAction);
+            showConfirmationModal(`Tem certeza que deseja CANCELAR o Pedido #${entrega.id}? Esta ação devolverá os produtos ao estoque.`, performAction);
         } else {
             performAction();
         }

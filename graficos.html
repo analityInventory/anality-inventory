@@ -218,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- FUNCIÓN CORREGIDA ---
     function updateKPIs(data) {
         if (!data || Object.keys(data).length === 0) {
             kpiTotalSales.textContent = 'R$0.00';
@@ -227,7 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Convertir valores a números antes de sumar
+        // --- CORRECCIÓN APLICADA AQUÍ ---
+        // Se usa parseFloat para asegurar que los valores sean números antes de sumar.
         const totalSales = Object.values(data).reduce((sum, month) => sum + parseFloat(month.ventas || 0), 0);
         const totalExpenses = Object.values(data).reduce((sum, month) => sum + parseFloat(month.gastos || 0), 0);
         const totalInvestments = Object.values(data).reduce((sum, month) => sum + parseFloat(month.inversiones || 0), 0);

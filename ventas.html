@@ -133,10 +133,21 @@
 function initAutocomplete() {
     const addressInput = document.getElementById('customer-address');
     
+    // ===================================================================
+    // BÚSQUEDA MEJORADA Y ESTRICTA PARA MANAUS
+    // ===================================================================
+    const MANAUS_BOUNDS = {
+        north: -2.98,
+        south: -3.20,
+        west: -60.10,
+        east: -59.88,
+    };
+
     const options = {
         componentRestrictions: { country: "br" },
         fields: ["address_components", "formatted_address", "geometry"],
-        types: ["address"],
+        bounds: MANAUS_BOUNDS, // Prioriza resultados dentro de estos límites
+        strictBounds: true,    // ¡IMPORTANTE! Solo muestra resultados dentro de los límites
     };
     
     const autocomplete = new google.maps.places.Autocomplete(addressInput, options);
@@ -212,12 +223,14 @@ function initializeAppLogic(autocomplete) {
             return { fee: 8.00, name: 'Zona 1', color: 'bg-green-500/20 text-green-300' };
         } else if (distanceInKm <= 8) {
             return { fee: 12.00, name: 'Zona 2', color: 'bg-blue-500/20 text-blue-300' };
-        } else if (distanceInKm <= 15) {
-            return { fee: 18.00, name: 'Zona 3', color: 'bg-yellow-500/20 text-yellow-300' };
-        } else if (distanceInKm <= 20) { // Nuevo tramo intermedio
-            return { fee: 22.00, name: 'Zona 4', color: 'bg-orange-500/20 text-orange-300' };
+        } else if (distanceInKm <= 12) { // Nuevo tramo de R$15
+            return { fee: 15.00, name: 'Zona 3', color: 'bg-cyan-500/20 text-cyan-300' };
+        } else if (distanceInKm <= 18) {
+            return { fee: 18.00, name: 'Zona 4', color: 'bg-yellow-500/20 text-yellow-300' };
+        } else if (distanceInKm <= 25) { 
+            return { fee: 22.00, name: 'Zona 5', color: 'bg-orange-500/20 text-orange-300' };
         } else { // Tramo final
-            return { fee: 28.00, name: 'Zona 5', color: 'bg-red-500/20 text-red-300' };
+            return { fee: 28.00, name: 'Zona 6', color: 'bg-red-500/20 text-red-300' };
         }
     }
 

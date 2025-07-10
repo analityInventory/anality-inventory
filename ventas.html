@@ -7,6 +7,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- =================================================================== -->
+    <!-- PASO 1: SCRIPT DE GOOGLE MAPS CON TU CLAVE DE API                  -->
+    <!-- Reemplaza 'TU_CLAVE_DE_API' por la clave que generaste en Google Cloud. -->
+    <!-- El parámetro 'libraries=places' activa el autocompletado.         -->
+    <!-- El parámetro 'callback=initAutocomplete' ejecuta la función JS     -->
+    <!-- cuando el script se haya cargado por completo.                     -->
+    <!-- =================================================================== -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC17UyZO3QivEHPwYGz_2CmEkkiLy_DLlg&libraries=places&callback=initAutocomplete" async defer></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
         ::-webkit-scrollbar { width: 8px; }
@@ -22,6 +32,31 @@
         .selection-badge { position: absolute; top: -10px; right: -10px; background-color: #3b82f6; color: white; font-weight: bold; font-size: 0.75rem; width: 28px; height: 28px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; border: 2px solid #0f172a; transform: scale(0); transition: transform 0.2s ease-out; }
         .product-card.selected .selection-badge { transform: scale(1); }
         .product-card.selected { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4); }
+        /* Estilos para el dropdown de autocompletado de Google */
+        .pac-container {
+            background-color: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000 !important;
+        }
+        .pac-item {
+            padding: 10px;
+            font-size: 1rem;
+            color: #e2e8f0;
+            border-top: 1px solid #334155;
+            cursor: pointer;
+        }
+        .pac-item:first-child {
+            border-top: none;
+        }
+        .pac-item:hover {
+            background-color: #334155;
+        }
+        .pac-item-query {
+            font-size: 1rem;
+            color: #f1f5f9;
+        }
     </style>
 </head>
 <body class="overflow-x-hidden">
@@ -111,7 +146,31 @@
     </template>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+// ===================================================================
+// PASO 2: ESTRUCTURA DEL SCRIPT MODIFICADA
+// La función `initAutocomplete` es ahora el punto de entrada.
+// Se declara en el ámbito global para que el script de Google la encuentre.
+// ===================================================================
+function initAutocomplete() {
+    // Lógica del Autocompletado de Dirección
+    const addressInput = document.getElementById('customer-address');
+    const options = {
+        // Restringe las búsquedas a Brasil para mayor relevancia.
+        componentRestrictions: { country: "br" },
+        // Pide solo los campos que necesitas para optimizar el uso de la API.
+        fields: ["formatted_address", "address_components", "geometry"],
+        types: ["address"],
+    };
+    
+    // Crea la instancia de autocompletado y la asocia con el campo de entrada.
+    const autocomplete = new google.maps.places.Autocomplete(addressInput, options);
+
+    // Ejecuta el resto de la lógica de tu aplicación una vez que el autocompletado está listo.
+    initializeAppLogic();
+}
+
+// Toda tu lógica original se ha movido a esta función.
+function initializeAppLogic() {
     // --- CONFIG & STATE ---
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
     let allProducts = [];
@@ -306,7 +365,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cart.length === 0) { alert('O carrinho está vazio.'); return; }
         if (!customerName) { alert('O nome do cliente é obrigatório.'); return; }
 
-        // Lógica para determinar el estado correcto del pedido
         const deliveryType = document.getElementById('delivery-type').value;
         const orderStatus = deliveryType === 'delivery' ? 'Pendiente' : 'Entregado';
 
@@ -317,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
             total: cart.reduce((s, i) => s + (i.price * i.quantity), 0) + (parseFloat(deliveryFeeEl.value) || 0),
             payment_method: document.getElementById('payment-method').value,
             delivery_fee: parseFloat(deliveryFeeEl.value) || 0,
-            status: orderStatus, // <-- ESTADO AÑADIDO
+            status: orderStatus,
             items: cart.map(item => ({ id: item.id, quantity: item.quantity, price: item.price, costo: item.costo || 0 }))
         };
         
@@ -364,11 +422,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (card) handleProductClick(parseInt(card.dataset.productId));
     });
 
-    // **NUEVO EVENTO PARA LONG PRESS**
     productListContainer.addEventListener('contextmenu', (e) => {
         const card = e.target.closest('.product-card');
         if (card) {
-            e.preventDefault(); // Prevenir el menú contextual del navegador
+            e.preventDefault();
             handleProductLongPress(parseInt(card.dataset.productId));
         }
     });
@@ -393,10 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIALIZATION ---
     fetchProducts();
-});
+}
 </script>
-</body>
-</html>
-
 </body>
 </html>

@@ -139,7 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // Este endpoint `/users/register` debe ser creado en tu backend
+            // ===================================================================
+            // CORRECCIÓN: La URL debe apuntar a /users/register
+            // ===================================================================
             const response = await fetch(`${API_BASE_URL}/users/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -170,7 +172,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = document.getElementById('login-password').value;
 
         try {
-            // Este endpoint `/users/token` debe ser actualizado en tu backend para devolver el 'role'
+            // ===================================================================
+            // CORRECCIÓN: La URL debe apuntar a /users/token
+            // ===================================================================
             const response = await fetch(`${API_BASE_URL}/users/token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -183,15 +187,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             
-            // Guardar el token
             localStorage.setItem('authToken', data.access_token);
             sessionStorage.setItem('authToken', data.access_token);
 
-            // Redirección basada en el rol
             if (data.role === 'admin') {
-                window.location.href = 'index.html'; // Panel principal
+                window.location.href = 'index.html';
             } else if (data.role === 'repartidor') {
-                window.location.href = 'repartidor_app.html'; // App del repartidor
+                window.location.href = 'repartidor_app.html';
             } else {
                 throw new Error('Tipo de usuário desconhecido.');
             }

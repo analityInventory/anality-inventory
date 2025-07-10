@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AnalitycPro - Repartidor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- El script de Google Maps es necesario para la geolocalización y mapas -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=TU_CLAVE_DE_API&libraries=places" async defer></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .card-exit-active { transition: opacity 0.5s, transform 0.5s; opacity: 0; transform: translateX(100%); }
+        .gps-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+    </style>
+</head>
+<body class="font-sans">
+
+    <div id="app-container">
+        <!-- Encabezado Fijo -->
+        <header class="bg-slate-900/80 backdrop-blur-sm shadow-md sticky top-0 z-20 border-b border-slate-700">
+            <div class="max-w-4xl mx-auto px-5 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-white">Minhas Entregas</h1>
+                <!-- Indicador de Estado del GPS -->
+                <div id="gps-status" class="flex items-center gap-2">
+                    <span class="text-sm text-slate-400">GPS</span>
+                    <div id="gps-indicator" class="h-3 w-3 rounded-full bg-red-500" title="GPS Inativo"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenido Principal: Lista de Entregas -->
+        <main id="lista-entregas" class="max-w-4xl mx-auto p-4 space-y-4"></main>
+
+        <!-- Mensaje cuando no hay entregas -->
+        <div id="mensaje-vacio" class="hidden text-center mt-24 px-4">
+            <i class="ph ph-coffee text-6xl text-slate-500"></i>
+            <p class="text-slate-400 mt-4 text-lg">Nenhuma entrega pendente. Bom descanso!</p>
+        </div>
+
+        <!-- Botón Fijo para Iniciar/Detener Seguimiento -->
+        <div class="fixed bottom-4 right-4 z-30">
+            <button id="toggle-tracking-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg p-4 transition-transform transform active:scale-90 flex items-center justify-center gap-2">
+                <i id="tracking-icon" class="ph ph-map-pin text-3xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loader Global -->
+    <div id="loader-global" class="hidden fixed inset-0 bg-slate-900 bg-opacity-80 flex justify-center items-center z-50">
+        <div class="border-t-4 border-blue-500 rounded-full w-16 h-16 animate-spin"></div>
+    </div>
+
+    <!-- Template para cada tarjeta de entrega -->
+    <template id="tarjeta-entrega-template">
+        <div class="delivery-card bg-slate-800 rounded-lg shadow-md overflow-hidden border border-slate-700">
+            <div class="p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h2 class="text-xl font-bold text-white" data-cliente></h2>
+                        <span class="text-sm text-slate-400" data-id></span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-lg font-bold text-green-400" data-total></p>
+                        <p class="text-sm text-slate-400" data-payment></p>
+                    </div>
+                </div>
+                
+                <div class="border-t border-slate-700 pt-4 space-y-4">
+                     <div>
+                        <p class="font-semibold text-slate-300 mb-1">Endereço:</p>
+                        <p class="text-slate-200" data-direccion></p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-slate-300 mb-1">Produtos:</p>
+                        <p class="text-slate-400 text-sm" data-productos></p>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2">
+                <a data-navigate-btn href="#" target="_blank" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 transition flex items-center justify-center gap-2">
+                    <i class="ph-fill ph-navigation-arrow text-xl"></i>
+                    Navegar
+                </a>
+                <button data-delivered-btn class="bg-green-600 hover:bg-green-700 text-white font-bold py-4 transition flex items-center justify-center gap-2">
+                    <i class="ph-fill ph-check-circle text-xl"></i>
+                    Marcar como Entregue
+                </button>
+            </div>
+        </div>
+    </template>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const API_BASE_URL = 'https://mi-primera-app.fly.dev';
+    const REPARTIDOR_ID = 'repartidor_01'; // ID único para este repartidor. En una app real, esto vendría de un login.
+    const TRACKING_INTERVAL = 30000; // 30 segundos
+
+    // --- Selectores del DOM ---
+    const listaEntregasContainer = document.getElementById('lista-entregas');
+    const tarjetaTemplate = document.getElementById('tarjeta-entrega-template');
+    const loaderGlobal = document.getElementById('loader-global');
+    const mensajeVacio = document.getElementById('mensaje-vacio');
+    const gpsIndicator = document.getElementById('gps-indicator');
+    const toggleTrackingBtn = document.getElementById('toggle-tracking-btn');
+    const trackingIcon = document.getElementById('tracking-icon');
+
+    let watchId = null; // ID para el seguimiento de la geolocalización
+    let trackingIntervalId = null; // ID para el intervalo de envío de datos
+
+    // --- Funciones de la API ---
+    async function fetchApi(url, options = {}) {
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        if (!token) {
+            alert('Sessão inválida. Por favor, faça login no painel principal.');
+            throw new Error('No autorizado');
+        }
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...options.headers };
+        const response = await fetch(url, { ...options, headers });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Falha na comunicação com o servidor.');
+        }
+        return response;
+    }
+
+    // --- Renderizado de la UI ---
+    function renderEntregas(entregas) {
+        listaEntregasContainer.innerHTML = '';
+        if (entregas.length === 0) {
+            mensajeVacio.classList.remove('hidden');
+            return;
+        }
+        mensajeVacio.classList.add('hidden');
+
+        entregas.forEach(entrega => {
+            const card = tarjetaTemplate.content.cloneNode(true);
+            const cardElement = card.firstElementChild;
+            cardElement.dataset.orderId = entrega.id;
+
+            cardElement.querySelector('[data-id]').textContent = `Pedido #${entrega.id}`;
+            cardElement.querySelector('[data-cliente]').textContent = entrega.customer_name;
+            cardElement.querySelector('[data-total]').textContent = `R$${parseFloat(entrega.total).toFixed(2)}`;
+            cardElement.querySelector('[data-payment]').textContent = `Pagamento: ${entrega.payment_method}`;
+            cardElement.querySelector('[data-direccion]').textContent = entrega.customer_address;
+            
+            const productos = (entrega.products || []).map(p => `${p.quantity}x ${p.name}`).join(', ');
+            cardElement.querySelector('[data-productos]').textContent = productos;
+
+            const navigateBtn = cardElement.querySelector('[data-navigate-btn]');
+            navigateBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(entrega.customer_address)}`;
+
+            const deliveredBtn = cardElement.querySelector('[data-delivered-btn]');
+            deliveredBtn.addEventListener('click', () => markAsDelivered(entrega.id, cardElement));
+
+            listaEntregasContainer.appendChild(card);
+        });
+    }
+
+    // --- Lógica Principal ---
+    async function fetchDeliveries() {
+        loaderGlobal.classList.remove('hidden');
+        try {
+            const response = await fetchApi(`${API_BASE_URL}/orders?status_filter=Enviado`);
+            const entregas = await response.json();
+            renderEntregas(entregas);
+        } catch (error) {
+            alert(`Erro ao buscar entregas: ${error.message}`);
+        } finally {
+            loaderGlobal.classList.add('hidden');
+        }
+    }
+
+    async function markAsDelivered(orderId, cardElement) {
+        cardElement.style.pointerEvents = 'none';
+        try {
+            await fetchApi(`${API_BASE_URL}/orders/${orderId}/status`, {
+                method: 'PUT',
+                body: JSON.stringify({ status: 'Entregado' })
+            });
+            cardElement.classList.add('card-exit-active');
+            cardElement.addEventListener('transitionend', () => cardElement.remove());
+        } catch (error) {
+            alert(`Falha ao marcar como entregue: ${error.message}`);
+            cardElement.style.pointerEvents = 'auto';
+        }
+    }
+
+    // --- Lógica de Geolocalización y Seguimiento ---
+    function startTracking() {
+        if (!navigator.geolocation) {
+            alert('Geolocalização não é suportada por este navegador.');
+            return;
+        }
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        };
+
+        watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                console.log(`Posição atual: ${latitude}, ${longitude}`);
+                gpsIndicator.classList.remove('bg-red-500');
+                gpsIndicator.classList.add('bg-green-500', 'gps-pulse');
+                
+                // Iniciar el envío periódico si no está ya activo
+                if (!trackingIntervalId) {
+                    trackingIntervalId = setInterval(() => {
+                        sendLocationToServer({ latitude, longitude });
+                    }, TRACKING_INTERVAL);
+                }
+            },
+            (error) => {
+                console.error(`Erro de Geolocalização: ${error.message}`);
+                alert('Não foi possível obter a sua localização. Verifique as permissões do navegador.');
+                stopTracking();
+            },
+            options
+        );
+
+        trackingIcon.classList.remove('ph-map-pin');
+        trackingIcon.classList.add('ph-map-pin-line');
+        toggleTrackingBtn.classList.replace('bg-blue-600', 'bg-red-600');
+        toggleTrackingBtn.classList.replace('hover:bg-blue-700', 'hover:bg-red-700');
+    }
+
+    function stopTracking() {
+        if (watchId) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+        if (trackingIntervalId) {
+            clearInterval(trackingIntervalId);
+            trackingIntervalId = null;
+        }
+        gpsIndicator.classList.remove('bg-green-500', 'gps-pulse');
+        gpsIndicator.classList.add('bg-red-500');
+        
+        trackingIcon.classList.remove('ph-map-pin-line');
+        trackingIcon.classList.add('ph-map-pin');
+        toggleTrackingBtn.classList.replace('bg-red-600', 'bg-blue-600');
+        toggleTrackingBtn.classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
+        console.log('Seguimiento detenido.');
+    }
+
+    async function sendLocationToServer(coords) {
+        console.log(`Enviando localização para o servidor:`, coords);
+        try {
+            // Este endpoint debe ser creado en tu backend
+            await fetchApi(`${API_BASE_URL}/repartidores/${REPARTIDOR_ID}/location`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    latitude: coords.latitude,
+                    longitude: coords.longitude
+                })
+            });
+            console.log('Localização enviada com sucesso.');
+        } catch (error) {
+            console.error('Falha ao enviar localização:', error.message);
+        }
+    }
+
+    toggleTrackingBtn.addEventListener('click', () => {
+        if (watchId) {
+            stopTracking();
+        } else {
+            startTracking();
+        }
+    });
+
+    // --- Inicialización ---
+    fetchDeliveries();
+});
+</script>
+</body>
+</html>

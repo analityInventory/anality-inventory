@@ -6,7 +6,6 @@
     <title>AnalityInventory - Gestão de Entregas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- SCRIPT DE GOOGLE MAPS AÑADIDO -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC17UyZO3QivEHPwYGz_2CmEkkiLy_DLlg&libraries=places,visualization&callback=initMap" async defer></script>
     <style>
         body { 
@@ -171,9 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
         listaEntregasContainer.classList.toggle('hidden', visible);
     }
 
-    // ===================================================================
-    // FUNCIÓN RESTAURADA: Modal de confirmación
-    // ===================================================================
     function showConfirmationModal(message, onConfirm) {
         modalContent.innerHTML = `
             <i class="ph ph-question text-5xl text-yellow-400 mb-4 inline-block"></i>
@@ -205,12 +201,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const request = {
             origin: STORE_LOCATION,
             destination: address,
-            travelMode: 'DRIVING'
+            travelMode: 'DRIVING',
+            // Pide explícitamente la duración en el tráfico
+            drivingOptions: {
+                departureTime: new Date(),
+                trafficModel: 'best_guess'
+            }
         };
 
         try {
             const result = await directionsService.route(request);
             if (result.routes.length > 0) {
+                // La API devuelve duration_in_traffic si se le pide
                 const duration = result.routes[0].legs[0].duration_in_traffic || result.routes[0].legs[0].duration;
                 etaLabel.textContent = `(Aprox. ${duration.text})`;
                 etaLabel.classList.remove('hidden');
@@ -276,9 +278,15 @@ document.addEventListener('DOMContentLoaded', () => {
             btnsContainer.innerHTML = '';
             let actionsHtml = '';
             if (currentVista === 'Pendiente') {
+                btnsContainer.classList.add('grid-cols-1');
                 actionsHtml = `<button data-accion="Enviado" class="btn-accion bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 transition flex items-center justify-center gap-2"><i class="ph-fill ph-truck text-xl"></i>Marcar como Enviado</button>`;
             } else if (currentVista === 'Enviado') {
-                actionsHtml = `<button data-accion="Entregado" class="btn-accion bg-green-600 hover:bg-green-700 text-white font-bold py-3 transition flex items-center justify-center gap-2"><i class="ph-fill ph-check-circle text-xl"></i>Marcar como Entregue</button>`;
+                // NUEVO: Grid de 2 columnas para los botones
+                btnsContainer.classList.add('grid-cols-2', 'gap-2', 'p-2');
+                actionsHtml = `
+                    <button data-accion="Cancelado" class="btn-accion bg-red-600/80 hover:bg-red-600 text-white font-bold py-3 transition flex items-center justify-center gap-2 rounded-md"><i class="ph-fill ph-x-circle text-xl"></i>Cancelar</button>
+                    <button data-accion="Entregado" class="btn-accion bg-green-600 hover:bg-green-700 text-white font-bold py-3 transition flex items-center justify-center gap-2 rounded-md"><i class="ph-fill ph-check-circle text-xl"></i>Entregue</button>
+                `;
             }
             btnsContainer.innerHTML = actionsHtml;
             
@@ -301,9 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ===================================================================
-    // FUNCIÓN RESTAURADA: Maneja las acciones de los botones
-    // ===================================================================
     async function handleAction(entrega, accion, cardElement) {
         const loaderCard = cardElement.querySelector('.loader-card');
         const buttons = cardElement.querySelectorAll('.btn-accion');
@@ -320,7 +325,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 cardElement.classList.add('card-exit', 'card-exit-active');
                 cardElement.addEventListener('transitionend', () => {
                     cardElement.remove();
-                    // Si la lista queda vacía, recargar para mostrar el mensaje
                     if (listaEntregasContainer.children.length === 0) {
                         fetchAllEntregas();
                     }

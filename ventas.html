@@ -8,11 +8,6 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- =================================================================== -->
-    <!-- SCRIPT DE GOOGLE MAPS ACTUALIZADO                                   -->
-    <!-- Se mantiene igual, ya que 'places' es suficiente para Directions. -->
-    <!-- Reemplaza 'TU_CLAVE_DE_API' por la clave que generaste en Google Cloud. -->
-    <!-- =================================================================== -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC17UyZO3QivEHPwYGz_2CmEkkiLy_DLlg&libraries=places&callback=initAutocomplete" async defer></script>
 
     <style>
@@ -30,13 +25,9 @@
         .selection-badge { position: absolute; top: -10px; right: -10px; background-color: #3b82f6; color: white; font-weight: bold; font-size: 0.75rem; width: 28px; height: 28px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; border: 2px solid #0f172a; transform: scale(0); transition: transform 0.2s ease-out; }
         .product-card.selected .selection-badge { transform: scale(1); }
         .product-card.selected { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4); }
-        /* Estilos para el dropdown de autocompletado de Google */
         .pac-container {
-            background-color: #1e293b;
-            border: 1px solid #475569;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 1000 !important;
+            background-color: #1e293b; border: 1px solid #475569; border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000 !important;
         }
         .pac-item { padding: 10px; font-size: 1rem; color: #e2e8f0; border-top: 1px solid #334155; cursor: pointer; }
         .pac-item:first-child { border-top: none; }
@@ -83,7 +74,6 @@
                             <input id="customer-address" type="text" placeholder="Endereço (para entrega)" class="form-input">
                             <input id="customer-phone" type="tel" placeholder="Telefone" class="form-input">
                         </div>
-                        <!-- NUEVO: Contenedor para el mapa -->
                         <div id="map-container" class="mt-4 hidden">
                             <div id="map" class="h-48 w-full rounded-lg bg-slate-700 border border-slate-600"></div>
                         </div>
@@ -114,11 +104,9 @@
         </div>
     </main>
 
-    <!-- Botones flotantes -->
     <button id="checkout-view-btn" class="hidden fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg p-5 transition-transform transform active:scale-90"><i class="ph ph-arrow-right text-3xl"></i></button>
     <button id="products-view-btn" class="hidden fixed bottom-6 left-6 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-full shadow-lg p-5 transition-transform transform active:scale-90"><i class="ph ph-arrow-left text-3xl"></i></button>
 
-    <!-- Templates -->
     <template id="product-card-template">
         <div class="product-card bg-slate-800 border border-slate-700 rounded-lg p-3 flex flex-col items-center text-center shadow-sm hover:border-blue-500 transition cursor-pointer relative">
             <div class="selection-badge"></div>
@@ -145,33 +133,28 @@ function initAutocomplete() {
     
     const autocomplete = new google.maps.places.Autocomplete(addressInput, options);
 
-    // NUEVO: Escuchar cuando el usuario selecciona un lugar.
     autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
-        if (place.geometry) {
-            // Si el tipo de entrega es 'delivery', calcular la ruta y el costo.
+        if (place && place.geometry) {
             if (document.getElementById('delivery-type').value === 'delivery') {
                 calculateAndShowRoute(place);
             }
         }
     });
 
-    initializeAppLogic(autocomplete); // Pasar la instancia de autocompletado
+    initializeAppLogic(autocomplete);
 }
 
-function initializeAppLogic(autocomplete) { // Recibir la instancia
-    // --- CONFIG & STATE ---
+function initializeAppLogic(autocomplete) {
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
-    // NUEVO: Configuración para el cálculo de envío
-    const STORE_LOCATION = 'Av. Djalma Batista, 3578 - Flores, Manaus - AM, 69050-010'; // ¡IMPORTANTE! Cambia esto por la dirección de tu tienda.
-    const DELIVERY_BASE_FEE = 5.0; // R$5.00
-    const DELIVERY_FEE_PER_KM = 1.5; // R$1.50
+    const STORE_LOCATION = 'Av. Djalma Batista, 3578 - Flores, Manaus - AM, 69050-010';
+    const DELIVERY_BASE_FEE = 5.0;
+    const DELIVERY_FEE_PER_KM = 1.5;
 
-    let allProducts = [];
-    let cart = [];
-    let map, directionsService, directionsRenderer;
+    let allProducts = [], cart = [];
+    let map, directionsService, directionsRenderer, geocoder;
+    let lastGeocodedAddress = '';
 
-    // --- SELECTORS ---
     const productListContainer = document.getElementById('product-list');
     const searchInput = document.getElementById('product-search');
     const cartItemsContainer = document.getElementById('cart-items');
@@ -182,137 +165,111 @@ function initializeAppLogic(autocomplete) { // Recibir la instancia
     const finalizeButton = document.getElementById('finalize-button');
     const deliveryTypeEl = document.getElementById('delivery-type');
     const mapContainer = document.getElementById('map-container');
-    
+    const addressInput = document.getElementById('customer-address');
     const viewProducts = document.getElementById('view-products');
     const viewCheckout = document.getElementById('view-checkout');
     const checkoutViewBtn = document.getElementById('checkout-view-btn');
     const productsViewBtn = document.getElementById('products-view-btn');
 
-    // --- MAP & DIRECTIONS LOGIC ---
     function initMap() {
         directionsService = new google.maps.DirectionsService();
-        directionsRenderer = new google.maps.DirectionsRenderer({
-            suppressMarkers: true, // Opcional: para usar marcadores personalizados
-        });
+        geocoder = new google.maps.Geocoder();
+        directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
         const mapOptions = {
-            zoom: 15,
-            center: { lat: -3.09, lng: -60.02 }, // Centro de Manaus
-            disableDefaultUI: true,
-            styles: [ // Estilo de mapa oscuro para que coincida con tu UI
-                { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-                { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
-                { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
-                { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
-                { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] },
-                { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b3" }] },
-                { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#746855" }] },
-                { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2835" }] },
-                { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#f3d19c" }] },
-                { featureType: "transit", elementType: "geometry", stylers: [{ color: "#2f3948" }] },
-                { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] },
-                { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#515c6d" }] },
-            ],
+            zoom: 15, center: { lat: -3.09, lng: -60.02 }, disableDefaultUI: true,
+            styles: [ { elementType: "geometry", stylers: [{ color: "#242f3e" }] }, { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] }, { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] }, { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] }, { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] }, { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] }, { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] }, { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b3" }] }, { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#746855" }] }, { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2835" }] }, { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#f3d19c" }] }, { featureType: "transit", elementType: "geometry", stylers: [{ color: "#2f3948" }] }, { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] }, { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#515c6d" }] }, ],
         };
         map = new google.maps.Map(document.getElementById("map"), mapOptions);
         directionsRenderer.setMap(map);
     }
 
     function calculateAndShowRoute(destinationPlace) {
-        if (!destinationPlace || !destinationPlace.geometry) {
-            return;
-        }
+        if (!destinationPlace || !destinationPlace.geometry) return;
         
         mapContainer.style.display = 'block';
-        if (!map) initMap(); // Inicializar el mapa si aún no se ha hecho
+        if (!map) initMap();
 
-        const request = {
-            origin: STORE_LOCATION,
-            destination: destinationPlace.geometry.location,
-            travelMode: 'DRIVING'
-        };
+        const request = { origin: STORE_LOCATION, destination: destinationPlace.geometry.location, travelMode: 'DRIVING' };
 
         directionsService.route(request, (result, status) => {
             if (status == 'OK') {
                 directionsRenderer.setDirections(result);
-                
-                // Calcular tarifa
                 const route = result.routes[0].legs[0];
                 const distanceInKm = route.distance.value / 1000;
                 const fee = DELIVERY_BASE_FEE + (distanceInKm * DELIVERY_FEE_PER_KM);
-                
                 deliveryFeeEl.value = fee.toFixed(2);
                 updateTotals();
-
-                // Opcional: añadir marcadores personalizados
                 new google.maps.Marker({ position: route.start_location, map: map, title: 'Sua Loja' });
                 new google.maps.Marker({ position: route.end_location, map: map, title: 'Cliente' });
-
             } else {
-                alert('Não foi possível calcular a rota: ' + status);
+                alert('Não foi possível calcular a rota. Verifique o endereço.');
                 mapContainer.style.display = 'none';
             }
         });
     }
+    
+    // ===================================================================
+    // FUNCIÓN MEJORADA: Intenta geocodificar el texto de la dirección.
+    // Esto se usa cuando el usuario no selecciona de la lista.
+    // ===================================================================
+    function geocodeAddressAndCalculate() {
+        const addressText = addressInput.value.trim();
+        // Evita llamadas repetidas para la misma dirección
+        if (!addressText || addressText === lastGeocodedAddress) return;
 
-    // --- API LOGIC ---
+        if (!geocoder) initMap(); // Asegura que el geocodificador esté listo
+
+        geocoder.geocode({ 'address': addressText, componentRestrictions: { country: 'br' } }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+                lastGeocodedAddress = results[0].formatted_address;
+                // Rellena el campo con la dirección formateada para consistencia
+                addressInput.value = lastGeocodedAddress;
+                calculateAndShowRoute(results[0]);
+            } else {
+                console.error('Geocode was not successful for the following reason: ' + status);
+            }
+        });
+    }
+
     function getAuthHeaders() { /* ... sin cambios ... */ return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}` }; }
     async function fetchProducts() { /* ... sin cambios ... */ const h=getAuthHeaders();if(!h)return;try{const r=await fetch(`${API_BASE_URL}/products?out_of_stock=false`,{headers:h});if(!r.ok)throw new Error('...');allProducts=await r.json();renderProducts(allProducts)}catch(e){alert(e.message)}}
-    
-    // --- VIEW TRANSITIONS ---
     function showCheckoutView() { /* ... sin cambios ... */ viewProducts.classList.add('view-hidden-left');viewCheckout.classList.remove('view-hidden-right');checkoutViewBtn.classList.add('hidden');productsViewBtn.classList.remove('hidden'); }
     function showProductsView() { /* ... sin cambios ... */ viewProducts.classList.remove('view-hidden-left');viewCheckout.classList.add('view-hidden-right');productsViewBtn.classList.add('hidden');updateCheckoutButtonVisibility(); }
-
-    // --- RENDER LOGIC ---
     function renderProducts(productsToRender) { /* ... sin cambios ... */ productListContainer.innerHTML='';const t=document.getElementById('product-card-template');productsToRender.forEach(p=>{const c=t.content.cloneNode(true).firstElementChild;c.querySelector('h3').textContent=p.name;c.querySelector('[data-brand]').textContent=p.brand||'Sem Marca';c.querySelector('[data-price]').textContent=`R$${p.price.toFixed(2)}`;const s=c.querySelector('[data-stock]');s.textContent=`Estoque: ${p.stock}`;if(p.stock<5){s.classList.replace('bg-slate-700','bg-yellow-500/30');s.classList.replace('text-slate-300','text-yellow-300')}c.dataset.productId=p.id;productListContainer.appendChild(c)});updateAllProductCardSelections() }
     function renderCart() { /* ... sin cambios ... */ cartItemsContainer.innerHTML='';if(cart.length===0){cartItemsContainer.appendChild(cartEmptyMessage);cartEmptyMessage.hidden=false}else{cartEmptyMessage.hidden=true;const t=document.getElementById('cart-item-template');cart.forEach(i=>{const c=t.content.cloneNode(true).firstElementChild;c.querySelector('p').textContent=i.name;c.querySelector('[data-price]').textContent=`R$${i.price.toFixed(2)}`;const q=c.querySelector('input');q.value=i.quantity;q.max=i.stock;q.dataset.itemId=i.id;c.querySelector('[data-action="remove"]').dataset.itemId=i.id;cartItemsContainer.appendChild(c)})}updateTotals();updateCheckoutButtonVisibility() }
-    
-    // --- BUSINESS LOGIC ---
     function handleProductClick(productId) { /* ... sin cambios ... */ const p=allProducts.find(p=>p.id===productId);if(!p)return;const e=cart.find(i=>i.id===productId);if(e){if(e.quantity<p.stock){e.quantity++}else{alert('...')}}else{cart.push({...p,quantity:1})}renderCart();updateProductCardSelection(productId) }
     function handleProductLongPress(productId) { /* ... sin cambios ... */ const e=cart.find(i=>i.id===productId);if(e){cart=cart.filter(i=>i.id!==productId);renderCart();updateProductCardSelection(productId)} }
     function updateCartItemQuantity(productId, newQuantity) { /* ... sin cambios ... */ const c=cart.find(i=>i.id===productId);const p=allProducts.find(p=>p.id===productId);if(!c||!p)return;if(newQuantity<=0){removeFromCart(productId)}else if(newQuantity>p.stock){alert(`...`);c.quantity=p.stock;renderCart()}else{c.quantity=newQuantity}updateTotals();updateProductCardSelection(productId) }
     function removeFromCart(productId) { /* ... sin cambios ... */ cart=cart.filter(i=>i.id!==productId);renderCart();updateProductCardSelection(productId);if(cart.length===0){showProductsView()} }
     function updateTotals() { /* ... sin cambios ... */ const s=cart.reduce((s,i)=>s+(i.price*i.quantity),0);const d=parseFloat(deliveryFeeEl.value)||0;const g=s+d;subtotalValueEl.textContent=`R$${s.toFixed(2)}`;grandTotalValueEl.textContent=`R$${g.toFixed(2)}` }
-    
-    // --- UI UPDATE FUNCTIONS ---
     function updateProductCardSelection(productId) { /* ... sin cambios ... */ const c=productListContainer.querySelector(`[data-product-id='${productId}']`);if(!c)return;const i=cart.find(i=>i.id===productId);const b=c.querySelector('.selection-badge');if(i){c.classList.add('selected');b.textContent=`${i.quantity}x`}else{c.classList.remove('selected')} }
     function updateAllProductCardSelections() { /* ... sin cambios ... */ allProducts.forEach(p=>updateProductCardSelection(p.id)) }
     function updateCheckoutButtonVisibility() { /* ... sin cambios ... */ checkoutViewBtn.classList.toggle('hidden',cart.length===0) }
-
     async function finalizeSale() { /* ... sin cambios ... */ const c=document.getElementById('customer-name').value.trim();if(cart.length===0){alert('...');return}if(!c){alert('...');return}const d=document.getElementById('delivery-type').value;const o=d==='delivery'?'Pendiente':'Entregado';const p={customer_name:c,customer_address:document.getElementById('customer-address').value.trim(),customer_phone:document.getElementById('customer-phone').value.trim(),total:cart.reduce((s,i)=>s+(i.price*i.quantity),0)+(parseFloat(deliveryFeeEl.value)||0),payment_method:document.getElementById('payment-method').value,delivery_fee:parseFloat(deliveryFeeEl.value)||0,status:o,items:cart.map(i=>({id:i.id,quantity:i.quantity,price:i.price,costo:i.costo||0}))};const h=getAuthHeaders();if(!h)return;finalizeButton.disabled=true;finalizeButton.innerHTML='...';try{const r=await fetch(`${API_BASE_URL}/orders`,{method:'POST',headers:h,body:JSON.stringify(p)});if(!r.ok)throw new Error((await r.json()).detail||'...');const res=await r.json();alert(`Sucesso! Pedido #${res.order_id} criado.`);resetForm()}catch(e){alert(`Erro: ${e.message}`)}finally{finalizeButton.disabled=false;finalizeButton.innerHTML='...'}}
+    function resetForm() { cart = []; document.getElementById('customer-name').value = ''; addressInput.value = ''; document.getElementById('customer-phone').value = ''; deliveryFeeEl.value = '0.00'; mapContainer.style.display = 'none'; if(directionsRenderer) directionsRenderer.set('directions', null); renderCart(); showProductsView(); fetchProducts(); }
 
-    function resetForm() {
-        cart = [];
-        document.getElementById('customer-name').value = '';
-        document.getElementById('customer-address').value = '';
-        document.getElementById('customer-phone').value = '';
-        deliveryFeeEl.value = '0.00';
-        mapContainer.style.display = 'none'; // Ocultar el mapa
-        if(directionsRenderer) directionsRenderer.set('directions', null); // Limpiar la ruta del mapa
-        renderCart();
-        showProductsView();
-        fetchProducts();
-    }
-
-    // --- EVENT LISTENERS ---
-    searchInput.addEventListener('input', (e) => { /* ... sin cambios ... */ const s=e.target.value.toLowerCase();const f=allProducts.filter(p=>p.name.toLowerCase().includes(s)||p.brand&&p.brand.toLowerCase().includes(s)||p.id.toString().includes(s));renderProducts(f) });
-    productListContainer.addEventListener('click', (e) => { /* ... sin cambios ... */ const c=e.target.closest('.product-card');if(c)handleProductClick(parseInt(c.dataset.productId)) });
-    productListContainer.addEventListener('contextmenu', (e) => { /* ... sin cambios ... */ const c=e.target.closest('.product-card');if(c){e.preventDefault();handleProductLongPress(parseInt(c.dataset.productId))} });
-    document.body.addEventListener('change', (e) => { if (e.target.matches('#cart-items input[type="number"]')) { /* ... sin cambios ... */ const i=parseInt(e.target.dataset.itemId);const n=parseInt(e.target.value);updateCartItemQuantity(i,n)} });
-    document.body.addEventListener('click', (e) => { /* ... sin cambios ... */ const b=e.target.closest('[data-action="remove"]');if(b)removeFromCart(parseInt(b.dataset.itemId)) });
-    
+    searchInput.addEventListener('input', (e) => { const s=e.target.value.toLowerCase();const f=allProducts.filter(p=>p.name.toLowerCase().includes(s)||p.brand&&p.brand.toLowerCase().includes(s)||p.id.toString().includes(s));renderProducts(f) });
+    productListContainer.addEventListener('click', (e) => { const c=e.target.closest('.product-card');if(c)handleProductClick(parseInt(c.dataset.productId)) });
+    productListContainer.addEventListener('contextmenu', (e) => { const c=e.target.closest('.product-card');if(c){e.preventDefault();handleProductLongPress(parseInt(c.dataset.productId))} });
+    document.body.addEventListener('change', (e) => { if (e.target.matches('#cart-items input[type="number"]')) { const i=parseInt(e.target.dataset.itemId);const n=parseInt(e.target.value);updateCartItemQuantity(i,n)} });
+    document.body.addEventListener('click', (e) => { const b=e.target.closest('[data-action="remove"]');if(b)removeFromCart(parseInt(b.dataset.itemId)) });
     deliveryFeeEl.addEventListener('input', updateTotals);
     finalizeButton.addEventListener('click', finalizeSale);
     checkoutViewBtn.addEventListener('click', showCheckoutView);
     productsViewBtn.addEventListener('click', showProductsView);
 
-    // NUEVO: Escuchar cambios en el tipo de entrega
+    // ===================================================================
+    // EVENT LISTENERS MEJORADOS
+    // ===================================================================
     deliveryTypeEl.addEventListener('change', (e) => {
         if (e.target.value === 'delivery') {
             const place = autocomplete.getPlace();
+            // Si el usuario ya seleccionó de la lista, usa eso.
             if (place && place.geometry) {
                 calculateAndShowRoute(place);
+            } else {
+                // Si no, intenta usar el texto que ya está en el campo.
+                geocodeAddressAndCalculate();
             }
         } else {
             deliveryFeeEl.value = '0.00';
@@ -321,7 +278,13 @@ function initializeAppLogic(autocomplete) { // Recibir la instancia
         }
     });
 
-    // --- INITIALIZATION ---
+    // NUEVO: Escuchar cuando el usuario hace clic fuera del campo de dirección.
+    addressInput.addEventListener('blur', () => {
+        if (deliveryTypeEl.value === 'delivery') {
+            geocodeAddressAndCalculate();
+        }
+    });
+
     fetchProducts();
 }
 </script>

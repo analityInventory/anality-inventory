@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnalyticExpress - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+        }
+        .form-container {
+            background-color: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .tab.active {
+            border-bottom-color: #3b82f6; /* Azul */
+            color: #60a5fa;
+        }
+        .form-input {
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            color: #f3f4f6;
+        }
+        .form-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+            outline: none;
+        }
+        .submit-btn {
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+        .submit-btn:hover {
+            background-color: #2563eb;
+        }
+        .form-hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1544991886-3b39564b554d?q=80&w=2535&auto=format&fit=crop');">
+
+    <div class="w-full max-w-md mx-auto">
+        <div class="text-center mb-8">
+            <h1 class="text-5xl font-black text-white tracking-wider" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+                Analytic<span class="text-blue-400">Express</span>
+            </h1>
+            <p class="text-slate-300 mt-2">Sua logística, otimizada.</p>
+        </div>
+
+        <div class="form-container rounded-xl shadow-2xl overflow-hidden">
+            <!-- Pestañas -->
+            <div class="grid grid-cols-2">
+                <button id="login-tab-btn" class="tab active text-lg font-bold py-4 transition-colors duration-300 border-b-4">Entrar</button>
+                <button id="register-tab-btn" class="tab text-lg font-bold py-4 text-slate-400 transition-colors duration-300 border-b-4 border-transparent">Registrar</button>
+            </div>
+
+            <!-- Formularios -->
+            <div class="p-8">
+                <!-- Formulario de Login -->
+                <form id="login-form" class="space-y-6">
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium text-slate-300">Email</label>
+                        <input type="email" id="login-email" required class="form-input mt-1 block w-full rounded-md shadow-sm p-3">
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-slate-300">Senha</label>
+                        <input type="password" id="login-password" required class="form-input mt-1 block w-full rounded-md shadow-sm p-3">
+                    </div>
+                    <button type="submit" class="submit-btn w-full font-bold py-3 px-4 rounded-md shadow-lg transition transform active:scale-95">
+                        Entrar
+                    </button>
+                </form>
+
+                <!-- Formulario de Registro -->
+                <form id="register-form" class="space-y-4 form-hidden">
+                    <input type="text" id="register-name" placeholder="Nome Completo" required class="form-input block w-full rounded-md shadow-sm p-3">
+                    <input type="email" id="register-email" placeholder="Email" required class="form-input block w-full rounded-md shadow-sm p-3">
+                    <input type="password" id="register-password" placeholder="Senha" required class="form-input block w-full rounded-md shadow-sm p-3">
+                    <input type="tel" id="register-phone" placeholder="Telefone / WhatsApp" required class="form-input block w-full rounded-md shadow-sm p-3">
+                    <select id="register-role" required class="form-input block w-full rounded-md shadow-sm p-3">
+                        <option value="" disabled selected>Selecione o tipo de usuário</option>
+                        <option value="repartidor">Repartidor (Entregador)</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                    <button type="submit" class="submit-btn w-full font-bold py-3 px-4 rounded-md shadow-lg transition transform active:scale-95">
+                        Criar Conta
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div id="message-area" class="text-center mt-4 text-white"></div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const API_BASE_URL = 'https://mi-primera-app.fly.dev';
+
+    const loginTabBtn = document.getElementById('login-tab-btn');
+    const registerTabBtn = document.getElementById('register-tab-btn');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const messageArea = document.getElementById('message-area');
+
+    // --- Lógica de Pestañas ---
+    loginTabBtn.addEventListener('click', () => {
+        loginTabBtn.classList.add('active');
+        registerTabBtn.classList.remove('active');
+        loginForm.classList.remove('form-hidden');
+        registerForm.classList.add('form-hidden');
+    });
+
+    registerTabBtn.addEventListener('click', () => {
+        registerTabBtn.classList.add('active');
+        loginTabBtn.classList.remove('active');
+        registerForm.classList.remove('form-hidden');
+        loginForm.classList.add('form-hidden');
+    });
+
+    // --- Lógica de Registro ---
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        messageArea.textContent = '';
+        const name = document.getElementById('register-name').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        const phone = document.getElementById('register-phone').value;
+        const role = document.getElementById('register-role').value;
+
+        if (!role) {
+            messageArea.textContent = 'Por favor, selecione um tipo de usuário.';
+            messageArea.style.color = '#f87171'; // red-400
+            return;
+        }
+
+        try {
+            // Este endpoint `/users/register` debe ser creado en tu backend
+            const response = await fetch(`${API_BASE_URL}/users/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, phone, role })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Falha ao registrar.');
+            }
+
+            messageArea.textContent = 'Registro bem-sucedido! Por favor, faça o login.';
+            messageArea.style.color = '#4ade80'; // green-400
+            registerForm.reset();
+            loginTabBtn.click(); // Cambia a la pestaña de login
+
+        } catch (error) {
+            messageArea.textContent = `Erro: ${error.message}`;
+            messageArea.style.color = '#f87171';
+        }
+    });
+
+    // --- Lógica de Login ---
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        messageArea.textContent = '';
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        try {
+            // Este endpoint `/users/token` debe ser actualizado en tu backend para devolver el 'role'
+            const response = await fetch(`${API_BASE_URL}/users/token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+            });
+
+            if (!response.ok) {
+                throw new Error('Email ou senha inválidos.');
+            }
+
+            const data = await response.json();
+            
+            // Guardar el token
+            localStorage.setItem('authToken', data.access_token);
+            sessionStorage.setItem('authToken', data.access_token);
+
+            // Redirección basada en el rol
+            if (data.role === 'admin') {
+                window.location.href = 'index.html'; // Panel principal
+            } else if (data.role === 'repartidor') {
+                window.location.href = 'repartidor_app.html'; // App del repartidor
+            } else {
+                throw new Error('Tipo de usuário desconhecido.');
+            }
+
+        } catch (error) {
+            messageArea.textContent = `Erro: ${error.message}`;
+            messageArea.style.color = '#f87171';
+        }
+    });
+});
+</script>
+</body>
+</html>

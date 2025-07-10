@@ -3,64 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análise Gráfica</title>
+    <title>AnalityInventory - Análise Gráfica</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        
         .form-input {
-            padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1;
-            border-radius: 0.5rem; background-color: white;
+            padding: 0.75rem;
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            background-color: #334155;
+            color: #f1f5f9;
+            transition: all 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+        }
+        .chart-card {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+        }
+        .kpi-card {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .chart-container {
+            height: 300px; /* Altura fija para los contenedores de gráficos */
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="font-sans">
 
-    <header class="bg-white shadow-md sticky top-0 z-20">
+    <header class="bg-slate-900/80 backdrop-blur-sm shadow-md sticky top-0 z-20 border-b border-slate-700">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
-            <h1 id="header-title" class="text-2xl font-bold text-slate-800">Análise Gráfica</h1>
+            <h1 id="header-title" class="text-2xl font-bold text-white">Dashboard de Análise</h1>
             <div>
-                 <a href="index.html" class="text-slate-600 hover:text-blue-600 transition active:scale-90 mr-4" title="Voltar aos Pedidos">
+                 <a href="index.html" class="text-slate-400 hover:text-white transition" title="Voltar ao Menu">
                     <i class="ph ph-arrow-u-left-up text-3xl"></i>
                  </a>
-                 <button id="logoutButton" class="text-slate-600 hover:text-red-600 transition active:scale-90" title="Sair">
-                     <i class="ph ph-sign-out text-3xl"></i>
-                 </button>
             </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto p-4 lg:p-6">
-        <div class="bg-white p-5 rounded-xl shadow-lg">
-            <div class="flex flex-wrap items-center gap-4 mb-6 border-b pb-4">
-                <div>
-                    <label class="text-sm font-medium text-slate-600">Tipo de Análise:</label>
-                    <select id="report-type" class="form-input mt-1">
-                        <option>Resumen Financiero</option>
-                        <option>Análisis de Gastos</option>
-                        <option>Análisis de Productos</option>
-                        <option>Evolución de Ganancia Neta</option>
-                    </select>
+        <!-- Filtros -->
+        <div class="bg-slate-800 p-4 rounded-xl shadow-lg border border-slate-700 mb-6">
+            <div class="flex flex-wrap items-end gap-4">
+                <div class="flex-grow">
+                    <label class="text-sm font-medium text-slate-400">Desde:</label>
+                    <input type="date" id="date-from" class="form-input mt-1 w-full">
                 </div>
-                <div>
-                    <label class="text-sm font-medium text-slate-600">Desde:</label>
-                    <input type="date" id="date-from" class="form-input mt-1">
+                <div class="flex-grow">
+                    <label class="text-sm font-medium text-slate-400">Até:</label>
+                    <input type="date" id="date-to" class="form-input mt-1 w-full">
                 </div>
-                <div>
-                    <label class="text-sm font-medium text-slate-600">Hasta:</label>
-                    <input type="date" id="date-to" class="form-input mt-1">
-                </div>
-                <button id="generate-chart-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg self-end">Gerar</button>
+                <button id="generate-report-btn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition flex items-center justify-center gap-2">
+                    <i class="ph ph-chart-bar"></i>
+                    Gerar Relatório
+                </button>
             </div>
-            
-            <div id="chart-container" class="relative h-[60vh]">
-                <canvas id="myChart"></canvas>
-                <p id="no-data-message" class="hidden absolute inset-0 flex items-center justify-center text-slate-500">
-                    Nenhum dado encontrado para o período selecionado.
-                </p>
+        </div>
+
+        <!-- Dashboard de Gráficos -->
+        <div class="space-y-6">
+            <!-- KPIs Principales -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="kpi-card">
+                    <p class="text-slate-400 text-sm">Total de Vendas</p>
+                    <p id="kpi-total-sales" class="text-4xl font-bold text-green-400 mt-2">R$0.00</p>
+                </div>
+                <div class="kpi-card">
+                    <p class="text-slate-400 text-sm">Total de Despesas</p>
+                    <p id="kpi-total-expenses" class="text-4xl font-bold text-red-400 mt-2">R$0.00</p>
+                </div>
+                <div class="kpi-card">
+                    <p class="text-slate-400 text-sm">Ganho Líquido</p>
+                    <p id="kpi-net-profit" class="text-4xl font-bold text-sky-400 mt-2">R$0.00</p>
+                </div>
             </div>
+
+            <!-- Gráficos Detallados -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="chart-card">
+                    <h3 class="text-lg font-bold text-white mb-4">Rendimento Mensal</h3>
+                    <div class="chart-container">
+                        <canvas id="monthly-performance-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="text-lg font-bold text-white mb-4">Top 5 Produtos Mais Vendidos</h3>
+                    <div class="chart-container">
+                        <canvas id="top-products-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card lg:col-span-2">
+                     <h3 class="text-lg font-bold text-white mb-4">Desglose de Despesas por Categoria</h3>
+                    <div class="chart-container max-w-sm mx-auto">
+                        <canvas id="expenses-by-category-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="no-data-message" class="hidden text-center text-slate-500 py-16">
+            <i class="ph ph-chart-line text-6xl"></i>
+            <p class="mt-4">Nenhum dado encontrado para o período selecionado.</p>
         </div>
     </main>
 
@@ -68,23 +133,28 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIG & STATE ---
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
-    let currentChart = null;
-    const chartCanvas = document.getElementById('myChart');
-    const noDataMessage = document.getElementById('no-data-message');
-    const ctx = chartCanvas.getContext('2d');
+    let charts = {}; // Object to hold all chart instances
 
     // --- SELECTORS ---
-    const reportTypeSelect = document.getElementById('report-type');
     const dateFromInput = document.getElementById('date-from');
     const dateToInput = document.getElementById('date-to');
-    const generateBtn = document.getElementById('generate-chart-btn');
-    const headerTitle = document.getElementById('header-title');
-    const logoutButton = document.getElementById('logoutButton');
+    const generateBtn = document.getElementById('generate-report-btn');
+    const noDataMessage = document.getElementById('no-data-message');
     
+    // KPI Selectors
+    const kpiTotalSales = document.getElementById('kpi-total-sales');
+    const kpiTotalExpenses = document.getElementById('kpi-total-expenses');
+    const kpiNetProfit = document.getElementById('kpi-net-profit');
+
+    // Chart Canvas Selectors
+    const monthlyPerformanceCanvas = document.getElementById('monthly-performance-chart');
+    const topProductsCanvas = document.getElementById('top-products-chart');
+    const expensesByCategoryCanvas = document.getElementById('expenses-by-category-chart');
+
     // --- API LOGIC ---
     function getAuthHeaders() {
         const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        if (!token) { window.location.href = 'index.html'; return null; }
+        if (!token) { window.location.href = 'login.html'; return null; }
         return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
     }
 
@@ -100,14 +170,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- CHART LOGIC ---
-    async function plotChart() {
-        if (currentChart) {
-            currentChart.destroy();
-        }
-        noDataMessage.classList.add('hidden');
-        chartCanvas.classList.remove('hidden');
+    function destroyAllCharts() {
+        Object.values(charts).forEach(chart => {
+            if (chart) chart.destroy();
+        });
+        charts = {};
+    }
 
-        const reportType = reportTypeSelect.value;
+    async function generateReport() {
+        destroyAllCharts();
+        
         const fromDate = dateFromInput.value;
         const toDate = dateToInput.value;
 
@@ -115,150 +187,169 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Por favor, selecione um intervalo de datas.');
             return;
         }
-
-        headerTitle.textContent = `${reportType} (${fromDate} a ${toDate})`;
-        let endpoint = '';
-        let chartOptions = {};
         
         try {
-            switch (reportType) {
-                case 'Resumen Financiero':
-                    endpoint = `/analisis/resumen_financiero?start_date=${fromDate}&end_date=${toDate}`;
-                    const financialData = await fetchApi(endpoint);
-                    renderFinancialSummary(financialData);
-                    break;
-                case 'Análisis de Gastos':
-                    endpoint = `/analisis/gastos_por_categoria?start_date=${fromDate}&end_date=${toDate}`;
-                    const expenseData = await fetchApi(endpoint);
-                    renderExpensesChart(expenseData);
-                    break;
-                case 'Análisis de Productos':
-                    endpoint = `/analisis/top_productos?start_date=${fromDate}&end_date=${toDate}`;
-                    const productData = await fetchApi(endpoint);
-                    renderTopProductsChart(productData);
-                    break;
-                case 'Evolución de Ganancia Neta':
-                    endpoint = `/analisis/ganancia_neta?start_date=${fromDate}&end_date=${toDate}`;
-                    const profitData = await fetchApi(endpoint);
-                    renderNetProfitChart(profitData);
-                    break;
+            const financialSummaryPromise = fetchApi(`/analisis/resumen_financiero?start_date=${fromDate}&end_date=${toDate}`);
+            const topProductsPromise = fetchApi(`/analisis/top_productos?start_date=${fromDate}&end_date=${toDate}`);
+            const expensesByCategoryPromise = fetchApi(`/analisis/gastos_por_categoria?start_date=${fromDate}&end_date=${toDate}`);
+            
+            const [financialData, topProductsData, expensesByCategoryData] = await Promise.all([
+                financialSummaryPromise,
+                topProductsPromise,
+                expensesByCategoryPromise
+            ]);
+
+            const hasData = Object.keys(financialData).length > 0 || topProductsData.length > 0 || expensesByCategoryData.length > 0;
+            noDataMessage.classList.toggle('hidden', hasData);
+            document.querySelector('.dashboard-container')?.classList.toggle('hidden', !hasData);
+
+            if(hasData) {
+                updateKPIs(financialData);
+                renderMonthlyPerformanceChart(financialData);
+                renderTopProductsChart(topProductsData);
+                renderExpensesByCategoryChart(expensesByCategoryData);
             }
+
         } catch (error) {
-            alert(`Erro ao gerar gráfico: ${error.message}`);
-            chartCanvas.classList.add('hidden');
-            noDataMessage.textContent = `Erro ao carregar dados: ${error.message}`;
+            alert(`Erro ao gerar relatório: ${error.message}`);
             noDataMessage.classList.remove('hidden');
         }
     }
-
-    function renderFinancialSummary(data) {
-        if (Object.keys(data).length === 0) {
-            noDataMessage.classList.remove('hidden');
-            chartCanvas.classList.add('hidden');
-            return;
-        }
-        const labels = Object.keys(data).map(m => new Date(m + '-02').toLocaleString('pt-BR', { month: 'short', year: '2-digit' }));
-        const ventas = Object.values(data).map(d => d.ventas);
-        const gastos = Object.values(data).map(d => d.gastos);
-        const inversiones = Object.values(data).map(d => d.inversiones);
+    
+    function updateKPIs(data) {
+        const totalSales = Object.values(data).reduce((sum, month) => sum + month.ventas, 0);
+        const totalExpenses = Object.values(data).reduce((sum, month) => sum + month.gastos, 0);
+        const totalInvestments = Object.values(data).reduce((sum, month) => sum + month.inversiones, 0);
+        const netProfit = totalSales - totalExpenses - totalInvestments;
         
-        currentChart = new Chart(ctx, {
+        kpiTotalSales.textContent = `R$${totalSales.toFixed(2)}`;
+        kpiTotalExpenses.textContent = `R$${totalExpenses.toFixed(2)}`;
+        kpiNetProfit.textContent = `R$${netProfit.toFixed(2)}`;
+        kpiNetProfit.className = `text-4xl font-bold mt-2 ${netProfit >= 0 ? 'text-sky-400' : 'text-red-500'}`;
+    }
+
+    function renderMonthlyPerformanceChart(data) {
+        const labels = Object.keys(data).map(m => new Date(m + '-02').toLocaleString('pt-BR', { month: 'short', year: '2-digit' }));
+        const salesData = Object.values(data).map(d => d.ventas);
+        const netProfitData = Object.values(data).map(d => d.ventas - d.gastos - d.inversiones);
+
+        charts.monthlyPerformance = new Chart(monthlyPerformanceCanvas.getContext('2d'), {
             type: 'bar',
             data: {
                 labels,
                 datasets: [
-                    { label: 'Ventas', data: ventas, backgroundColor: '#22c55e' },
-                    { label: 'Gastos', data: gastos, backgroundColor: '#ef4444' },
-                    { label: 'Inversiones', data: inversiones, backgroundColor: '#3b82f6' }
+                    {
+                        label: 'Vendas',
+                        data: salesData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        order: 2
+                    },
+                    {
+                        label: 'Ganho Líquido',
+                        data: netProfitData,
+                        type: 'line',
+                        borderColor: '#06b6d4',
+                        backgroundColor: '#06b6d4',
+                        tension: 0.4,
+                        fill: false,
+                        order: 1
+                    }
                 ]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-        });
-    }
-
-    function renderExpensesChart(data) {
-        if (data.length === 0) {
-            noDataMessage.classList.remove('hidden');
-            chartCanvas.classList.add('hidden');
-            return;
-        }
-        const labels = data.map(d => d.categoria);
-        const values = data.map(d => d.total_categoria);
-
-        currentChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels,
-                datasets: [{
-                    label: 'Gastos por Categoria',
-                    data: values,
-                    backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef']
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { 
+                    y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                },
+                plugins: { legend: { labels: { color: '#e2e8f0' } } },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuad'
+                }
+            }
         });
     }
 
     function renderTopProductsChart(data) {
-        if (data.length === 0) {
-            noDataMessage.classList.remove('hidden');
-            chartCanvas.classList.add('hidden');
-            return;
-        }
         const labels = data.map(d => d.product_name);
         const values = data.map(d => d.total_revenue);
         
-        currentChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [{ label: 'Ingresos por Producto', data: values, backgroundColor: '#16a34a' }]
-            },
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
-        });
-    }
-    
-    function renderNetProfitChart(data) {
-        if (Object.keys(data).length === 0) {
-            noDataMessage.classList.remove('hidden');
-            chartCanvas.classList.add('hidden');
-            return;
-        }
-        const labels = Object.keys(data).map(m => new Date(m + '-02').toLocaleString('pt-BR', { month: 'short', year: '2-digit' }));
-        const netProfits = Object.values(data).map(d => d.total_ingresos - d.total_costos - d.total_gastos);
-        
-        currentChart = new Chart(ctx, {
+        charts.topProducts = new Chart(topProductsCanvas.getContext('2d'), {
             type: 'bar',
             data: {
                 labels,
                 datasets: [{ 
-                    label: 'Ganancia Neta', 
-                    data: netProfits,
-                    backgroundColor: netProfits.map(p => p >= 0 ? '#22c55e' : '#ef4444')
+                    label: 'Ingressos por Produto', 
+                    data: values, 
+                    backgroundColor: '#16a34a',
+                    borderColor: '#16a34a',
+                    borderWidth: 1
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: false } } }
+            options: { 
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                scales: { 
+                    y: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                },
+                plugins: { legend: { display: false } },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuad'
+                }
+            }
+        });
+    }
+
+    function renderExpensesByCategoryChart(data) {
+        const labels = data.map(d => d.categoria);
+        const values = data.map(d => d.total_categoria);
+
+        charts.expensesByCategory = new Chart(expensesByCategoryCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Despesas por Categoria',
+                    data: values,
+                    backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'],
+                    borderColor: '#1e293b',
+                    borderWidth: 4,
+                    hoverOffset: 10
+                }]
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'right', labels: { color: '#e2e8f0' } } },
+                animation: {
+                    animateRotate: true,
+                    animateScale: true,
+                    duration: 1200
+                }
+            }
         });
     }
 
     // --- INITIALIZATION & EVENTS ---
     function setDefaultDates() {
         const today = new Date();
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         dateToInput.value = today.toISOString().split('T')[0];
-        dateFromInput.value = firstDay.toISOString().split('T')[0];
+        dateFromInput.value = firstDayOfMonth.toISOString().split('T')[0];
     }
-
-    logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('authToken');
-        sessionStorage.removeItem('authToken');
-        window.location.href = 'index.html';
-    });
     
-    generateBtn.addEventListener('click', plotChart);
+    generateBtn.addEventListener('click', generateReport);
 
-    setDefaultDates();
-    plotChart(); // Cargar el gráfico inicial al cargar la página
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (token) {
+        setDefaultDates();
+        generateReport();
+    } else {
+        window.location.href = 'login.html';
+    }
 });
 </script>
 </body>

@@ -9,20 +9,22 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- =================================================================== -->
+    <!-- PASO 1: AÑADIR LIBRERÍA DE SUPABASE Y EL GUARDIÁN DE SEGURIDAD      -->
+    <!-- =================================================================== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js" defer></script>
+
     <style>
-        /* --- TEMA OSCURO APLICADO --- */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #0f172a;
             color: #e2e8f0;
         }
-        /* Estilos para la barra de rolagem */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-
-        /* Estilos para inputs y modales */
         .form-input {
             width: 100%;
             padding: 0.75rem;
@@ -73,15 +75,12 @@
     </header>
 
     <main class="max-w-7xl mx-auto p-4 lg:p-6">
-        <!-- Contenedor principal -->
         <div class="bg-slate-800 p-5 rounded-xl shadow-lg border border-slate-700">
-            <!-- Sección de Resumen y Gráficos -->
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-center mb-6 border-b border-slate-700 pb-6">
                 <div class="lg:col-span-2 text-center lg:text-left">
                     <p class="text-slate-400 text-sm">Total Gastado (Filtro Atual)</p>
                     <p id="total-expenses-value" class="text-5xl font-bold text-red-400">R$0.00</p>
                 </div>
-                <!-- Contenedor para ambos gráficos -->
                 <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="relative h-48">
                         <canvas id="expense-donut-chart"></canvas>
@@ -94,7 +93,6 @@
                 </div>
             </div>
 
-            <!-- Sección de Filtros y Tabla -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4 items-center">
                 <input type="text" id="search-input" placeholder="Buscar por descrição..." class="form-input lg:col-span-1">
                 <select id="month-filter" class="form-input">
@@ -127,12 +125,10 @@
         </div>
     </main>
     
-    <!-- Botón flotante para añadir gasto -->
     <button id="add-expense-btn" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg p-4 transition-transform transform active:scale-90 z-30">
         <i class="ph ph-plus text-3xl"></i>
     </button>
 
-    <!-- Modal para Añadir/Editar Gasto -->
     <div id="expense-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
         <div class="modal-container opacity-0 scale-95 bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg border border-slate-700">
             <div class="p-6 border-b border-slate-700 flex justify-between items-center">
@@ -171,7 +167,6 @@
         </div>
     </div>
     
-    <!-- Modal de Gestão de Categorias -->
     <div id="category-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4">
         <div class="bg-slate-800 rounded-xl shadow-2xl w-full max-w-md border border-slate-700">
             <div class="p-6 border-b border-slate-700 flex justify-between items-center">
@@ -192,7 +187,6 @@
         </div>
     </div>
 
-    <!-- Templates -->
     <template id="expense-row-template">
         <tr class="hover:bg-slate-700/50">
             <td class="p-3 text-slate-300" data-description></td>
@@ -221,7 +215,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- CONFIG & STATE ---
+    // La variable 'supabase' está disponible globalmente gracias a 'auth.js'
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
     let allExpenses = [];
     let allCategories = [];
@@ -253,17 +247,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoryListContainer = document.getElementById('category-list-container');
     const addCategoryForm = document.getElementById('add-category-form');
 
-    // --- API LOGIC ---
-    function getAuthHeaders() {
-        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        if (!token) { window.location.href = 'login.html'; return null; }
-        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    // ===================================================================
+    // PASO 2: ACTUALIZAR LA LÓGICA DE AUTENTICACIÓN
+    // ===================================================================
+    async function getAuthHeaders() {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+            console.error('Error de sesión o sesión no encontrada:', error);
+            window.location.href = 'login.html'; // Redirige si no hay sesión
+            return null;
+        }
+        return { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${session.access_token}` 
+        };
     }
 
     async function fetchApi(endpoint, options = {}) {
-        const headers = getAuthHeaders();
-        if (!headers) return;
+        const headers = await getAuthHeaders();
+        if (!headers) return; // Detiene la ejecución si no hay cabeceras
+        
         const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options });
+        
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido.' }));
             throw new Error(errorData.detail);
@@ -272,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return response.json();
     }
 
-    // --- DATA LOADING ---
+    // --- El resto de la lógica de la aplicación se mantiene, ya que ahora usa fetchApi actualizado ---
     async function loadInitialData() {
         try {
             await fetchCategories();
@@ -287,10 +292,8 @@ document.addEventListener('DOMContentLoaded', () => {
         populateCategorySelects();
     }
     
-    // --- FUNCIÓN CORREGIDA ---
     async function fetchExpenses() {
         const fetchedExpenses = await fetchApi('/gastos');
-        // Enriquece los datos de gastos con el categoria_id faltante
         allExpenses = fetchedExpenses.map(expense => {
             const category = allCategories.find(cat => cat.nombre === expense.categoria);
             return {
@@ -302,7 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFilteredResults();
     }
 
-    // --- FILTER & RENDER LOGIC ---
     function populateCategorySelects() {
         const currentFilterValue = categoryFilter.value;
         categoryFilter.innerHTML = '<option value="Todos">Todas as Categorias</option>';
@@ -378,7 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- CHART RENDERING ---
     function renderExpenseDonutChart(expenses) {
         const canvas = document.getElementById('expense-donut-chart');
         const noDataEl = document.getElementById('donut-no-data');
@@ -464,7 +465,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- MODAL & FORM LOGIC ---
     function openModal(modal) {
         modal.classList.remove('hidden');
         setTimeout(() => {
@@ -540,7 +540,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- CATEGORY MODAL LOGIC ---
     function renderCategoryList() {
         categoryListContainer.innerHTML = '';
         const template = document.getElementById('category-list-item-template');
@@ -604,12 +603,8 @@ document.addEventListener('DOMContentLoaded', () => {
     addCategoryForm.addEventListener('submit', handleAddNewCategory);
 
     // --- INITIALIZATION ---
-    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-    if (token) {
-        loadInitialData();
-    } else {
-        window.location.href = 'login.html';
-    }
+    // La verificación de seguridad ahora la hace auth.js, por lo que podemos llamar a loadInitialData directamente.
+    loadInitialData();
 });
 </script>
 </body>

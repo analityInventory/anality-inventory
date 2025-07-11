@@ -7,9 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Librería de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Script de Google reCAPTCHA -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         body {
@@ -75,13 +73,8 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const SUPABASE_URL = 'TU_SUPABASE_URL';
-    const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY';
-
-    if (SUPABASE_URL === 'TU_SUPABASE_URL' || SUPABASE_ANON_KEY === 'TU_SUPABASE_ANON_KEY') {
-        alert('ERRO DE CONFIGURAÇÃO: As credenciais do Supabase não foram definidas neste arquivo.');
-        return;
-    }
+    const SUPABASE_URL = 'https://gedcmaypjelwwibzlxte.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdlZGNtYXlwamVsd3dpYnpseHRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyMjk3MzcsImV4cCI6MjA2NjgwNTczN30.4rwnAo4um8Q1NK25TakCOOJew1VuoQWtvGE27brslbY';
     
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -91,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showMessage(text, isError = false) {
         messageArea.textContent = text;
         messageArea.style.backgroundColor = isError ? 'rgba(239, 68, 68, 0.5)' : 'rgba(74, 222, 128, 0.5)';
+        messageArea.style.display = text ? 'block' : 'none';
     }
 
     registerForm.addEventListener('submit', async (e) => {
@@ -138,3 +132,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+

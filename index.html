@@ -8,20 +8,18 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
-    <!-- =================================================================== -->
-    <!-- PASO 1: AÑADIR LIBRERÍA DE SUPABASE Y EL GUARDIÁN DE SEGURIDAD      -->
-    <!-- =================================================================== -->
+    <!-- PASO 1: AÑADIR LIBRERÍA DE SUPABASE Y EL GUARDIÁN DE SEGURIDAD -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js" defer></script>
 
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0f172a; /* Tema oscuro */
+            background-color: #0f172a;
             color: #e2e8f0;
         }
         .menu-card {
-            background-color: #1e293b; /* Color de tarjeta oscuro */
+            background-color: #1e293b;
             border-radius: 1rem;
             padding: 2rem;
             text-align: center;
@@ -54,6 +52,32 @@
             color: #94a3b8;
             margin-top: 0.25rem;
         }
+        /* Estilos para el modal y el selector de idioma */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+            transition: opacity 0.3s ease;
+        }
+        .modal-container {
+            background-color: #1e293b;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            border: 1px solid #334155;
+        }
+        .language-selector {
+            position: relative;
+        }
+        .language-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 0.5rem;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            z-index: 50;
+        }
+        .language-selector:hover .language-dropdown {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -61,87 +85,182 @@
     <header class="bg-slate-900/80 backdrop-blur-sm shadow-md sticky top-0 z-20 border-b border-slate-700">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
             <h1 class="text-2xl font-bold text-white">AnalyticPro</h1>
-            <button id="logoutButton" class="text-slate-400 hover:text-white transition active:scale-90" title="Sair">
-                <i class="ph ph-sign-out text-3xl"></i>
-            </button>
+            <div class="flex items-center gap-4">
+                <!-- NUEVO: Selector de Idioma -->
+                <div class="language-selector">
+                    <button class="text-slate-400 hover:text-white transition">
+                        <i class="ph ph-translate text-3xl"></i>
+                    </button>
+                    <div class="language-dropdown rounded-md shadow-lg">
+                        <a href="#" class="block px-4 py-2 text-sm text-slate-300 hover:bg-blue-600 hover:text-white" data-lang-code="pt">Português</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-slate-300 hover:bg-blue-600 hover:text-white" data-lang-code="es">Español</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-slate-300 hover:bg-blue-600 hover:text-white" data-lang-code="en">English</a>
+                    </div>
+                </div>
+                <button id="logoutButton" class="text-slate-400 hover:text-red-500 transition active:scale-90" title="Sair">
+                    <i class="ph ph-sign-out text-3xl"></i>
+                </button>
+            </div>
         </div>
     </header>
 
     <main class="max-w-5xl mx-auto p-4 lg:p-8">
         <div class="text-center mb-12">
-            <h1 class="text-4xl font-bold text-white">Menu Principal</h1>
-            <p class="text-slate-400 mt-2">Selecione um módulo para começar a gerenciar.</p>
+            <h1 class="text-4xl font-bold text-white" data-lang="main_title">Menu Principal</h1>
+            <p class="text-slate-400 mt-2" data-lang="subtitle">Selecione um módulo para começar a gerenciar.</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Card de Vender -->
             <a href="ventas.html" class="menu-card">
                 <i class="ph ph-storefront"></i>
-                <h2>Vender</h2>
-                <p>Criar uma nova venda ou pedido</p>
+                <h2 data-lang="card_sell_title">Vender</h2>
+                <p data-lang="card_sell_desc">Criar uma nova venda ou pedido</p>
             </a>
-            <!-- Card de Entregas -->
             <a href="entregas.html" class="menu-card">
                 <i class="ph ph-package"></i>
-                <h2>Entregas</h2>
-                <p>Gerenciar pedidos e entregas</p>
+                <h2 data-lang="card_deliveries_title">Entregas</h2>
+                <p data-lang="card_deliveries_desc">Gerenciar pedidos e entregas</p>
             </a>
-            <!-- Card de Produtos -->
             <a href="productos.html" class="menu-card">
                 <i class="ph ph-cube"></i>
-                <h2>Produtos</h2>
-                <p>Controlar inventário e estoque</p>
+                <h2 data-lang="card_products_title">Produtos</h2>
+                <p data-lang="card_products_desc">Controlar inventário e estoque</p>
             </a>
-            <!-- Card de Inversiones -->
             <a href="inversiones.html" class="menu-card">
                 <i class="ph ph-chart-line-up"></i>
-                <h2>Investimentos</h2>
-                <p>Registrar compras e pacotes</p>
+                <h2 data-lang="card_investments_title">Investimentos</h2>
+                <p data-lang="card_investments_desc">Registrar compras e pacotes</p>
             </a>
-            <!-- Card de Gastos -->
             <a href="gastos.html" class="menu-card">
                 <i class="ph ph-receipt"></i>
-                <h2>Despesas</h2>
-                <p>Administrar gastos operativos</p>
+                <h2 data-lang="card_expenses_title">Despesas</h2>
+                <p data-lang="card_expenses_desc">Administrar gastos operativos</p>
             </a>
-            <!-- Card de Gráficos -->
             <a href="graficos.html" class="menu-card">
                 <i class="ph ph-chart-bar"></i>
-                <h2>Análises</h2>
-                <p>Visualizar gráficos e relatórios</p>
+                <h2 data-lang="card_analysis_title">Análises</h2>
+                <p data-lang="card_analysis_desc">Visualizar gráficos e relatórios</p>
             </a>
-            <!-- Card de Configuración -->
             <a href="configuracoes.html" class="menu-card">
                 <i class="ph ph-gear"></i>
-                <h2>Configurações</h2>
-                <p>Ajustes da conta e temas</p>
+                <h2 data-lang="card_settings_title">Configurações</h2>
+                <p data-lang="card_settings_desc">Ajustes da conta e temas</p>
             </a>
         </div>
     </main>
+
+    <!-- NUEVO: Modal de Confirmación para Salir -->
+    <div id="logout-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+        <div class="modal-container rounded-lg shadow-lg p-6 w-full max-w-sm text-center">
+            <i class="ph ph-warning-circle text-5xl text-yellow-400 mb-4"></i>
+            <h3 class="text-xl font-bold text-white mb-2" data-lang="logout_confirm_title">Sair da Conta</h3>
+            <p class="text-slate-400 mb-6" data-lang="logout_confirm_text">Você tem certeza que deseja sair?</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancel-logout-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-6 rounded-lg transition" data-lang="logout_confirm_cancel">Cancelar</button>
+                <button id="confirm-logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition" data-lang="logout_confirm_confirm">Sim, Sair</button>
+            </div>
+        </div>
+    </div>
     
 <script>
-// ===================================================================
-// PASO 2: ACTUALIZAR LA LÓGICA DE LA PÁGINA
-// El script antiguo se ha eliminado.
-// ===================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // La verificación de seguridad ahora la hace 'auth.js' antes de que este código se ejecute.
-    // Por lo tanto, podemos asumir que el usuario ya está autenticado.
-
+    // La variable 'supabase' está disponible globalmente gracias al script 'auth.js'
     const logoutButton = document.getElementById('logoutButton');
-    logoutButton.addEventListener('click', async () => {
+    const logoutModal = document.getElementById('logout-modal');
+    const cancelLogoutBtn = document.getElementById('cancel-logout-btn');
+    const confirmLogoutBtn = document.getElementById('confirm-logout-btn');
+
+    // --- Lógica de Traducción ---
+    const translations = {
+        pt: {
+            main_title: "Menu Principal", subtitle: "Selecione um módulo para começar a gerenciar.",
+            card_sell_title: "Vender", card_sell_desc: "Criar uma nova venda ou pedido",
+            card_deliveries_title: "Entregas", card_deliveries_desc: "Gerenciar pedidos e entregas",
+            card_products_title: "Produtos", card_products_desc: "Controlar inventário e estoque",
+            card_investments_title: "Investimentos", card_investments_desc: "Registrar compras e pacotes",
+            card_expenses_title: "Despesas", card_expenses_desc: "Administrar gastos operativos",
+            card_analysis_title: "Análises", card_analysis_desc: "Visualizar gráficos e relatórios",
+            card_settings_title: "Configurações", card_settings_desc: "Ajustes da conta e temas",
+            logout_confirm_title: "Sair da Conta", logout_confirm_text: "Você tem certeza que deseja sair?",
+            logout_confirm_cancel: "Cancelar", logout_confirm_confirm: "Sim, Sair"
+        },
+        es: {
+            main_title: "Menú Principal", subtitle: "Selecciona un módulo para empezar a gestionar.",
+            card_sell_title: "Vender", card_sell_desc: "Crear una nueva venta o pedido",
+            card_deliveries_title: "Entregas", card_deliveries_desc: "Gestionar pedidos y entregas",
+            card_products_title: "Productos", card_products_desc: "Controlar inventario y stock",
+            card_investments_title: "Inversiones", card_investments_desc: "Registrar compras y paquetes",
+            card_expenses_title: "Gastos", card_expenses_desc: "Administrar gastos operativos",
+            card_analysis_title: "Análisis", card_analysis_desc: "Visualizar gráficos e informes",
+            card_settings_title: "Configuraciones", card_settings_desc: "Ajustes de la cuenta y temas",
+            logout_confirm_title: "Cerrar Sesión", logout_confirm_text: "¿Estás seguro de que quieres salir?",
+            logout_confirm_cancel: "Cancelar", logout_confirm_confirm: "Sí, Salir"
+        },
+        en: {
+            main_title: "Main Menu", subtitle: "Select a module to start managing.",
+            card_sell_title: "Sell", card_sell_desc: "Create a new sale or order",
+            card_deliveries_title: "Deliveries", card_deliveries_desc: "Manage orders and deliveries",
+            card_products_title: "Products", card_products_desc: "Control inventory and stock",
+            card_investments_title: "Investments", card_investments_desc: "Register purchases and packages",
+            card_expenses_title: "Expenses", card_expenses_desc: "Manage operating expenses",
+            card_analysis_title: "Analytics", card_analysis_desc: "View charts and reports",
+            card_settings_title: "Settings", card_settings_desc: "Account and theme settings",
+            logout_confirm_title: "Sign Out", logout_confirm_text: "Are you sure you want to sign out?",
+            logout_confirm_cancel: "Cancel", logout_confirm_confirm: "Yes, Sign Out"
+        }
+    };
+
+    function setLanguage(lang) {
+        if (!translations[lang]) return;
+        localStorage.setItem('userLanguage', lang);
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if (translations[lang][key]) {
+                el.textContent = translations[lang][key];
+            }
+        });
+    }
+
+    document.querySelectorAll('.language-option').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            setLanguage(e.target.dataset.langCode);
+        });
+    });
+
+    function loadLanguage() {
+        const savedLang = localStorage.getItem('userLanguage');
+        const browserLang = navigator.language.split('-')[0];
+        setLanguage(savedLang || (translations[browserLang] ? browserLang : 'pt'));
+    }
+    
+    // --- Lógica del Modal de Logout ---
+    logoutButton.addEventListener('click', () => {
+        logoutModal.classList.remove('hidden');
+    });
+
+    cancelLogoutBtn.addEventListener('click', () => {
+        logoutModal.classList.add('hidden');
+    });
+
+    confirmLogoutBtn.addEventListener('click', async () => {
         // La variable 'supabase' está disponible globalmente gracias al script 'auth.js'
         const { error } = await supabase.auth.signOut();
         if (error) {
             console.error('Error al cerrar sesión:', error);
             alert('Não foi possível sair. Tente novamente.');
         } else {
-            // Redirige al login de administrador después de cerrar sesión
             window.location.href = 'login.html';
         }
     });
+    
+    // Cargar el idioma al iniciar la página
+    loadLanguage();
 });
 </script>
+
+</body>
+</html>
 
 </body>
 </html>

@@ -10,23 +10,64 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Librería de Supabase y el guardián de seguridad -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js" defer></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
-        .form-input { width: 100%; padding: 0.75rem; border: 1px solid #475569; border-radius: 0.5rem; background-color: #334155; color: #f1f5f9; transition: all 0.2s; }
-        .form-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4); }
-        .modal-overlay { transition: opacity 0.3s ease; }
-        .modal-container { transition: transform 0.3s ease, opacity 0.3s ease; }
-        input[type="color"] { -webkit-appearance: none; -moz-appearance: none; appearance: none; width: 40px; height: 40px; border: none; cursor: pointer; border-radius: 0.5rem; padding: 0; background-color: transparent; }
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            background-color: #334155;
+            color: #f1f5f9;
+            transition: all 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+        }
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+        .modal-container {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        input[type="color"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 40px;
+            height: 40px;
+            border: none;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            padding: 0;
+            background-color: transparent;
+        }
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         input[type="color"]::-webkit-color-swatch { border: 1px solid #475569; border-radius: 0.5rem; }
         .language-selector { position: relative; }
-        .language-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background-color: #1e293b; border: 1px solid #334155; z-index: 50; }
+        .language-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 0.5rem;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            z-index: 50;
+        }
         .language-selector:hover .language-dropdown { display: block; }
     </style>
 </head>
@@ -36,6 +77,7 @@
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
             <h1 class="text-2xl font-bold text-white" data-lang="header_title">Gestão de Despesas</h1>
             <div class="flex items-center gap-4">
+                 <!-- Selector de Idioma -->
                 <div class="language-selector">
                     <button class="text-slate-400 hover:text-white transition">
                         <i class="ph ph-translate text-3xl"></i>
@@ -183,7 +225,8 @@
         </tr>
     </template>
     <template id="category-list-item-template">
-        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-700">
+        <!-- El div principal ahora tiene los atributos data-* para la delegación -->
+        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-700" data-category-id="" data-category-name="">
             <div class="flex items-center gap-3">
                 <span class="w-4 h-4 rounded-full" data-color-indicator></span>
                 <span class="font-medium text-slate-200" data-name></span>
@@ -194,7 +237,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // La variable 'supabase' está disponible globalmente gracias a 'auth.js'
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
     let allExpenses = [];
     let allCategories = [];
@@ -228,12 +270,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Lógica de Traducción ---
     const translations = {
-        pt: { /* ... */ },
-        es: { /* ... */ },
-        en: { /* ... */ }
+        pt: {
+            header_title: "Gestão de Despesas", total_spent_label: "Total Gastado (Filtro Atual)",
+            no_category_data: "Sem dados de categoria", no_trend_data: "Sem dados de tendência",
+            search_placeholder: "Buscar por descrição...", all_months: "Todos os Meses",
+            all_categories: "Todas as Categorias", th_description: "Descrição", th_value: "Valor",
+            th_category: "Categoria", th_date: "Data", th_actions: "Ações",
+            no_expenses_found: "Nenhuma despesa encontrada.", form_description: "Descrição *",
+            form_value: "Valor (R$) *", form_category: "Categoria *", form_date: "Data *",
+            form_notes: "Observações", form_cancel: "Cancelar", form_save: "Salvar",
+            category_modal_title: "Gerenciar Categorias", category_modal_add_title: "Adicionar Nova Categoria",
+            category_name_placeholder: "Nome da categoria", category_modal_add_btn: "Adicionar",
+            no_categories_found: "Nenhuma categoria cadastrada."
+        },
+        es: {
+            header_title: "Gestión de Gastos", total_spent_label: "Total Gastado (Filtro Actual)",
+            no_category_data: "Sin datos de categoría", no_trend_data: "Sin datos de tendencia",
+            search_placeholder: "Buscar por descripción...", all_months: "Todos los Meses",
+            all_categories: "Todas las Categorías", th_description: "Descripción", th_value: "Valor",
+            th_category: "Categoría", th_date: "Fecha", th_actions: "Acciones",
+            no_expenses_found: "No se encontraron gastos.", form_description: "Descripción *",
+            form_value: "Valor (R$) *", form_category: "Categoría *", form_date: "Fecha *",
+            form_notes: "Observaciones", form_cancel: "Cancelar", form_save: "Guardar",
+            category_modal_title: "Gestionar Categorías", category_modal_add_title: "Añadir Nueva Categoría",
+            category_name_placeholder: "Nombre de la categoría", category_modal_add_btn: "Añadir",
+            no_categories_found: "No se encontraron categorías."
+        },
+        en: {
+            header_title: "Expense Management", total_spent_label: "Total Spent (Current Filter)",
+            no_category_data: "No category data", no_trend_data: "No trend data",
+            search_placeholder: "Search by description...", all_months: "All Months",
+            all_categories: "All Categories", th_description: "Description", th_value: "Value",
+            th_category: "Category", th_date: "Date", th_actions: "Actions",
+            no_expenses_found: "No expenses found.", form_description: "Description *",
+            form_value: "Value (R$) *", form_category: "Category *", form_date: "Date *",
+            form_notes: "Notes", form_cancel: "Cancel", form_save: "Save",
+            category_modal_title: "Manage Categories", category_modal_add_title: "Add New Category",
+            category_name_placeholder: "Category name", category_modal_add_btn: "Add",
+            no_categories_found: "No categories found."
+        }
     };
 
-    function getCurrentLanguage() { // <-- NUEVO: Función para obtener el idioma actual y evitar repetición
+    function getCurrentLanguage() {
         const savedLang = localStorage.getItem('userLanguage');
         const browserLang = navigator.language.split('-')[0];
         return savedLang || (translations[browserLang] ? browserLang : 'pt');
@@ -264,8 +342,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Lógica de Autenticación y API ---
-    async function getAuthHeaders() { /* ... sin cambios ... */ }
-    async function fetchApi(endpoint, options = {}) { /* ... sin cambios ... */ }
+    async function getAuthHeaders() {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+            console.error('Error de sesión o sesión no encontrada:', error);
+            window.location.href = 'login.html';
+            return null;
+        }
+        return { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${session.access_token}` 
+        };
+    }
+
+    async function fetchApi(endpoint, options = {}) {
+        const headers = await getAuthHeaders();
+        if (!headers) {
+            throw new Error("Sessão de usuário não encontrada. Faça o login novamente.");
+        }
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido.' }));
+            throw new Error(errorData.detail);
+        }
+        if (response.status === 204) return null;
+        return response.json();
+    }
 
     // --- Lógica de la Aplicación ---
     async function loadInitialData() {
@@ -273,17 +375,20 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetchCategories();
             await fetchExpenses();
         } catch (error) {
+            console.error("Error detallado al cargar datos:", error);
             alert(`Erro ao carregar dados iniciais: ${error.message}`);
         }
     }
 
     async function fetchCategories() {
-        allCategories = await fetchApi('/gastos/categorias');
+        // CORRECCIÓN: Asegura que allCategories sea siempre un array.
+        allCategories = await fetchApi('/gastos/categorias') || [];
         populateCategorySelects();
     }
     
     async function fetchExpenses() {
-        const fetchedExpenses = await fetchApi('/gastos');
+        // CORRECIÓN: Asegura que fetchedExpenses sea siempre un array.
+        const fetchedExpenses = await fetchApi('/gastos') || [];
         allExpenses = fetchedExpenses.map(expense => {
             const category = allCategories.find(cat => cat.nombre === expense.categoria);
             return { ...expense, categoria_id: category ? category.id : null };
@@ -301,8 +406,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const expenseCategorySelect = document.getElementById('expense-category');
         expenseCategorySelect.innerHTML = '';
         allCategories.forEach(cat => expenseCategorySelect.appendChild(new Option(cat.nombre, cat.nombre)));
-        
-        setLanguage(getCurrentLanguage()); // <-- AÑADIDO: Mantiene la traducción correcta
+
+        setLanguage(getCurrentLanguage());
     }
 
     function populateMonthFilter() {
@@ -317,41 +422,237 @@ document.addEventListener('DOMContentLoaded', () => {
             monthFilter.appendChild(new Option(optionText.charAt(0).toUpperCase() + optionText.slice(1), monthStr));
         });
         monthFilter.value = currentFilterValue;
-        setLanguage(getCurrentLanguage()); // <-- AÑADIDO: Mantiene la traducción correcta
+        setLanguage(getCurrentLanguage());
     }
 
-    function renderFilteredResults() { /* ... sin cambios ... */ }
-    function renderSummary(expenses) { /* ... sin cambios ... */ }
-    function renderExpensesTable(expenses) { /* ... sin cambios ... */ }
-    function renderExpenseDonutChart(expenses) { /* ... sin cambios ... */ }
-    function renderExpenseTrendChart(expenses) { /* ... sin cambios ... */ }
-    function openModal(modal) { /* ... sin cambios ... */ }
-    function closeModal(modal) { /* ... sin cambios ... */ }
-    function prepareEditForm(expense) { /* ... sin cambios ... */ }
-    function prepareNewForm() { /* ... sin cambios ... */ }
-    async function handleFormSubmit(e) { /* ... sin cambios ... */ }
-    async function deleteExpense(id, description) { /* ... sin cambios ... */ }
+    function renderFilteredResults() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedCategoryId = categoryFilter.value;
+        const selectedMonth = monthFilter.value;
+
+        const filteredExpenses = allExpenses.filter(expense => {
+            const matchesSearch = expense.descripcion.toLowerCase().includes(searchTerm);
+            const matchesCategory = selectedCategoryId === 'Todos' || expense.categoria_id == selectedCategoryId;
+            const matchesMonth = selectedMonth === 'Todos' || expense.fecha.startsWith(selectedMonth);
+            return matchesSearch && matchesCategory && matchesMonth;
+        });
+        
+        renderSummary(filteredExpenses);
+        renderExpensesTable(filteredExpenses);
+    }
     
-    function renderCategoryList() { // <-- AHORA: Función más limpia y eficiente
+    function renderSummary(expenses) {
+        const totalGastado = expenses.reduce((sum, exp) => sum + parseFloat(exp.valor), 0);
+        totalExpensesValueEl.textContent = `R$${totalGastado.toFixed(2)}`;
+        renderExpenseDonutChart(expenses);
+        renderExpenseTrendChart(expenses);
+    }
+
+    function renderExpensesTable(expenses) {
+        expenseListBody.innerHTML = '';
+        noExpensesMessage.classList.toggle('hidden', expenses.length > 0);
+        
+        const template = document.getElementById('expense-row-template');
+        expenses.forEach(expense => {
+            const row = template.content.cloneNode(true).firstElementChild;
+            row.dataset.id = expense.id;
+            row.querySelector('[data-description]').textContent = expense.descripcion;
+            row.querySelector('[data-value]').textContent = `R$${parseFloat(expense.valor).toFixed(2)}`;
+            
+            const categoryEl = row.querySelector('[data-category]');
+            categoryEl.textContent = expense.categoria || 'N/A';
+            if (expense.categoria_color) {
+                categoryEl.style.backgroundColor = expense.categoria_color;
+                categoryEl.style.color = '#fff';
+            } else {
+                categoryEl.classList.add('bg-slate-600', 'text-slate-200');
+            }
+
+            row.querySelector('[data-date]').textContent = new Date(expense.fecha + 'T00:00:00').toLocaleDateString('pt-BR');
+            row.querySelector('[data-action="edit"]').addEventListener('click', () => prepareEditForm(expense));
+            row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteExpense(expense.id, expense.descripcion));
+            expenseListBody.appendChild(row);
+        });
+    }
+
+    function renderExpenseDonutChart(expenses) {
+        const canvas = document.getElementById('expense-donut-chart');
+        const noDataEl = document.getElementById('donut-no-data');
+        const ctx = canvas.getContext('2d');
+        
+        const categoryTotals = expenses.reduce((acc, expense) => {
+            const categoryName = expense.categoria || 'Sem Categoria';
+            const categoryColor = expense.categoria_color || '#64748b';
+            if (!acc[categoryName]) {
+                acc[categoryName] = { total: 0, color: categoryColor };
+            }
+            acc[categoryName].total += parseFloat(expense.valor);
+            return acc;
+        }, {});
+
+        const labels = Object.keys(categoryTotals);
+        noDataEl.classList.toggle('hidden', labels.length === 0);
+        canvas.classList.toggle('hidden', labels.length === 0);
+
+        if (expenseDonutChart) expenseDonutChart.destroy();
+        if (labels.length === 0) return;
+
+        expenseDonutChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: labels.map(label => categoryTotals[label].total),
+                    backgroundColor: labels.map(label => categoryTotals[label].color),
+                    borderColor: '#0f172a',
+                    borderWidth: 4,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+    
+    function renderExpenseTrendChart(expenses) {
+        const canvas = document.getElementById('expense-trend-chart');
+        const noDataEl = document.getElementById('trend-no-data');
+        const ctx = canvas.getContext('2d');
+
+        const dailyTotals = expenses.reduce((acc, expense) => {
+            const date = expense.fecha;
+            acc[date] = (acc[date] || 0) + parseFloat(expense.valor);
+            return acc;
+        }, {});
+
+        const sortedDates = Object.keys(dailyTotals).sort((a, b) => new Date(a) - new Date(b));
+        noDataEl.classList.toggle('hidden', sortedDates.length > 0);
+        canvas.classList.toggle('hidden', sortedDates.length === 0);
+        
+        if (expenseTrendChart) expenseTrendChart.destroy();
+        if (sortedDates.length === 0) return;
+        
+        expenseTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sortedDates,
+                datasets: [{
+                    label: 'Gasto por Dia',
+                    data: sortedDates.map(date => dailyTotals[date]),
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    pointBackgroundColor: '#ef4444'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'time', time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy' }, grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+                    y: { beginAtZero: true, grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    function openModal(modal) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    }
+
+    function closeModal(modal) {
+        modal.classList.add('opacity-0');
+        modal.querySelector('.modal-container').classList.add('opacity-0', 'scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+    
+    function prepareEditForm(expense) {
+        editingExpenseId = expense.id;
+        formTitle.textContent = 'Editar Despesa';
+        saveButton.textContent = 'Atualizar Despesa';
+        document.getElementById('expense-id').value = expense.id;
+        document.getElementById('expense-description').value = expense.descripcion;
+        document.getElementById('expense-value').value = expense.valor;
+        document.getElementById('expense-category').value = expense.categoria || '';
+        document.getElementById('expense-date').value = expense.fecha;
+        document.getElementById('expense-obs').value = expense.observaciones || '';
+        openModal(expenseModal);
+    }
+    
+    function prepareNewForm() {
+        editingExpenseId = null;
+        expenseForm.reset();
+        formTitle.textContent = 'Adicionar Nova Despesa';
+        saveButton.textContent = 'Salvar Despesa';
+        document.getElementById('expense-id').value = '';
+        document.getElementById('expense-date').valueAsDate = new Date();
+        openModal(expenseModal);
+    }
+
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        const categoryName = document.getElementById('expense-category').value;
+        
+        const expenseData = {
+            descripcion: document.getElementById('expense-description').value,
+            valor: parseFloat(document.getElementById('expense-value').value),
+            categoria: categoryName,
+            fecha: document.getElementById('expense-date').value,
+            observaciones: document.getElementById('expense-obs').value
+        };
+
+        try {
+            if (editingExpenseId) {
+                await fetchApi(`/gastos/${editingExpenseId}`, { method: 'PUT', body: JSON.stringify(expenseData) });
+                alert('Despesa atualizada com sucesso!');
+            } else {
+                await fetchApi('/gastos', { method: 'POST', body: JSON.stringify(expenseData) });
+                alert('Despesa adicionada com sucesso!');
+            }
+            closeModal(expenseModal);
+            fetchExpenses();
+        } catch (error) {
+            alert(`Erro ao salvar despesa: ${error.message}`);
+        }
+    }
+
+    async function deleteExpense(id, description) {
+        if (!confirm(`Tem certeza que deseja excluir a despesa "${description}"?`)) return;
+        try {
+            await fetchApi(`/gastos/${id}`, { method: 'DELETE' });
+            alert('Despesa excluída com sucesso!');
+            fetchExpenses();
+        } catch (error) {
+            alert(`Erro ao excluir despesa: ${error.message}`);
+        }
+    }
+    
+    function renderCategoryList() {
         categoryListContainer.innerHTML = '';
         const template = document.getElementById('category-list-item-template');
         if (allCategories.length === 0) {
-            categoryListContainer.innerHTML = '<p class="text-slate-500 text-center" data-lang="no_categories_found">Nenhuma categoria cadastrada.</p>';
+            categoryListContainer.innerHTML = `<p class="text-slate-500 text-center" data-lang="no_categories_found">Nenhuma categoria cadastrada.</p>`;
             setLanguage(getCurrentLanguage());
             return;
         }
         allCategories.forEach(cat => {
             const item = template.content.cloneNode(true).firstElementChild;
-            // Guardamos los datos en el elemento para que el listener delegado los pueda usar
+            // CORRECCIÓN: Se asignan los datos al elemento para la delegación
             item.dataset.categoryId = cat.id;
             item.dataset.categoryName = cat.nombre;
 
             item.querySelector('[data-name]').textContent = cat.nombre;
             item.querySelector('[data-color-indicator]').style.backgroundColor = cat.color;
             
-            // ELIMINADO: Ya no añadimos un listener por cada botón
-            // item.querySelector('[data-action="delete-category"]').addEventListener('click', () => handleDeleteCategory(cat.id, cat.nombre));
-            
+            // CORRECCIÓN: El listener se elimina del bucle
             categoryListContainer.appendChild(item);
         });
     }
@@ -367,7 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetchApi('/gastos/categorias', { method: 'POST', body: JSON.stringify({ nombre: name, color: colorInput.value }) });
             nameInput.value = '';
             await fetchCategories();
-            renderCategoryList(); // Actualiza la lista en el modal
+            renderCategoryList();
         } catch (error) {
             alert(`Erro ao adicionar categoria: ${error.message}`);
         }
@@ -377,9 +678,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!confirm(`Tem certeza que deseja excluir a categoria "${name}"? Isso não será possível se ela estiver em uso.`)) return;
         try {
             await fetchApi(`/gastos/categorias/${id}`, { method: 'DELETE' });
-            await fetchCategories(); // Recarga las categorías para toda la app
-            renderCategoryList();    // Actualiza la lista en el modal
-            fetchExpenses();         // Actualiza los gastos por si alguna categoría cambió
+            await fetchCategories();
+            renderCategoryList();
+            fetchExpenses();
         } catch (error) {
             alert(`Erro ao excluir categoria: ${error.message}`);
         }
@@ -402,16 +703,19 @@ document.addEventListener('DOMContentLoaded', () => {
     closeCategoryModalBtn.addEventListener('click', () => closeModal(categoryModal));
     addCategoryForm.addEventListener('submit', handleAddNewCategory);
 
-    // <-- NUEVO: Listener único para los botones de eliminar categorías (Delegación de Eventos)
+    // CORRECCIÓN: Listener único para el contenedor de la lista de categorías (Delegación de Eventos)
     categoryListContainer.addEventListener('click', (e) => {
         const deleteButton = e.target.closest('[data-action="delete-category"]');
         if (deleteButton) {
             const listItem = deleteButton.closest('[data-category-id]');
-            const categoryId = listItem.dataset.categoryId;
-            const categoryName = listItem.dataset.categoryName;
-            handleDeleteCategory(categoryId, categoryName);
+            if (listItem) {
+                const categoryId = listItem.dataset.categoryId;
+                const categoryName = listItem.dataset.categoryName;
+                handleDeleteCategory(categoryId, categoryName);
+            }
         }
     });
+
 
     // --- INITIALIZATION ---
     loadLanguage();

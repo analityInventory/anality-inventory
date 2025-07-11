@@ -5,54 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>AnalityInventory - Login Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Librería de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Script de Google reCAPTCHA -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #0f172a;
-            background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.1) 1px, transparent 0);
-            background-size: 20px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        #background-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.1; /* Sutil pero presente */
         }
         .login-container {
             background-color: #1e293b;
-            border-radius: 1rem;
-            padding: 2.5rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            width: 100%;
-            max-width: 400px;
             border: 1px solid #334155;
-        }
-        .logo {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
-            text-align: center;
-            color: #ffffff;
-            letter-spacing: -1px;
-        }
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #94a3b8;
-            font-weight: 600;
+            position: relative;
+            z-index: 1;
         }
         .form-input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #475569;
-            border-radius: 0.5rem;
             background-color: #334155;
+            border: 1px solid #475569;
             color: #f1f5f9;
-            transition: all 0.2s;
         }
         .form-input:focus {
             outline: none;
@@ -60,26 +45,11 @@
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
         }
         .btn-primary {
-            width: 100%;
-            padding: 0.75rem;
-            margin-top: 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
             background-color: #3b82f6;
             color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
         }
         .btn-primary:hover {
             background-color: #2563eb;
-        }
-        .footer {
-            position: absolute;
-            bottom: 20px;
-            color: #475569;
-            font-size: 0.8rem;
-            text-align: center;
         }
         .spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
@@ -88,164 +58,278 @@
             width: 16px;
             height: 16px;
             animation: spin 1s linear infinite;
-            display: inline-block;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .g-recaptcha {
-            display: flex;
-            justify-content: center;
-            margin-top: 1.5rem;
+        .language-selector {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 10;
         }
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.7); display: flex;
-            justify-content: center; align-items: center; z-index: 1000;
-            opacity: 0; transition: opacity 0.3s ease;
+        .language-selector-button {
+            background-color: #334155;
+            color: #94a3b8;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
-        .modal-container {
-            background-color: #1e293b; padding: 2rem; border-radius: 0.75rem;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2); text-align: center;
-            max-width: 400px; width: 90%; transform: scale(0.9); opacity: 0;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-            border: 1px solid #334155; color: #e2e8f0;
+        .language-selector-button:hover {
+            background-color: #475569;
         }
-        .modal-overlay.show { opacity: 1; }
-        .modal-overlay.show .modal-container { transform: scale(1); opacity: 1; }
+        .language-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 0.5rem;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .language-selector:hover .language-dropdown {
+            display: block;
+        }
+        .language-option {
+            padding: 0.75rem 1.5rem;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .language-option:hover {
+            background-color: #3b82f6;
+            color: white;
+        }
     </style>
 </head>
-<body>
+<body class="flex items-center justify-center min-h-screen p-4">
 
-    <div class="login-container">
-        <h1 class="logo">AnalityInventory</h1>
-        <form id="loginForm">
-            <div class="mb-4">
-                <label for="username" class="form-label">Email de Administrador</label>
-                <input type="email" id="username" class="form-input" placeholder="seu.email@admin.com" required>
-            </div>
-            <div class="mb-4">
-                <label for="password" class="form-label">Senha</label>
-                <input type="password" id="password" class="form-input" required>
-            </div>
+    <svg id="background-pattern" width="100%" height="100%">
+        <defs>
+            <pattern id="pattern-business" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+                <path d="M30 50 L70 50 L70 90 L30 90 Z M30 65 L70 65 M50 50 L50 90 M40 50 L60 35 L70 50" stroke="#475569" stroke-width="2" fill="none"/>
+                <path d="M120 150 L120 180 L180 180" stroke="#475569" stroke-width="2" fill="none"/>
+                <rect x="130" y="160" width="10" height="20" fill="#475569" opacity="0.5"/>
+                <rect x="150" y="140" width="10" height="40" fill="#475569" opacity="0.5"/>
+                <rect x="170" y="150" width="10" height="30" fill="#475569" opacity="0.5"/>
+                <path d="M40 130 L40 160 M45 130 L45 160 M50 130 L50 160 M60 130 L60 160 M65 130 L65 160 M70 130 L70 160 M75 130 L75 160" stroke="#475569" stroke-width="3" fill="none"/>
+                <path d="M150 40 L160 40 Q162 50 160 60 L150 60 Q148 50 150 40 Z M155 60 L155 80 L150 85 L160 85 L155 80" stroke="#475569" stroke-width="2" fill="none"/>
+            </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#pattern-business)" />
+    </svg>
+
+    <div class="language-selector">
+        <button class="language-selector-button flex items-center gap-2">
+            <i class="ph ph-translate text-xl"></i>
+            <span id="current-lang-text">Idioma</span>
+        </button>
+        <div class="language-dropdown">
+            <div class="language-option" data-lang-code="pt">Português</div>
+            <div class="language-option" data-lang-code="es">Español</div>
+            <div class="language-option" data-lang-code="en">English</div>
+        </div>
+    </div>
+
+    <div class="login-container rounded-xl shadow-2xl p-10 w-full max-w-md">
+        <h1 class="text-4xl font-bold text-center text-white mb-6" data-lang="main_title">AnalityInventory</h1>
+        <p class="text-center text-slate-400 mb-8" data-lang="subtitle">Acesso Exclusivo para Administradores</p>
+        
+        <form id="loginForm" class="space-y-6">
+            <input type="email" id="email" class="form-input w-full p-3 rounded-md" placeholder="Email de Administrador" data-lang-placeholder="email_placeholder" required>
+            <input type="password" id="password" class="form-input w-full p-3 rounded-md" placeholder="Senha" data-lang-placeholder="password_placeholder" required>
             
-            <div class="flex items-center mb-4">
-                <input type="checkbox" id="remember-me" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded bg-gray-700">
-                <label for="remember-me" class="ml-2 block text-sm text-slate-400">Lembrar-me</label>
+            <div class="flex items-center justify-between">
+                <label for="remember-me" class="flex items-center text-sm text-slate-400 cursor-pointer">
+                    <input type="checkbox" id="remember-me" class="h-4 w-4 rounded bg-slate-600 border-slate-500 text-blue-500 focus:ring-blue-600">
+                    <span class="ml-2" data-lang="remember_me">Lembrar-me</span>
+                </label>
             </div>
 
-            <div class="g-recaptcha" data-sitekey="6LdVrXcrAAAAAC41CuesKaE1vj-xPO9JhCc2iQvU"></div>
+            <div class="flex justify-center pt-2">
+                <div class="g-recaptcha" data-sitekey="6LdVrXcrAAAAAC41CuesKaE1vj-xPO9JhCc2iQvU"></div>
+            </div>
 
-            <button type="submit" id="login-button" class="btn-primary flex items-center justify-center">
-                <span id="login-text">Entrar</span>
+            <button type="submit" id="login-button" class="btn-primary w-full p-3 rounded-md font-bold text-lg flex items-center justify-center gap-2">
+                <span id="login-text" data-lang="login_button">Entrar</span>
                 <div id="login-spinner" class="spinner hidden"></div>
             </button>
         </form>
-    </div>
-
-    <div class="footer">
-        <span id="copyright"></span>. Todos os direitos reservados.
-    </div>
-
-    <div id="custom-modal-overlay" class="modal-overlay hidden">
-        <div class="modal-container">
-            <div id="modal-content"></div>
-            <button id="close-modal-btn" class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">Fechar</button>
+        <div id="message-area" class="text-center mt-4 text-white p-2 rounded-md"></div>
+        <div class="text-center mt-6">
+            <p class="text-slate-400 text-sm">
+                <span data-lang="no_account">Não tem uma conta?</span>
+                <a href="register.html" class="text-blue-400 hover:underline" data-lang="register_link">Registre-se aqui</a>
+            </p>
         </div>
     </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const customModalOverlay = document.getElementById('custom-modal-overlay');
-    const modalContent = document.getElementById('modal-content');
-    const closeModalBtn = document.getElementById('close-modal-btn');
+    // ===================================================================
+    // CONFIGURACIÓN DE SUPABASE INTEGRADA
+    // ===================================================================
+    const SUPABASE_URL = 'https://gedcmaypjelwwibzlxte.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdlZGNtYXlwamVsd3dpYnpseHRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyMjk3MzcsImV4cCI6MjA2NjgwNTczN30.4rwnAo4um8Q1NK25TakCOOJew1VuoQWtvGE27brslbY';
 
-    function showCustomModal(message, isError = false) {
-        modalContent.innerHTML = `
-            <i class="ph ${isError ? 'ph-x-circle text-red-500' : 'ph-check-circle text-green-500'} text-6xl mb-4"></i>
-            <h2 class="text-2xl font-bold text-white mb-2">${isError ? 'Erro!' : 'Sucesso!'}</h2>
-            <p class="text-lg text-slate-300 mb-4">${message}</p>
-        `;
-        customModalOverlay.classList.add('show', 'flex');
-        customModalOverlay.classList.remove('hidden');
-    }
-
-    function hideCustomModal() {
-        customModalOverlay.classList.remove('show');
-        setTimeout(() => {
-            customModalOverlay.classList.add('hidden');
-            modalContent.innerHTML = '';
-        }, 300);
-    }
-
-    closeModalBtn.addEventListener('click', hideCustomModal);
-    customModalOverlay.addEventListener('click', (e) => {
-        if (e.target === customModalOverlay) hideCustomModal();
-    });
-
-    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-    if (token) {
-        window.location.href = 'index.html';
-        return;
-    }
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const loginForm = document.getElementById('loginForm');
     const loginButton = document.getElementById('login-button');
     const loginText = document.getElementById('login-text');
     const loginSpinner = document.getElementById('login-spinner');
-    const rememberMeCheckbox = document.getElementById('remember-me');
-    document.getElementById('copyright').textContent = `© ${new Date().getFullYear()} AnalityInventory`;
+    const messageArea = document.getElementById('message-area');
+
+    const translations = {
+        pt: {
+            main_title: "AnalityInventory",
+            subtitle: "Acesso Exclusivo para Administradores",
+            email_placeholder: "Email de Administrador",
+            password_placeholder: "Senha",
+            remember_me: "Lembrar-me",
+            login_button: "Entrar",
+            no_account: "Não tem uma conta?",
+            register_link: "Registre-se aqui",
+            recaptcha_error: "Por favor, complete o reCAPTCHA.",
+            login_error: "Erro no login: ",
+            profile_error: "Erro ao buscar perfil: ",
+            access_denied: "Acesso negado. Este portal é exclusivo para administradores."
+        },
+        es: {
+            main_title: "AnalityInventory",
+            subtitle: "Acceso Exclusivo para Administradores",
+            email_placeholder: "Email de Administrador",
+            password_placeholder: "Contraseña",
+            remember_me: "Recordarme",
+            login_button: "Entrar",
+            no_account: "¿No tienes una cuenta?",
+            register_link: "Regístrate aquí",
+            recaptcha_error: "Por favor, completa el reCAPTCHA.",
+            login_error: "Error de inicio de sesión: ",
+            profile_error: "Error al buscar perfil: ",
+            access_denied: "Acceso denegado. Este portal es exclusivo para administradores."
+        },
+        en: {
+            main_title: "AnalityInventory",
+            subtitle: "Exclusive Access for Administrators",
+            email_placeholder: "Administrator Email",
+            password_placeholder: "Password",
+            remember_me: "Remember me",
+            login_button: "Sign In",
+            no_account: "Don't have an account?",
+            register_link: "Register here",
+            recaptcha_error: "Please complete the reCAPTCHA.",
+            login_error: "Login error: ",
+            profile_error: "Error fetching profile: ",
+            access_denied: "Access denied. This portal is for administrators only."
+        }
+    };
+
+    function setLanguage(lang) {
+        if (!translations[lang]) return;
+        localStorage.setItem('userLanguage', lang);
+        document.documentElement.lang = lang;
+
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if (translations[lang][key]) {
+                el.textContent = translations[lang][key];
+            }
+        });
+        document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-lang-placeholder');
+            if (translations[lang][key]) {
+                el.placeholder = translations[lang][key];
+            }
+        });
+        document.getElementById('current-lang-text').textContent = lang.toUpperCase();
+    }
+
+    document.querySelectorAll('.language-option').forEach(button => {
+        button.addEventListener('click', (e) => {
+            setLanguage(e.target.dataset.langCode);
+        });
+    });
+
+    function loadLanguage() {
+        const savedLang = localStorage.getItem('userLanguage');
+        const browserLang = navigator.language.split('-')[0];
+        setLanguage(savedLang || (translations[browserLang] ? browserLang : 'pt'));
+    }
+
+    function showMessage(text, isError = false, langKey = null) {
+        const lang = localStorage.getItem('userLanguage') || 'pt';
+        const translatedText = langKey ? translations[lang][langKey] || text : text;
+        messageArea.textContent = translatedText;
+        messageArea.style.backgroundColor = isError ? 'rgba(239, 68, 68, 0.5)' : 'rgba(74, 222, 128, 0.5)';
+        messageArea.style.display = text ? 'block' : 'none';
+    }
 
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         
         const recaptchaResponse = grecaptcha.getResponse();
         if (!recaptchaResponse) {
-            showCustomModal("Por favor, complete o reCAPTCHA.", true);
+            showMessage("Por favor, complete o reCAPTCHA.", true, 'recaptcha_error');
             return;
         }
 
-        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        const rememberMe = rememberMeCheckbox.checked;
         
-        const API_BASE_URL = 'https://mi-primera-app.fly.dev'; 
-        
-        loginText.classList.add('hidden');
+        loginText.style.display = 'none';
         loginSpinner.classList.remove('hidden');
         loginButton.disabled = true;
+        showMessage('');
 
         try {
-            // ===================================================================
-            // CORRECCIÓN: Se añade el prefijo /users/ a la URL del token
-            // ===================================================================
-            const response = await fetch(`${API_BASE_URL}/users/token`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ grant_type: 'password', username, password }).toString()
+            const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
             });
 
-            if (response.ok) {
-                const data = await response.json();
-            
-                if (rememberMe) {
-                   localStorage.setItem('authToken', data.access_token);
-                } else {
-                   sessionStorage.setItem('authToken', data.access_token);
+            if (loginError) {
+                throw new Error(loginError.message);
+            }
+
+            if (loginData.user) {
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('role')
+                    .eq('id', loginData.user.id)
+                    .single();
+
+                if (userError) {
+                    throw new Error(`Erro ao buscar perfil: ${userError.message}`);
                 }
-                window.location.href = 'index.html';
-            } else {
-                const errorData = await response.json().catch(() => ({ detail: 'Erro de comunicação.' }));
-                showCustomModal(`Erro ao iniciar sessão: ${errorData.detail}`, true);
-                grecaptcha.reset();
+                
+                if (userData.role === 'admin') {
+                    window.location.href = 'index.html';
+                } else {
+                    await supabase.auth.signOut();
+                    throw new Error('Acesso negado. Este portal é exclusivo para administradores.');
+                }
             }
         } catch (error) {
-            showCustomModal(`Erro de rede: Não foi possível conectar à API. Detalhes: ${error.message}`, true);
+            const lang = localStorage.getItem('userLanguage') || 'pt';
+            let errorMessage = error.message;
+            if(error.message.includes('denied') || error.message.includes('negado')) {
+                errorMessage = translations[lang]['access_denied'];
+            } else {
+                errorMessage = translations[lang]['login_error'] + error.message;
+            }
+            showMessage(errorMessage, true);
             grecaptcha.reset();
         } finally {
-            loginText.classList.remove('hidden');
+            loginText.style.display = 'inline';
             loginSpinner.classList.add('hidden');
             loginButton.disabled = false;
         }
     });
+
+    loadLanguage();
 });
 </script>
 

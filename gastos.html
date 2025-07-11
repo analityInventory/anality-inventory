@@ -208,6 +208,21 @@
         </div>
     </div>
 
+    <!-- NUEVO: Modal de Confirmación Personalizado -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
+        <div class="modal-container opacity-0 scale-95 bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm border border-slate-700">
+            <div class="p-6 text-center">
+                <i class="ph ph-warning-circle text-5xl text-yellow-400 mx-auto mb-4"></i>
+                <h3 id="confirmation-title" class="text-xl font-bold text-white mb-2"></h3>
+                <p id="confirmation-message" class="text-slate-400"></p>
+            </div>
+            <div class="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-center gap-4">
+                <button id="confirm-cancel-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-6 rounded-lg" data-lang="form_cancel">Cancelar</button>
+                <button id="confirm-ok-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg" data-lang="confirm_button">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
     <template id="expense-row-template">
         <tr class="hover:bg-slate-700/50">
             <td class="p-3 text-slate-300" data-description></td>
@@ -225,7 +240,6 @@
         </tr>
     </template>
     <template id="category-list-item-template">
-        <!-- El div principal ahora tiene los atributos data-* para la delegación -->
         <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-700" data-category-id="" data-category-name="">
             <div class="flex items-center gap-3">
                 <span class="w-4 h-4 rounded-full" data-color-indicator></span>
@@ -243,6 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingExpenseId = null;
     let expenseDonutChart = null;
     let expenseTrendChart = null;
+    let confirmCallback = null; // NUEVO: Variable para guardar la acción de confirmación
 
     // --- SELECTORS ---
     const expenseListBody = document.getElementById('expenses-list-body');
@@ -268,6 +283,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoryListContainer = document.getElementById('category-list-container');
     const addCategoryForm = document.getElementById('add-category-form');
 
+    // --- NUEVO: MODAL (CONFIRMATION) SELECTORS ---
+    const confirmationModal = document.getElementById('confirmation-modal');
+    const confirmationTitle = document.getElementById('confirmation-title');
+    const confirmationMessage = document.getElementById('confirmation-message');
+    const confirmOkBtn = document.getElementById('confirm-ok-btn');
+    const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+
     // --- Lógica de Traducción ---
     const translations = {
         pt: {
@@ -281,7 +303,10 @@ document.addEventListener('DOMContentLoaded', () => {
             form_notes: "Observações", form_cancel: "Cancelar", form_save: "Salvar",
             category_modal_title: "Gerenciar Categorias", category_modal_add_title: "Adicionar Nova Categoria",
             category_name_placeholder: "Nome da categoria", category_modal_add_btn: "Adicionar",
-            no_categories_found: "Nenhuma categoria cadastrada."
+            no_categories_found: "Nenhuma categoria cadastrada.", confirm_button: "Confirmar",
+            confirm_delete_title: "Confirmar Exclusão", 
+            confirm_delete_expense: "Tem certeza que deseja excluir a despesa",
+            confirm_delete_category: "Tem certeza que deseja excluir a categoria"
         },
         es: {
             header_title: "Gestión de Gastos", total_spent_label: "Total Gastado (Filtro Actual)",
@@ -294,7 +319,10 @@ document.addEventListener('DOMContentLoaded', () => {
             form_notes: "Observaciones", form_cancel: "Cancelar", form_save: "Guardar",
             category_modal_title: "Gestionar Categorías", category_modal_add_title: "Añadir Nueva Categoría",
             category_name_placeholder: "Nombre de la categoría", category_modal_add_btn: "Añadir",
-            no_categories_found: "No se encontraron categorías."
+            no_categories_found: "No se encontraron categorías.", confirm_button: "Confirmar",
+            confirm_delete_title: "Confirmar Eliminación",
+            confirm_delete_expense: "¿Estás seguro de que quieres eliminar el gasto?",
+            confirm_delete_category: "¿Estás seguro de que quieres eliminar la categoría?"
         },
         en: {
             header_title: "Expense Management", total_spent_label: "Total Spent (Current Filter)",
@@ -307,7 +335,10 @@ document.addEventListener('DOMContentLoaded', () => {
             form_notes: "Notes", form_cancel: "Cancel", form_save: "Save",
             category_modal_title: "Manage Categories", category_modal_add_title: "Add New Category",
             category_name_placeholder: "Category name", category_modal_add_btn: "Add",
-            no_categories_found: "No categories found."
+            no_categories_found: "No categories found.", confirm_button: "Confirm",
+            confirm_delete_title: "Confirm Deletion",
+            confirm_delete_expense: "Are you sure you want to delete the expense",
+            confirm_delete_category: "Are you sure you want to delete the category"
         }
     };
 
@@ -381,17 +412,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchCategories() {
-        // CORRECCIÓN: Asegura que allCategories sea siempre un array.
         allCategories = await fetchApi('/gastos/categorias') || [];
         populateCategorySelects();
     }
     
     async function fetchExpenses() {
-        // CORRECIÓN: Asegura que fetchedExpenses sea siempre un array.
         const fetchedExpenses = await fetchApi('/gastos') || [];
         allExpenses = fetchedExpenses.map(expense => {
             const category = allCategories.find(cat => cat.nombre === expense.categoria);
-            return { ...expense, categoria_id: category ? category.id : null };
+            return { ...expense, categoria_id: category ? category.id : null, categoria_color: category ? category.color : null };
         });
         populateMonthFilter();
         renderFilteredResults();
@@ -432,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const filteredExpenses = allExpenses.filter(expense => {
             const matchesSearch = expense.descripcion.toLowerCase().includes(searchTerm);
-            const matchesCategory = selectedCategoryId === 'Todos' || expense.categoria_id == selectedCategoryId;
+            const matchesCategory = selectedCategoryId === 'Todos' || String(expense.categoria_id) === selectedCategoryId;
             const matchesMonth = selectedMonth === 'Todos' || expense.fecha.startsWith(selectedMonth);
             return matchesSearch && matchesCategory && matchesMonth;
         });
@@ -618,21 +647,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Despesa adicionada com sucesso!');
             }
             closeModal(expenseModal);
-            fetchExpenses();
+            await fetchExpenses();
         } catch (error) {
             alert(`Erro ao salvar despesa: ${error.message}`);
         }
     }
 
+    // NUEVO: Lógica del modal de confirmación
+    function showConfirmation(titleKey, messageKey, messageParam, onConfirm) {
+        const lang = getCurrentLanguage();
+        confirmationTitle.textContent = translations[lang][titleKey] || 'Confirmar';
+        confirmationMessage.textContent = (translations[lang][messageKey] || '') + ` "${messageParam}"?`;
+        confirmCallback = onConfirm;
+        openModal(confirmationModal);
+    }
+
     async function deleteExpense(id, description) {
-        if (!confirm(`Tem certeza que deseja excluir a despesa "${description}"?`)) return;
-        try {
-            await fetchApi(`/gastos/${id}`, { method: 'DELETE' });
-            alert('Despesa excluída com sucesso!');
-            fetchExpenses();
-        } catch (error) {
-            alert(`Erro ao excluir despesa: ${error.message}`);
-        }
+        showConfirmation('confirm_delete_title', 'confirm_delete_expense', description, async () => {
+            try {
+                await fetchApi(`/gastos/${id}`, { method: 'DELETE' });
+                alert('Despesa excluída com sucesso!');
+                await fetchExpenses();
+            } catch (error) {
+                alert(`Erro ao excluir despesa: ${error.message}`);
+            }
+        });
     }
     
     function renderCategoryList() {
@@ -645,14 +684,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         allCategories.forEach(cat => {
             const item = template.content.cloneNode(true).firstElementChild;
-            // CORRECCIÓN: Se asignan los datos al elemento para la delegación
             item.dataset.categoryId = cat.id;
             item.dataset.categoryName = cat.nombre;
-
             item.querySelector('[data-name]').textContent = cat.nombre;
             item.querySelector('[data-color-indicator]').style.backgroundColor = cat.color;
-            
-            // CORRECCIÓN: El listener se elimina del bucle
             categoryListContainer.appendChild(item);
         });
     }
@@ -675,15 +710,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleDeleteCategory(id, name) {
-        if (!confirm(`Tem certeza que deseja excluir a categoria "${name}"? Isso não será possível se ela estiver em uso.`)) return;
-        try {
-            await fetchApi(`/gastos/categorias/${id}`, { method: 'DELETE' });
-            await fetchCategories();
-            renderCategoryList();
-            fetchExpenses();
-        } catch (error) {
-            alert(`Erro ao excluir categoria: ${error.message}`);
-        }
+        const message = `${translations[getCurrentLanguage()]['confirm_delete_category']} "${name}"?`;
+        showConfirmation('confirm_delete_title', 'confirm_delete_category', name, async () => {
+            try {
+                await fetchApi(`/gastos/categorias/${id}`, { method: 'DELETE' });
+                await fetchCategories();
+                renderCategoryList();
+                await fetchExpenses();
+            } catch (error) {
+                alert(`Erro ao excluir categoria: ${error.message}`);
+            }
+        });
     }
     
     // --- EVENT LISTENERS ---
@@ -703,7 +740,6 @@ document.addEventListener('DOMContentLoaded', () => {
     closeCategoryModalBtn.addEventListener('click', () => closeModal(categoryModal));
     addCategoryForm.addEventListener('submit', handleAddNewCategory);
 
-    // CORRECCIÓN: Listener único para el contenedor de la lista de categorías (Delegación de Eventos)
     categoryListContainer.addEventListener('click', (e) => {
         const deleteButton = e.target.closest('[data-action="delete-category"]');
         if (deleteButton) {
@@ -716,11 +752,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // NUEVO: Listeners para el modal de confirmación
+    confirmOkBtn.addEventListener('click', () => {
+        if (confirmCallback) {
+            confirmCallback();
+        }
+        closeModal(confirmationModal);
+    });
+
+    confirmCancelBtn.addEventListener('click', () => {
+        closeModal(confirmationModal);
+    });
 
     // --- INITIALIZATION ---
     loadLanguage();
     loadInitialData();
 });
 </script>
+</body>
+</html>
 </body>
 </html>

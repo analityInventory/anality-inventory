@@ -59,14 +59,37 @@
         }
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         input[type="color"]::-webkit-color-swatch { border: 1px solid #475569; border-radius: 0.5rem; }
+        .language-selector { position: relative; }
+        .language-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 0.5rem;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            z-index: 50;
+        }
+        .language-selector:hover .language-dropdown { display: block; }
     </style>
 </head>
 <body class="font-sans">
 
     <header class="bg-slate-900/80 backdrop-blur-sm shadow-md sticky top-0 z-20 border-b border-slate-700">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-white">Gestão de Despesas</h1>
-            <div>
+            <h1 class="text-2xl font-bold text-white" data-lang="header_title">Gestão de Despesas</h1>
+            <div class="flex items-center gap-4">
+                 <!-- Selector de Idioma -->
+                <div class="language-selector">
+                    <button class="text-slate-400 hover:text-white transition">
+                        <i class="ph ph-translate text-3xl"></i>
+                    </button>
+                    <div class="language-dropdown rounded-md shadow-lg">
+                        <a href="#" class="block px-4 py-2 text-sm text-slate-300 hover:bg-blue-600 hover:text-white" data-lang-code="pt">Português</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-slate-300 hover:bg-blue-600 hover:text-white" data-lang-code="es">Español</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-slate-300 hover:bg-blue-600 hover:text-white" data-lang-code="en">English</a>
+                    </div>
+                </div>
                  <a href="index.html" class="text-slate-400 hover:text-white transition" title="Voltar ao Menu">
                     <i class="ph ph-arrow-u-left-up text-3xl"></i>
                  </a>
@@ -78,29 +101,29 @@
         <div class="bg-slate-800 p-5 rounded-xl shadow-lg border border-slate-700">
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-center mb-6 border-b border-slate-700 pb-6">
                 <div class="lg:col-span-2 text-center lg:text-left">
-                    <p class="text-slate-400 text-sm">Total Gastado (Filtro Atual)</p>
+                    <p class="text-slate-400 text-sm" data-lang="total_spent_label">Total Gastado (Filtro Atual)</p>
                     <p id="total-expenses-value" class="text-5xl font-bold text-red-400">R$0.00</p>
                 </div>
                 <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="relative h-48">
                         <canvas id="expense-donut-chart"></canvas>
-                        <p id="donut-no-data" class="hidden absolute inset-0 flex items-center justify-center text-slate-500">Sem dados de categoria</p>
+                        <p id="donut-no-data" class="hidden absolute inset-0 flex items-center justify-center text-slate-500" data-lang="no_category_data">Sem dados de categoria</p>
                     </div>
                     <div class="relative h-48">
                         <canvas id="expense-trend-chart"></canvas>
-                         <p id="trend-no-data" class="hidden absolute inset-0 flex items-center justify-center text-slate-500">Sem dados de tendência</p>
+                         <p id="trend-no-data" class="hidden absolute inset-0 flex items-center justify-center text-slate-500" data-lang="no_trend_data">Sem dados de tendência</p>
                     </div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4 items-center">
-                <input type="text" id="search-input" placeholder="Buscar por descrição..." class="form-input lg:col-span-1">
+                <input type="text" id="search-input" placeholder="Buscar por descrição..." class="form-input lg:col-span-1" data-lang-placeholder="search_placeholder">
                 <select id="month-filter" class="form-input">
-                    <option value="Todos">Todos os Meses</option>
+                    <option value="Todos" data-lang="all_months">Todos os Meses</option>
                 </select>
                 <div class="flex gap-2">
                     <select id="category-filter" class="form-input flex-grow">
-                        <option value="Todos">Todas as Categorias</option>
+                        <option value="Todos" data-lang="all_categories">Todas as Categorias</option>
                     </select>
                     <button id="manage-categories-btn" class="p-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition" title="Gerenciar Categorias">
                         <i class="ph ph-gear-six text-xl"></i>
@@ -111,16 +134,16 @@
                 <table class="w-full text-left">
                     <thead class="sticky top-0 bg-slate-800 z-10">
                         <tr>
-                            <th class="p-3 text-sm font-semibold text-slate-400">Descrição</th>
-                            <th class="p-3 text-sm font-semibold text-slate-400">Valor</th>
-                            <th class="p-3 text-sm font-semibold text-slate-400">Categoria</th>
-                            <th class="p-3 text-sm font-semibold text-slate-400">Data</th>
-                            <th class="p-3 text-sm font-semibold text-slate-400">Ações</th>
+                            <th class="p-3 text-sm font-semibold text-slate-400" data-lang="th_description">Descrição</th>
+                            <th class="p-3 text-sm font-semibold text-slate-400" data-lang="th_value">Valor</th>
+                            <th class="p-3 text-sm font-semibold text-slate-400" data-lang="th_category">Categoria</th>
+                            <th class="p-3 text-sm font-semibold text-slate-400" data-lang="th_date">Data</th>
+                            <th class="p-3 text-sm font-semibold text-slate-400" data-lang="th_actions">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="expenses-list-body" class="divide-y divide-slate-700"></tbody>
                 </table>
-                 <p id="no-expenses-message" class="hidden text-center text-slate-500 py-16">Nenhuma despesa encontrada.</p>
+                 <p id="no-expenses-message" class="hidden text-center text-slate-500 py-16" data-lang="no_expenses_found">Nenhuma despesa encontrada.</p>
             </div>
         </div>
     </main>
@@ -139,30 +162,30 @@
                 <form id="expense-form" class="space-y-4">
                     <input type="hidden" id="expense-id">
                     <div>
-                        <label for="expense-description" class="block text-sm font-medium text-slate-400">Descrição *</label>
+                        <label for="expense-description" class="block text-sm font-medium text-slate-400" data-lang="form_description">Descrição *</label>
                         <input type="text" id="expense-description" class="form-input mt-1" required>
                     </div>
                     <div>
-                        <label for="expense-value" class="block text-sm font-medium text-slate-400">Valor (R$) *</label>
+                        <label for="expense-value" class="block text-sm font-medium text-slate-400" data-lang="form_value">Valor (R$) *</label>
                         <input type="number" id="expense-value" min="0.01" step="0.01" class="form-input mt-1" required>
                     </div>
                     <div>
-                        <label for="expense-category" class="block text-sm font-medium text-slate-400">Categoria *</label>
+                        <label for="expense-category" class="block text-sm font-medium text-slate-400" data-lang="form_category">Categoria *</label>
                         <select id="expense-category" class="form-input mt-1" required></select>
                     </div>
                     <div>
-                        <label for="expense-date" class="block text-sm font-medium text-slate-400">Data *</label>
+                        <label for="expense-date" class="block text-sm font-medium text-slate-400" data-lang="form_date">Data *</label>
                         <input type="date" id="expense-date" class="form-input mt-1" required>
                     </div>
                      <div>
-                        <label for="expense-obs" class="block text-sm font-medium text-slate-400">Observações</label>
+                        <label for="expense-obs" class="block text-sm font-medium text-slate-400" data-lang="form_notes">Observações</label>
                         <textarea id="expense-obs" rows="2" class="form-input mt-1"></textarea>
                     </div>
                 </form>
             </div>
             <div class="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-end gap-3">
-                <button type="button" id="cancel-form-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg">Cancelar</button>
-                <button type="submit" form="expense-form" id="save-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Salvar</button>
+                <button type="button" id="cancel-form-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg" data-lang="form_cancel">Cancelar</button>
+                <button type="submit" form="expense-form" id="save-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg" data-lang="form_save">Salvar</button>
             </div>
         </div>
     </div>
@@ -170,18 +193,18 @@
     <div id="category-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4">
         <div class="bg-slate-800 rounded-xl shadow-2xl w-full max-w-md border border-slate-700">
             <div class="p-6 border-b border-slate-700 flex justify-between items-center">
-                <h2 class="text-xl font-bold text-white">Gerenciar Categorias</h2>
+                <h2 class="text-xl font-bold text-white" data-lang="category_modal_title">Gerenciar Categorias</h2>
                 <button id="close-category-modal" class="text-slate-400 hover:text-white"><i class="ph ph-x text-2xl"></i></button>
             </div>
             <div class="p-6">
                 <div id="category-list-container" class="space-y-2 max-h-60 overflow-y-auto mb-6 pr-2"></div>
                 <form id="add-category-form" class="space-y-3 border-t border-slate-700 pt-4">
-                    <h4 class="font-semibold text-white">Adicionar Nova Categoria</h4>
+                    <h4 class="font-semibold text-white" data-lang="category_modal_add_title">Adicionar Nova Categoria</h4>
                     <div class="flex items-center gap-3">
-                        <input type="text" id="new-category-name" placeholder="Nome da categoria" class="form-input flex-grow" required>
+                        <input type="text" id="new-category-name" placeholder="Nome da categoria" class="form-input flex-grow" required data-lang-placeholder="category_name_placeholder">
                         <input type="color" id="new-category-color" value="#475569" class="form-input p-1">
                     </div>
-                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition">Adicionar</button>
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition" data-lang="category_modal_add_btn">Adicionar</button>
                 </form>
             </div>
         </div>
@@ -247,14 +270,78 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoryListContainer = document.getElementById('category-list-container');
     const addCategoryForm = document.getElementById('add-category-form');
 
-    // ===================================================================
-    // PASO 2: ACTUALIZAR LA LÓGICA DE AUTENTICACIÓN
-    // ===================================================================
+    // --- Lógica de Traducción ---
+    const translations = {
+        pt: {
+            header_title: "Gestão de Despesas", total_spent_label: "Total Gastado (Filtro Atual)",
+            no_category_data: "Sem dados de categoria", no_trend_data: "Sem dados de tendência",
+            search_placeholder: "Buscar por descrição...", all_months: "Todos os Meses",
+            all_categories: "Todas as Categorias", th_description: "Descrição", th_value: "Valor",
+            th_category: "Categoria", th_date: "Data", th_actions: "Ações",
+            no_expenses_found: "Nenhuma despesa encontrada.", form_description: "Descrição *",
+            form_value: "Valor (R$) *", form_category: "Categoria *", form_date: "Data *",
+            form_notes: "Observações", form_cancel: "Cancelar", form_save: "Salvar",
+            category_modal_title: "Gerenciar Categorias", category_modal_add_title: "Adicionar Nova Categoria",
+            category_name_placeholder: "Nome da categoria", category_modal_add_btn: "Adicionar"
+        },
+        es: {
+            header_title: "Gestión de Gastos", total_spent_label: "Total Gastado (Filtro Actual)",
+            no_category_data: "Sin datos de categoría", no_trend_data: "Sin datos de tendencia",
+            search_placeholder: "Buscar por descripción...", all_months: "Todos los Meses",
+            all_categories: "Todas las Categorías", th_description: "Descripción", th_value: "Valor",
+            th_category: "Categoría", th_date: "Fecha", th_actions: "Acciones",
+            no_expenses_found: "No se encontraron gastos.", form_description: "Descripción *",
+            form_value: "Valor (R$) *", form_category: "Categoría *", form_date: "Fecha *",
+            form_notes: "Observaciones", form_cancel: "Cancelar", form_save: "Guardar",
+            category_modal_title: "Gestionar Categorías", category_modal_add_title: "Añadir Nueva Categoría",
+            category_name_placeholder: "Nombre de la categoría", category_modal_add_btn: "Añadir"
+        },
+        en: {
+            header_title: "Expense Management", total_spent_label: "Total Spent (Current Filter)",
+            no_category_data: "No category data", no_trend_data: "No trend data",
+            search_placeholder: "Search by description...", all_months: "All Months",
+            all_categories: "All Categories", th_description: "Description", th_value: "Value",
+            th_category: "Category", th_date: "Date", th_actions: "Actions",
+            no_expenses_found: "No expenses found.", form_description: "Description *",
+            form_value: "Value (R$) *", form_category: "Category *", form_date: "Date *",
+            form_notes: "Notes", form_cancel: "Cancel", form_save: "Save",
+            category_modal_title: "Manage Categories", category_modal_add_title: "Add New Category",
+            category_name_placeholder: "Category name", category_modal_add_btn: "Add"
+        }
+    };
+
+    function setLanguage(lang) {
+        if (!translations[lang]) return;
+        localStorage.setItem('userLanguage', lang);
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if (translations[lang][key]) el.textContent = translations[lang][key];
+        });
+        document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-lang-placeholder');
+            if (translations[lang][key]) el.placeholder = translations[lang][key];
+        });
+    }
+
+    document.querySelectorAll('.language-option').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            setLanguage(e.target.dataset.langCode);
+        });
+    });
+
+    function loadLanguage() {
+        const savedLang = localStorage.getItem('userLanguage');
+        const browserLang = navigator.language.split('-')[0];
+        setLanguage(savedLang || (translations[browserLang] ? browserLang : 'pt'));
+    }
+
+    // --- Lógica de Autenticación y API ---
     async function getAuthHeaders() {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error || !session) {
             console.error('Error de sesión o sesión no encontrada:', error);
-            window.location.href = 'login.html'; // Redirige si no hay sesión
+            window.location.href = 'login.html';
             return null;
         }
         return { 
@@ -265,10 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchApi(endpoint, options = {}) {
         const headers = await getAuthHeaders();
-        if (!headers) return; // Detiene la ejecución si no hay cabeceras
-        
+        if (!headers) return;
         const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options });
-        
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido.' }));
             throw new Error(errorData.detail);
@@ -277,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return response.json();
     }
 
-    // --- El resto de la lógica de la aplicación se mantiene, ya que ahora usa fetchApi actualizado ---
+    // --- Lógica de la Aplicación (sin cambios) ---
     async function loadInitialData() {
         try {
             await fetchCategories();
@@ -296,10 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fetchedExpenses = await fetchApi('/gastos');
         allExpenses = fetchedExpenses.map(expense => {
             const category = allCategories.find(cat => cat.nombre === expense.categoria);
-            return {
-                ...expense,
-                categoria_id: category ? category.id : null
-            };
+            return { ...expense, categoria_id: category ? category.id : null };
         });
         populateMonthFilter();
         renderFilteredResults();
@@ -307,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateCategorySelects() {
         const currentFilterValue = categoryFilter.value;
-        categoryFilter.innerHTML = '<option value="Todos">Todas as Categorias</option>';
+        categoryFilter.innerHTML = '<option value="Todos" data-lang="all_categories">Todas as Categorias</option>';
         allCategories.forEach(cat => categoryFilter.appendChild(new Option(cat.nombre, cat.id)));
         categoryFilter.value = currentFilterValue;
         
@@ -320,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const months = [...new Set(allExpenses.map(exp => exp.fecha.substring(0, 7)))];
         months.sort().reverse();
         const currentFilterValue = monthFilter.value;
-        monthFilter.innerHTML = '<option value="Todos">Todos os Meses</option>';
+        monthFilter.innerHTML = '<option value="Todos" data-lang="all_months">Todos os Meses</option>';
         months.forEach(monthStr => {
             const [year, month] = monthStr.split('-');
             const date = new Date(year, month - 1, 1);
@@ -603,11 +685,9 @@ document.addEventListener('DOMContentLoaded', () => {
     addCategoryForm.addEventListener('submit', handleAddNewCategory);
 
     // --- INITIALIZATION ---
-    // La verificación de seguridad ahora la hace auth.js, por lo que podemos llamar a loadInitialData directamente.
+    loadLanguage();
     loadInitialData();
 });
 </script>
-</body>
-</html>
 </body>
 </html>

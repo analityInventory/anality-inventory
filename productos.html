@@ -257,7 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
             error_loading_products: "Erro ao carregar produtos:", error_saving_product: "Erro ao salvar produto:", error_deleting_product: "Erro ao excluir produto:",
             product_added_success: "Produto adicionado com sucesso!", product_updated_success: "Produto atualizado com sucesso!", product_deleted_success: "Produto excluído com sucesso!",
             scanner_title: "Escanear Código", scanner_status: "Aponte a câmera para o código",
-            scanner_requesting_permission: "Solicitando permissão da câmera...", scanner_no_permission: "Permissão da câmera não concedida.",
+            scanner_requesting_permission: "Solicitando permissão da câmera...",
+            scanner_no_permission: "Permissão da câmera não concedida. Verifique as configurações do seu navegador e certifique-se de estar em um site seguro (https).",
             scanner_found_code: "Código encontrado!"
         },
         es: {
@@ -484,7 +485,8 @@ document.addEventListener('DOMContentLoaded', () => {
         html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
             .catch(err => {
                 console.error("Error al iniciar el escáner", err);
-                qrReaderStatus.textContent = translations[getCurrentLanguage()].scanner_no_permission;
+                showAlert('error', 'scanner_no_permission');
+                stopScanner();
             });
     }
 

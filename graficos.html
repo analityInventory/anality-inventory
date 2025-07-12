@@ -9,6 +9,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Scripts de autenticación y Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js" defer></script>
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -18,7 +23,6 @@
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
-        
         .form-input {
             padding: 0.75rem;
             border: 1px solid #475569;
@@ -47,17 +51,30 @@
             text-align: center;
         }
         .chart-container {
-            height: 300px; /* Altura fija para los contenedores de gráficos */
+            height: 300px;
         }
+        .language-selector { position: relative; }
+        .language-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background-color: #1e293b; border: 1px solid #334155; z-index: 50; }
+        .language-selector:hover .language-dropdown { display: block; }
     </style>
 </head>
 <body class="font-sans">
 
     <header class="bg-slate-900/80 backdrop-blur-sm shadow-md sticky top-0 z-20 border-b border-slate-700">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
-            <h1 id="header-title" class="text-2xl font-bold text-white">Dashboard de Análise</h1>
-            <div>
-                 <a href="index.html" class="text-slate-400 hover:text-white transition" title="Voltar ao Menu">
+            <h1 id="header-title" class="text-2xl font-bold text-white" data-lang="header_title">Dashboard de Análise</h1>
+            <div class="flex items-center gap-4">
+                <div class="language-selector">
+                    <button class="text-slate-400 hover:text-white transition">
+                        <i class="ph ph-translate text-3xl"></i>
+                    </button>
+                    <div class="language-dropdown rounded-md shadow-lg">
+                        <a href="#" class="language-option block px-4 py-2 text-sm text-slate-300 hover:bg-blue-600 hover:text-white" data-lang-code="pt">Português</a>
+                        <a href="#" class="language-option block px-4 py-2 text-sm text-slate-300 hover:bg-blue-600 hover:text-white" data-lang-code="es">Español</a>
+                        <a href="#" class="language-option block px-4 py-2 text-sm text-slate-300 hover:bg-blue-600 hover:text-white" data-lang-code="en">English</a>
+                    </div>
+                </div>
+                 <a href="index.html" class="text-slate-400 hover:text-white transition" title="Voltar ao Menu" data-lang-title="back_to_menu">
                     <i class="ph ph-arrow-u-left-up text-3xl"></i>
                  </a>
             </div>
@@ -69,16 +86,16 @@
         <div class="bg-slate-800 p-4 rounded-xl shadow-lg border border-slate-700 mb-6">
             <div class="flex flex-wrap items-end gap-4">
                 <div class="flex-grow">
-                    <label class="text-sm font-medium text-slate-400">Desde:</label>
+                    <label class="text-sm font-medium text-slate-400" data-lang="date_from_label">Desde:</label>
                     <input type="date" id="date-from" class="form-input mt-1 w-full">
                 </div>
                 <div class="flex-grow">
-                    <label class="text-sm font-medium text-slate-400">Até:</label>
+                    <label class="text-sm font-medium text-slate-400" data-lang="date_to_label">Até:</label>
                     <input type="date" id="date-to" class="form-input mt-1 w-full">
                 </div>
                 <button id="generate-report-btn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition flex items-center justify-center gap-2">
                     <i class="ph ph-chart-bar"></i>
-                    Gerar Relatório
+                    <span data-lang="generate_report_btn">Gerar Relatório</span>
                 </button>
             </div>
         </div>
@@ -88,15 +105,15 @@
             <!-- KPIs Principales -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="kpi-card">
-                    <p class="text-slate-400 text-sm">Total de Vendas</p>
+                    <p class="text-slate-400 text-sm" data-lang="kpi_total_sales">Total de Vendas</p>
                     <p id="kpi-total-sales" class="text-4xl font-bold text-green-400 mt-2">R$0.00</p>
                 </div>
                 <div class="kpi-card">
-                    <p class="text-slate-400 text-sm">Total de Despesas</p>
+                    <p class="text-slate-400 text-sm" data-lang="kpi_total_expenses">Total de Despesas</p>
                     <p id="kpi-total-expenses" class="text-4xl font-bold text-red-400 mt-2">R$0.00</p>
                 </div>
                 <div class="kpi-card">
-                    <p class="text-slate-400 text-sm">Ganho Líquido</p>
+                    <p class="text-slate-400 text-sm" data-lang="kpi_net_profit">Ganho Líquido</p>
                     <p id="kpi-net-profit" class="text-4xl font-bold text-sky-400 mt-2">R$0.00</p>
                 </div>
             </div>
@@ -104,19 +121,19 @@
             <!-- Gráficos Detallados -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="chart-card">
-                    <h3 class="text-lg font-bold text-white mb-4">Rendimento Mensal</h3>
+                    <h3 class="text-lg font-bold text-white mb-4" data-lang="monthly_performance_title">Rendimento Mensal</h3>
                     <div class="chart-container">
                         <canvas id="monthly-performance-chart"></canvas>
                     </div>
                 </div>
                 <div class="chart-card">
-                    <h3 class="text-lg font-bold text-white mb-4">Top 5 Produtos Mais Vendidos</h3>
+                    <h3 class="text-lg font-bold text-white mb-4" data-lang="top_products_title">Top 5 Produtos Mais Vendidos</h3>
                     <div class="chart-container">
                         <canvas id="top-products-chart"></canvas>
                     </div>
                 </div>
                 <div class="chart-card lg:col-span-2">
-                     <h3 class="text-lg font-bold text-white mb-4">Desglose de Despesas por Categoria</h3>
+                     <h3 class="text-lg font-bold text-white mb-4" data-lang="expenses_by_category_title">Desglose de Despesas por Categoria</h3>
                     <div class="chart-container max-w-sm mx-auto">
                         <canvas id="expenses-by-category-chart"></canvas>
                     </div>
@@ -125,15 +142,22 @@
         </div>
         <div id="no-data-message" class="hidden text-center text-slate-500 py-16">
             <i class="ph ph-chart-line text-6xl"></i>
-            <p class="mt-4">Nenhum dado encontrado para o período selecionado.</p>
+            <p class="mt-4" data-lang="no_data_message">Nenhum dado encontrado para o período selecionado.</p>
         </div>
     </main>
 
+    <!-- Modal de Alerta -->
+    <div id="alert-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4">
+        <div class="modal-container opacity-0 scale-95 bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm border border-slate-700">
+            <div class="p-6 text-center"><i id="alert-icon" class="text-5xl mx-auto mb-4"></i><h3 id="alert-title" class="text-xl font-bold text-white mb-2"></h3><p id="alert-message" class="text-slate-400"></p></div>
+            <div class="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-center"><button id="alert-ok-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg">OK</button></div>
+        </div>
+    </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- CONFIG & STATE ---
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
-    let charts = {}; // Object to hold all chart instances
+    let charts = {};
 
     // --- SELECTORS ---
     const dateFromInput = document.getElementById('date-from');
@@ -141,78 +165,77 @@ document.addEventListener('DOMContentLoaded', () => {
     const generateBtn = document.getElementById('generate-report-btn');
     const noDataMessage = document.getElementById('no-data-message');
     const dashboardContainer = document.querySelector('.dashboard-container');
-    
-    // KPI Selectors
     const kpiTotalSales = document.getElementById('kpi-total-sales');
     const kpiTotalExpenses = document.getElementById('kpi-total-expenses');
     const kpiNetProfit = document.getElementById('kpi-net-profit');
-
-    // Chart Canvas Selectors
     const monthlyPerformanceCanvas = document.getElementById('monthly-performance-chart');
     const topProductsCanvas = document.getElementById('top-products-chart');
     const expensesByCategoryCanvas = document.getElementById('expenses-by-category-chart');
+    const alertModal = document.getElementById('alert-modal');
+    const alertIcon = document.getElementById('alert-icon');
+    const alertTitle = document.getElementById('alert-title');
+    const alertMessage = document.getElementById('alert-message');
+    const alertOkBtn = document.getElementById('alert-ok-btn');
 
-    // --- API LOGIC ---
-    function getAuthHeaders() {
-        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        if (!token) { window.location.href = 'login.html'; return null; }
-        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-    }
-
-    async function fetchApi(endpoint, options = {}) {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options });
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido.' }));
-            throw new Error(errorData.detail);
+    const translations = {
+        pt: {
+            header_title: "Dashboard de Análise", back_to_menu: "Voltar ao Menu", date_from_label: "Desde:", date_to_label: "Até:",
+            generate_report_btn: "Gerar Relatório", kpi_total_sales: "Total de Vendas", kpi_total_expenses: "Total de Despesas",
+            kpi_net_profit: "Ganho Líquido", monthly_performance_title: "Rendimento Mensal", top_products_title: "Top 5 Produtos Mais Vendidos",
+            expenses_by_category_title: "Desglose de Despesas por Categoria", no_data_message: "Nenhum dado encontrado para o período selecionado.",
+            alert_error_title: "Erro", alert_info_title: "Aviso", select_date_range: "Por favor, selecione um intervalo de datas.",
+            error_generating_report: "Erro ao gerar relatório:", sales_label: "Vendas", net_profit_label: "Ganho Líquido",
+            revenue_by_product: "Ingressos por Produto", expenses_by_category: "Despesas por Categoria"
+        },
+        es: {
+            header_title: "Dashboard de Análisis", back_to_menu: "Volver al Menú", date_from_label: "Desde:", date_to_label: "Hasta:",
+            generate_report_btn: "Generar Reporte", kpi_total_sales: "Ventas Totales", kpi_total_expenses: "Gastos Totales",
+            kpi_net_profit: "Ganancia Neta", monthly_performance_title: "Rendimiento Mensual", top_products_title: "Top 5 Productos Más Vendidos",
+            expenses_by_category_title: "Desglose de Gastos por Categoría", no_data_message: "No se encontraron datos para el período seleccionado.",
+            alert_error_title: "Error", alert_info_title: "Aviso", select_date_range: "Por favor, selecciona un rango de fechas.",
+            error_generating_report: "Error al generar el reporte:", sales_label: "Ventas", net_profit_label: "Ganancia Neta",
+            revenue_by_product: "Ingresos por Producto", expenses_by_category: "Gastos por Categoría"
         }
-        return response.json();
-    }
+    };
 
-    // --- CHART LOGIC ---
-    function destroyAllCharts() {
-        Object.values(charts).forEach(chart => {
-            if (chart) chart.destroy();
-        });
-        charts = {};
-    }
+    function getCurrentLanguage() { const savedLang = localStorage.getItem('userLanguage'); const browserLang = navigator.language.split('-')[0]; return savedLang || (translations[browserLang] ? browserLang : 'pt'); }
+    function setLanguage(lang) { if (!translations[lang]) lang = 'pt'; localStorage.setItem('userLanguage', lang); document.querySelectorAll('[data-lang]').forEach(el => { const key = el.getAttribute('data-lang'); if (translations[lang][key]) el.textContent = translations[lang][key]; }); document.querySelectorAll('[data-lang-title]').forEach(el => { const key = el.getAttribute('data-lang-title'); if (translations[lang][key]) el.title = translations[lang][key]; }); }
+    function loadLanguage() { setLanguage(getCurrentLanguage()); }
+
+    function openModal(modal) { modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95'); }, 10); }
+    function closeModal(modal) { modal.classList.add('opacity-0'); modal.querySelector('.modal-container').classList.add('opacity-0', 'scale-95'); setTimeout(() => modal.classList.add('hidden'), 300); }
+    function showAlert(type, messageKey, messageParam = "") { const lang = getCurrentLanguage(); let title = "", iconClass = ""; switch (type) { case 'error': title = translations[lang].alert_error_title; iconClass = 'ph ph-x-circle text-red-400'; break; default: title = translations[lang].alert_info_title; iconClass = 'ph ph-info text-blue-400'; break; } alertTitle.textContent = title; alertIcon.className = `text-5xl mx-auto mb-4 ${iconClass}`; alertMessage.textContent = (translations[lang][messageKey] || messageKey) + " " + messageParam; openModal(alertModal); }
+
+    async function getAuthHeaders() { const { data: { session }, error } = await supabase.auth.getSession(); if (error || !session) { window.location.href = 'login.html'; return null; } return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }; }
+    async function fetchApi(endpoint, options = {}) { const headers = await getAuthHeaders(); if (!headers) throw new Error("Sessão de usuário não encontrada."); const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers, ...options }); if (!response.ok) { const errorData = await response.json().catch(() => ({ detail: 'Erro desconhecido.' })); if (response.status === 401) { showAlert('error', 'Sessão expirada ou não autorizada. Por favor, faça login novamente.'); setTimeout(() => window.location.href = 'login.html', 3000); } throw new Error(errorData.detail); } return response.json(); }
+
+    function destroyAllCharts() { Object.values(charts).forEach(chart => { if (chart) chart.destroy(); }); charts = {}; }
 
     async function generateReport() {
         destroyAllCharts();
-        
         const fromDate = dateFromInput.value;
         const toDate = dateToInput.value;
-
         if (!fromDate || !toDate) {
-            alert('Por favor, selecione um intervalo de datas.');
+            showAlert('info', 'select_date_range');
             return;
         }
-        
         try {
-            const financialSummaryPromise = fetchApi(`/analisis/resumen_financiero?start_date=${fromDate}&end_date=${toDate}`);
-            const topProductsPromise = fetchApi(`/analisis/top_productos?start_date=${fromDate}&end_date=${toDate}`);
-            const expensesByCategoryPromise = fetchApi(`/analisis/gastos_por_categoria?start_date=${fromDate}&end_date=${toDate}`);
-            
             const [financialData, topProductsData, expensesByCategoryData] = await Promise.all([
-                financialSummaryPromise,
-                topProductsPromise,
-                expensesByCategoryPromise
+                fetchApi(`/analisis/resumen_financiero?start_date=${fromDate}&end_date=${toDate}`),
+                fetchApi(`/analisis/top_productos?start_date=${fromDate}&end_date=${toDate}`),
+                fetchApi(`/analisis/gastos_por_categoria?start_date=${fromDate}&end_date=${toDate}`)
             ]);
-
             const hasData = Object.keys(financialData).length > 0 || topProductsData.length > 0 || expensesByCategoryData.length > 0;
             noDataMessage.classList.toggle('hidden', hasData);
             dashboardContainer.classList.toggle('hidden', !hasData);
-
             if(hasData) {
                 updateKPIs(financialData);
                 renderMonthlyPerformanceChart(financialData);
                 renderTopProductsChart(topProductsData);
                 renderExpensesByCategoryChart(expensesByCategoryData);
             }
-
         } catch (error) {
-            alert(`Erro ao gerar relatório: ${error.message}`);
+            showAlert('error', 'error_generating_report', error.message);
             dashboardContainer.classList.add('hidden');
             noDataMessage.classList.remove('hidden');
         }
@@ -225,14 +248,10 @@ document.addEventListener('DOMContentLoaded', () => {
             kpiNetProfit.textContent = 'R$0.00';
             return;
         }
-
-        // --- CORRECCIÓN APLICADA AQUÍ ---
-        // Se usa parseFloat para asegurar que los valores sean números antes de sumar.
         const totalSales = Object.values(data).reduce((sum, month) => sum + parseFloat(month.ventas || 0), 0);
         const totalExpenses = Object.values(data).reduce((sum, month) => sum + parseFloat(month.gastos || 0), 0);
         const totalInvestments = Object.values(data).reduce((sum, month) => sum + parseFloat(month.inversiones || 0), 0);
         const netProfit = totalSales - totalExpenses - totalInvestments;
-        
         kpiTotalSales.textContent = `R$${totalSales.toFixed(2)}`;
         kpiTotalExpenses.textContent = `R$${totalExpenses.toFixed(2)}`;
         kpiNetProfit.textContent = `R$${netProfit.toFixed(2)}`;
@@ -240,111 +259,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderMonthlyPerformanceChart(data) {
-        const labels = Object.keys(data).map(m => new Date(m + '-02').toLocaleString('pt-BR', { month: 'short', year: '2-digit' }));
+        const lang = getCurrentLanguage();
+        const labels = Object.keys(data).map(m => new Date(m + '-02').toLocaleString(lang, { month: 'short', year: '2-digit' }));
         const salesData = Object.values(data).map(d => parseFloat(d.ventas || 0));
         const netProfitData = Object.values(data).map(d => parseFloat(d.ventas || 0) - parseFloat(d.gastos || 0) - parseFloat(d.inversiones || 0));
-
         charts.monthlyPerformance = new Chart(monthlyPerformanceCanvas.getContext('2d'), {
             type: 'bar',
             data: {
                 labels,
                 datasets: [
-                    {
-                        label: 'Vendas',
-                        data: salesData,
-                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                        borderColor: '#3b82f6',
-                        borderWidth: 2,
-                        order: 2
-                    },
-                    {
-                        label: 'Ganho Líquido',
-                        data: netProfitData,
-                        type: 'line',
-                        borderColor: '#06b6d4',
-                        backgroundColor: '#06b6d4',
-                        tension: 0.4,
-                        fill: false,
-                        order: 1
-                    }
+                    { label: translations[lang].sales_label, data: salesData, backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: '#3b82f6', borderWidth: 2, order: 2 },
+                    { label: translations[lang].net_profit_label, data: netProfitData, type: 'line', borderColor: '#06b6d4', backgroundColor: '#06b6d4', tension: 0.4, fill: false, order: 1 }
                 ]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { 
-                    y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                    x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
-                },
-                plugins: { legend: { labels: { color: '#e2e8f0' } } },
-                animation: {
-                    duration: 1000,
-                    easing: 'easeInOutQuad'
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }, x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } } }, plugins: { legend: { labels: { color: '#e2e8f0' } } }, animation: { duration: 1000, easing: 'easeInOutQuad' } }
         });
     }
 
     function renderTopProductsChart(data) {
+        const lang = getCurrentLanguage();
         const labels = data.map(d => d.product_name);
         const values = data.map(d => parseFloat(d.total_revenue || 0));
-        
         charts.topProducts = new Chart(topProductsCanvas.getContext('2d'), {
             type: 'bar',
-            data: {
-                labels,
-                datasets: [{ 
-                    label: 'Ingressos por Produto', 
-                    data: values, 
-                    backgroundColor: '#16a34a',
-                    borderColor: '#16a34a',
-                    borderWidth: 1
-                }]
-            },
-            options: { 
-                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                scales: { 
-                    y: { ticks: { color: '#94a3b8' }, grid: { display: false } },
-                    x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
-                },
-                plugins: { legend: { display: false } },
-                animation: {
-                    duration: 1000,
-                    easing: 'easeInOutQuad'
-                }
-            }
+            data: { labels, datasets: [{ label: translations[lang].revenue_by_product, data: values, backgroundColor: '#16a34a', borderColor: '#16a34a', borderWidth: 1 }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#94a3b8' }, grid: { display: false } }, x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } } }, plugins: { legend: { display: false } }, animation: { duration: 1000, easing: 'easeInOutQuad' } }
         });
     }
 
     function renderExpensesByCategoryChart(data) {
+        const lang = getCurrentLanguage();
         const labels = data.map(d => d.categoria);
         const values = data.map(d => parseFloat(d.total_categoria || 0));
-
         charts.expensesByCategory = new Chart(expensesByCategoryCanvas.getContext('2d'), {
             type: 'doughnut',
             data: {
                 labels,
-                datasets: [{
-                    label: 'Despesas por Categoria',
-                    data: values,
-                    backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'],
-                    borderColor: '#1e293b',
-                    borderWidth: 4,
-                    hoverOffset: 10
-                }]
+                datasets: [{ label: translations[lang].expenses_by_category, data: values, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'], borderColor: '#1e293b', borderWidth: 4, hoverOffset: 10 }]
             },
-            options: { 
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'right', labels: { color: '#e2e8f0' } } },
-                animation: {
-                    animateRotate: true,
-                    animateScale: true,
-                    duration: 1200
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#e2e8f0' } } }, animation: { animateRotate: true, animateScale: true, duration: 1200 } }
         });
     }
 
-    // --- INITIALIZATION & EVENTS ---
     function setDefaultDates() {
         const today = new Date();
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -353,14 +309,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     generateBtn.addEventListener('click', generateReport);
+    alertOkBtn.addEventListener('click', () => closeModal(alertModal));
+    document.querySelectorAll('.language-option').forEach(b => b.addEventListener('click', e => { e.preventDefault(); setLanguage(e.target.dataset.langCode); }));
 
-    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-    if (token) {
-        setDefaultDates();
-        generateReport();
-    } else {
-        window.location.href = 'login.html';
-    }
+    loadLanguage();
+    setDefaultDates();
+    generateReport();
 });
 </script>
 </body>

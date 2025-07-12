@@ -151,7 +151,12 @@
             </div>
             <div class="p-4">
                 <div id="qr-reader" class="w-full"></div>
-                <p id="qr-reader-status" class="text-center text-slate-400 mt-2 text-sm" data-lang="scanner_status">Aponte a câmera para o código</p>
+                <!-- Botón para iniciar la cámara -->
+                <button id="start-scan-button" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                    <i class="ph ph-camera"></i>
+                    <span data-lang="scanner_activate_camera">Ativar Câmera</span>
+                </button>
+                <p id="qr-reader-status" class="text-center text-slate-400 mt-2 text-sm" data-lang="scanner_status_initial">Clique no botão para iniciar a câmera</p>
             </div>
         </div>
     </div>
@@ -224,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const scannerModal = document.getElementById('scanner-modal');
     const closeScannerBtn = document.getElementById('close-scanner-btn');
     const qrReaderStatus = document.getElementById('qr-reader-status');
+    const startScanButton = document.getElementById('start-scan-button');
     const productModal = document.getElementById('product-modal');
     const addProductBtn = document.getElementById('add-product-btn');
     const closeModalBtn = document.getElementById('close-modal-btn');
@@ -256,17 +262,36 @@ document.addEventListener('DOMContentLoaded', () => {
             confirm_delete_title: "Confirmar Exclusão", confirm_delete_message: "Tem certeza que deseja excluir o produto",
             error_loading_products: "Erro ao carregar produtos:", error_saving_product: "Erro ao salvar produto:", error_deleting_product: "Erro ao excluir produto:",
             product_added_success: "Produto adicionado com sucesso!", product_updated_success: "Produto atualizado com sucesso!", product_deleted_success: "Produto excluído com sucesso!",
-            scanner_title: "Escanear Código", scanner_status: "Aponte a câmera para o código",
+            scanner_title: "Escanear Código", scanner_status_initial: "Clique no botão para iniciar a câmera", scanner_activate_camera: "Ativar Câmera",
             scanner_requesting_permission: "Solicitando permissão da câmera...",
             scanner_no_permission: "Permissão da câmera não concedida. Verifique as configurações do seu navegador e certifique-se de estar em um site seguro (https).",
-            scanner_found_code: "Código encontrado!"
+            scanner_found_code: "Código encontrado!", scanner_active: "Aponte a câmera para o código"
         },
         es: {
-            // Traducciones al español
+            header_title: "Gestión de Productos", back_to_menu: "Volver al Menú",
+            total_inventory_value_label: "💰 Valor Total del Inventario", total_stock_units_label: "📦 Unidades Totales en Stock",
+            search_placeholder: "Buscar por nombre, marca o ID...", show_out_of_stock: "Mostrar solo agotados",
+            th_id: "ID", th_product: "Producto", th_cost: "Costo", th_price: "Precio", th_stock: "Stock", th_total_value: "Valor Total", th_class: "Clasif.", th_actions: "Acciones",
+            no_products_found: "No se encontraron productos.",
+            form_product_name: "Nombre del Producto *", form_brand: "Marca", form_cost: "Costo (R$)", form_price: "Precio de Venta (R$) *", form_stock: "Stock Inicial *",
+            form_cancel: "Cancelar", form_save: "Guardar", confirm_button: "Confirmar",
+            alert_success_title: "Éxito", alert_error_title: "Error", alert_info_title: "Aviso",
+            confirm_delete_title: "Confirmar Eliminación", confirm_delete_message: "¿Estás seguro de que quieres eliminar el producto?",
+            error_loading_products: "Error al cargar productos:", error_saving_product: "Error al guardar producto:", error_deleting_product: "Error al eliminar producto:",
+            product_added_success: "¡Producto añadido con éxito!", product_updated_success: "¡Producto actualizado con éxito!", product_deleted_success: "¡Producto eliminado con éxito!",
+            scanner_title: "Escanear Código", scanner_status_initial: "Haz clic en el botón para iniciar la cámara", scanner_activate_camera: "Activar Cámara",
+            scanner_requesting_permission: "Solicitando permiso de la cámara...",
+            scanner_no_permission: "Permiso de la cámara no concedido. Verifica la configuración de tu navegador y asegúrate de estar en un sitio seguro (https).",
+            scanner_found_code: "¡Código encontrado!", scanner_active: "Apunta la cámara al código"
         }
     };
 
-    function getCurrentLanguage() { return localStorage.getItem('userLanguage') || 'pt'; }
+    function getCurrentLanguage() {
+        const savedLang = localStorage.getItem('userLanguage');
+        const browserLang = navigator.language.split('-')[0];
+        return savedLang || (translations[browserLang] ? browserLang : 'pt');
+    }
+
     function setLanguage(lang) {
         if (!translations[lang]) lang = 'pt';
         localStorage.setItem('userLanguage', lang);
@@ -479,10 +504,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!html5QrCode) {
             html5QrCode = new Html5Qrcode("qr-reader");
         }
-        openModal(scannerModal);
+        
         qrReaderStatus.textContent = translations[getCurrentLanguage()].scanner_requesting_permission;
+        startScanButton.classList.add('hidden');
+
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
         html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+            .then(() => {
+                qrReaderStatus.textContent = translations[getCurrentLanguage()].scanner_active;
+            })
             .catch(err => {
                 console.error("Error al iniciar el escáner", err);
                 showAlert('error', 'scanner_no_permission');
@@ -495,6 +526,8 @@ document.addEventListener('DOMContentLoaded', () => {
             html5QrCode.stop().catch(err => console.error("Error al detener el escáner.", err));
         }
         closeModal(scannerModal);
+        startScanButton.classList.remove('hidden');
+        qrReaderStatus.textContent = translations[getCurrentLanguage()].scanner_status_initial;
     }
 
     // --- EVENT LISTENERS ---
@@ -504,8 +537,9 @@ document.addEventListener('DOMContentLoaded', () => {
     addProductBtn.addEventListener('click', prepareNewForm);
     closeModalBtn.addEventListener('click', () => closeModal(productModal));
     cancelFormBtn.addEventListener('click', () => closeModal(productModal));
-    scanQrBtn.addEventListener('click', startScanner);
+    scanQrBtn.addEventListener('click', () => openModal(scannerModal));
     closeScannerBtn.addEventListener('click', stopScanner);
+    startScanButton.addEventListener('click', startScanner);
     alertOkBtn.addEventListener('click', () => closeModal(alertModal));
     confirmOkBtn.addEventListener('click', () => {
         if (confirmCallback) confirmCallback();
@@ -522,5 +556,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
 });
 </script>
+</body>
+</html>
 </body>
 </html>

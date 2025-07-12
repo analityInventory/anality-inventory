@@ -11,6 +11,8 @@
     <!-- Scripts de autenticación y Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js" defer></script>
+    <!-- Librería para el escáner de QR y códigos de barras -->
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
@@ -24,6 +26,7 @@
         .language-selector { position: relative; }
         .language-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background-color: #1e293b; border: 1px solid #334155; z-index: 50; }
         .language-selector:hover .language-dropdown { display: block; }
+        #qr-reader { border: 2px solid #475569; border-radius: 0.5rem; overflow: hidden; }
     </style>
 </head>
 <body class="font-sans">
@@ -63,7 +66,12 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 items-center">
-                <input type="text" id="search-input" placeholder="Buscar por nome, marca ou ID..." class="form-input" data-lang-placeholder="search_placeholder">
+                <div class="relative">
+                    <input type="text" id="search-input" placeholder="Buscar por nome, marca ou ID..." class="form-input pr-12" data-lang-placeholder="search_placeholder">
+                    <button id="scan-qr-btn" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-blue-400 transition" title="Escanear Código de Barras/QR">
+                        <i class="ph ph-qr-code text-2xl"></i>
+                    </button>
+                </div>
                 <label class="flex items-center justify-end gap-2 text-slate-300">
                     <input type="checkbox" id="out-of-stock-filter" class="h-4 w-4 rounded text-blue-500 bg-slate-600 border-slate-500 focus:ring-blue-500">
                     <span data-lang="show_out_of_stock">Mostrar apenas esgotados</span>
@@ -135,6 +143,19 @@
         </div>
     </div>
 
+    <div id="scanner-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
+        <div class="modal-container opacity-0 scale-95 bg-slate-800 rounded-xl shadow-2xl w-full max-w-md border border-slate-700">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-white" data-lang="scanner_title">Escanear Código</h2>
+                <button id="close-scanner-btn" class="text-slate-400 hover:text-white"><i class="ph ph-x text-2xl"></i></button>
+            </div>
+            <div class="p-4">
+                <div id="qr-reader" class="w-full"></div>
+                <p id="qr-reader-status" class="text-center text-slate-400 mt-2 text-sm" data-lang="scanner_status">Aponte a câmera para o código</p>
+            </div>
+        </div>
+    </div>
+
     <div id="alert-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex justify-center items-center p-4 modal-overlay opacity-0">
         <div class="modal-container opacity-0 scale-95 bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm border border-slate-700">
             <div class="p-6 text-center">
@@ -186,11 +207,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // La variable 'supabase' está disponible globalmente gracias a 'auth.js'
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
     let allProducts = [];
     let editingProductId = null;
     let confirmCallback = null;
+    let html5QrCode = null;
 
     // --- SELECTORS ---
     const productListBody = document.getElementById('product-list-body');
@@ -199,8 +220,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const outOfStockFilter = document.getElementById('out-of-stock-filter');
     const totalInventoryValueEl = document.getElementById('total-inventory-value');
     const totalStockUnitsEl = document.getElementById('total-stock-units');
-
-    // --- MODAL SELECTORS ---
+    const scanQrBtn = document.getElementById('scan-qr-btn');
+    const scannerModal = document.getElementById('scanner-modal');
+    const closeScannerBtn = document.getElementById('close-scanner-btn');
+    const qrReaderStatus = document.getElementById('qr-reader-status');
     const productModal = document.getElementById('product-modal');
     const addProductBtn = document.getElementById('add-product-btn');
     const closeModalBtn = document.getElementById('close-modal-btn');
@@ -208,8 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const productForm = document.getElementById('product-form');
     const formTitle = document.getElementById('form-title');
     const saveButton = document.getElementById('save-button');
-    
-    // --- ALERT & CONFIRMATION MODAL SELECTORS ---
     const alertModal = document.getElementById('alert-modal');
     const alertIcon = document.getElementById('alert-icon');
     const alertTitle = document.getElementById('alert-title');
@@ -234,7 +255,10 @@ document.addEventListener('DOMContentLoaded', () => {
             alert_success_title: "Sucesso", alert_error_title: "Erro", alert_info_title: "Aviso",
             confirm_delete_title: "Confirmar Exclusão", confirm_delete_message: "Tem certeza que deseja excluir o produto",
             error_loading_products: "Erro ao carregar produtos:", error_saving_product: "Erro ao salvar produto:", error_deleting_product: "Erro ao excluir produto:",
-            product_added_success: "Produto adicionado com sucesso!", product_updated_success: "Produto atualizado com sucesso!", product_deleted_success: "Produto excluído com sucesso!"
+            product_added_success: "Produto adicionado com sucesso!", product_updated_success: "Produto atualizado com sucesso!", product_deleted_success: "Produto excluído com sucesso!",
+            scanner_title: "Escanear Código", scanner_status: "Aponte a câmera para o código",
+            scanner_requesting_permission: "Solicitando permissão da câmera...", scanner_no_permission: "Permissão da câmera não concedida.",
+            scanner_found_code: "Código encontrado!"
         },
         es: {
             // Traducciones al español
@@ -338,22 +362,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderProducts() {
         productListBody.innerHTML = '';
         noProductsMessage.classList.toggle('hidden', allProducts.length > 0);
-
-        let totalInventoryValue = 0;
-        let totalStock = 0;
-        let processedData = [];
-
+        let totalInventoryValue = 0, totalStock = 0, processedData = [];
         allProducts.forEach(p => {
             const totalValue = (p.price || 0) * (p.stock || 0);
             totalInventoryValue += totalValue;
             totalStock += p.stock || 0;
             processedData.push({ ...p, totalValue });
         });
-
         processedData.sort((a, b) => b.totalValue - a.totalValue);
         let accumulatedValue = 0;
         const totalAbcValue = processedData.reduce((sum, p) => sum + p.totalValue, 0);
-
         processedData.forEach(p => {
             accumulatedValue += p.totalValue;
             const percentage = totalAbcValue > 0 ? (accumulatedValue / totalAbcValue) * 100 : 0;
@@ -361,7 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (percentage <= 95) p.classification = "B";
             else p.classification = "C";
         });
-
         const template = document.getElementById('product-row-template');
         processedData.forEach(p => {
             const row = template.content.cloneNode(true).firstElementChild;
@@ -372,23 +389,20 @@ document.addEventListener('DOMContentLoaded', () => {
             row.querySelector('[data-price]').textContent = `R$${(p.price || 0).toFixed(2)}`;
             const stockEl = row.querySelector('[data-stock]');
             stockEl.textContent = p.stock;
-            stockEl.className = 'p-3 font-bold'; // Reset classes
+            stockEl.className = 'p-3 font-bold';
             if (p.stock <= 0) stockEl.classList.add('text-red-500');
             else if (p.stock <= 5) stockEl.classList.add('text-yellow-400');
             else stockEl.classList.add('text-slate-300');
-
             row.querySelector('[data-total-value]').textContent = `R$${p.totalValue.toFixed(2)}`;
             const classEl = row.querySelector('[data-classification]');
             classEl.textContent = p.classification;
             if (p.classification === "A") classEl.style.backgroundColor = '#16a34a';
             else if (p.classification === "B") classEl.style.backgroundColor = '#f59e0b';
             else classEl.style.backgroundColor = '#ef4444';
-
             row.querySelector('[data-action="edit"]').addEventListener('click', () => prepareEditForm(p));
             row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteProduct(p.id, p.name));
             productListBody.appendChild(row);
         });
-
         totalInventoryValueEl.textContent = `R$${totalInventoryValue.toFixed(2)}`;
         totalStockUnitsEl.textContent = totalStock;
     }
@@ -424,7 +438,6 @@ document.addEventListener('DOMContentLoaded', () => {
             price: parseFloat(document.getElementById('product-price').value),
             stock: parseInt(document.getElementById('product-stock').value, 10),
         };
-
         try {
             if (editingProductId) {
                 await fetchApi(`/products/${editingProductId}`, { method: 'PUT', body: JSON.stringify(productData) });
@@ -452,6 +465,36 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function onScanSuccess(decodedText, decodedResult) {
+        qrReaderStatus.textContent = translations[getCurrentLanguage()].scanner_found_code;
+        searchInput.value = decodedText;
+        stopScanner();
+        loadProducts();
+    }
+
+    function onScanFailure(error) { /* Ignored */ }
+
+    function startScanner() {
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("qr-reader");
+        }
+        openModal(scannerModal);
+        qrReaderStatus.textContent = translations[getCurrentLanguage()].scanner_requesting_permission;
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+            .catch(err => {
+                console.error("Error al iniciar el escáner", err);
+                qrReaderStatus.textContent = translations[getCurrentLanguage()].scanner_no_permission;
+            });
+    }
+
+    function stopScanner() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().catch(err => console.error("Error al detener el escáner.", err));
+        }
+        closeModal(scannerModal);
+    }
+
     // --- EVENT LISTENERS ---
     searchInput.addEventListener('input', loadProducts);
     outOfStockFilter.addEventListener('change', loadProducts);
@@ -459,6 +502,8 @@ document.addEventListener('DOMContentLoaded', () => {
     addProductBtn.addEventListener('click', prepareNewForm);
     closeModalBtn.addEventListener('click', () => closeModal(productModal));
     cancelFormBtn.addEventListener('click', () => closeModal(productModal));
+    scanQrBtn.addEventListener('click', startScanner);
+    closeScannerBtn.addEventListener('click', stopScanner);
     alertOkBtn.addEventListener('click', () => closeModal(alertModal));
     confirmOkBtn.addEventListener('click', () => {
         if (confirmCallback) confirmCallback();

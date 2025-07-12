@@ -139,8 +139,29 @@
     </template>
 
 <script>
-// La función initApp es llamada por la API de Google Maps cuando está lista.
+// Variables globales para controlar el estado de inicialización
+let domReady = false;
+let googleMapsReady = false;
+
+// Esta función es llamada por el script de la API de Google Maps
 function initApp() {
+    googleMapsReady = true;
+    runAppIfReady();
+}
+
+// El listener principal se asegura de que el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    domReady = true;
+    runAppIfReady();
+});
+
+// Esta función solo se ejecuta cuando tanto el DOM como Google Maps están listos
+function runAppIfReady() {
+    if (!domReady || !googleMapsReady) {
+        return; // Espera a que ambos estén listos
+    }
+
+    // El resto del código de la aplicación va aquí dentro
     let map, directionsService, geocoder;
     const API_BASE_URL = 'https://mi-primera-app.fly.dev';
     const STORE_LOCATION = 'R. Garça Azul, 193 - São José Operário, Manaus - AM, 69086-692';
@@ -154,7 +175,6 @@ function initApp() {
     const optimizeRouteBtn = document.getElementById('optimize-route-btn');
     const selectedCountSpan = document.getElementById('selected-count');
     
-    // Selectores de modales
     const alertModal = document.getElementById('alert-modal');
     const alertIcon = document.getElementById('alert-icon');
     const alertTitle = document.getElementById('alert-title');
@@ -201,12 +221,60 @@ function initApp() {
     };
 
     function getCurrentLanguage() { return localStorage.getItem('userLanguage') || 'pt'; }
-    function setLanguage(lang) { /* ... (implementación completa omitida por brevedad) ... */ }
+    
+    function setLanguage(lang) {
+        if (!translations[lang]) return;
+        localStorage.setItem('userLanguage', lang);
+        document.querySelectorAll('[data-lang]').forEach(el => {
+            const key = el.getAttribute('data-lang');
+            if (translations[lang][key]) el.textContent = translations[lang][key];
+        });
+        document.querySelectorAll('[data-lang-title]').forEach(el => {
+            const key = el.getAttribute('data-lang-title');
+            if (translations[lang][key]) el.title = translations[lang][key];
+        });
+    }
+
     function loadLanguage() { setLanguage(getCurrentLanguage()); }
 
-    function openModal(modal) { /* ... */ }
-    function closeModal(modal) { /* ... */ }
-    function showAlert(type, messageKey, messageParam = "") { /* ... */ }
+    function openModal(modal) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('.modal-container').classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    }
+
+    function closeModal(modal) {
+        modal.classList.add('opacity-0');
+        modal.querySelector('.modal-container').classList.add('opacity-0', 'scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    function showAlert(type, messageKey, messageParam = "") {
+        const lang = getCurrentLanguage();
+        let title = "";
+        let iconClass = "";
+        switch (type) {
+            case 'success':
+                title = translations[lang].alert_success_title;
+                iconClass = 'ph ph-check-circle text-green-400';
+                break;
+            case 'error':
+                title = translations[lang].alert_error_title;
+                iconClass = 'ph ph-x-circle text-red-400';
+                break;
+            default:
+                title = translations[lang].alert_info_title;
+                iconClass = 'ph ph-info text-blue-400';
+                break;
+        }
+        alertTitle.textContent = title;
+        alertIcon.className = `text-5xl mx-auto mb-4 ${iconClass}`;
+        alertMessage.textContent = (translations[lang][messageKey] || messageKey) + " " + messageParam;
+        openModal(alertModal);
+    }
+
     function showConfirmation(titleKey, messageKey, messageParam, noteKey, onConfirm) {
         const lang = getCurrentLanguage();
         confirmationTitle.textContent = translations[lang][titleKey];
@@ -237,10 +305,26 @@ function initApp() {
         return response.json();
     }
 
-    function showLoader(visible) { /* ... */ }
-    function showMessage(iconClass, textKey, visible) { /* ... */ }
+    function showMessage(iconClass, textKey, visible) {
+        mensajeVacio.classList.toggle('hidden', !visible);
+        if(visible) {
+            document.getElementById('mensaje-vacio-icono').className = `ph ${iconClass} text-6xl text-slate-500`;
+            document.getElementById('mensaje-vacio-texto').textContent = translations[getCurrentLanguage()][textKey];
+        }
+    }
 
-    async function fetchETA(address, etaLabel) { /* ... */ }
+    async function fetchETA(address, etaLabel) {
+        if (!directionsService || !address || !etaLabel) return;
+        const request = { origin: STORE_LOCATION, destination: address, travelMode: 'DRIVING' };
+        try {
+            const result = await directionsService.route(request);
+            if (result.routes.length > 0) {
+                const duration = result.routes[0].legs[0].duration;
+                etaLabel.textContent = `${translations[getCurrentLanguage()].eta_prefix} ${duration.text})`;
+                etaLabel.classList.remove('hidden');
+            }
+        } catch (error) { console.error('Error al calcular ETA:', error); }
+    }
 
     function renderEntregas(entregas) {
         listaEntregasContainer.innerHTML = '';
@@ -249,7 +333,7 @@ function initApp() {
         updateSelectedCount();
 
         if (entregas.length === 0) {
-            // Lógica para mensaje vacío
+            showMessage('ph-package', 'no_orders_section', true);
             return;
         }
         showMessage('', '', false);
@@ -258,7 +342,38 @@ function initApp() {
             const card = tarjetaTemplate.content.cloneNode(true);
             const cardElement = card.firstElementChild;
             cardElement.dataset.orderId = entrega.id;
-            // ... (resto del renderizado de la tarjeta)
+            
+            cardElement.querySelector('[data-id]').textContent = entrega.id;
+            cardElement.querySelector('[data-cliente]').textContent = entrega.customer_name;
+            cardElement.querySelector('[data-total]').textContent = `${translations[lang].total_label} R$ ${parseFloat(entrega.total).toFixed(2)}`;
+            
+            const productosUl = cardElement.querySelector('[data-productos]');
+            productosUl.innerHTML = '';
+            (entrega.products || []).forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = `${p.quantity}x ${p.name}`;
+                productosUl.appendChild(li);
+            });
+
+            const direccionLink = cardElement.querySelector('[data-direccion-link]');
+            const direccionText = cardElement.querySelector('[data-direccion]');
+            if (entrega.customer_address) {
+                direccionText.textContent = entrega.customer_address;
+                direccionLink.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.customer_address)}`;
+            } else {
+                direccionText.textContent = translations[lang].no_address;
+                direccionLink.style.pointerEvents = 'none';
+            }
+            cardElement.querySelector('[data-telefono]').textContent = entrega.customer_phone || translations[lang].no_phone;
+
+            const selectionContainer = cardElement.querySelector('.selection-container');
+            const etaLabel = cardElement.querySelector('.eta-label');
+            if (currentVista === 'Pendiente') {
+                selectionContainer.classList.remove('hidden');
+            } else if (currentVista === 'Enviado') {
+                fetchETA(entrega.customer_address, etaLabel);
+            }
+
             const btnsContainer = cardElement.querySelector('.btns-container');
             btnsContainer.innerHTML = '';
             let actionsHtml = '';
@@ -282,15 +397,12 @@ function initApp() {
     }
 
     async function fetchAllEntregas() {
-        showLoader(true);
         try {
             const entregas = await fetchApi(`/orders?status_filter=${currentVista}`);
             renderEntregas(entregas);
         } catch (error) {
             console.error('Erro ao buscar pedidos:', error);
             showAlert('error', 'error_loading_orders');
-        } finally {
-            showLoader(false);
         }
     }
 
@@ -327,6 +439,12 @@ function initApp() {
             performAction();
         }
     }
+    
+    function updateSelectedCount() {
+        const count = document.querySelectorAll('.delivery-checkbox:checked').length;
+        selectedCountSpan.textContent = count;
+        optimizeRouteBtn.disabled = count < 2;
+    }
 
     // ... (resto de funciones y listeners) ...
 
@@ -336,8 +454,27 @@ function initApp() {
         geocoder = new google.maps.Geocoder();
         loadLanguage();
         fetchAllEntregas();
+        
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                currentVista = item.dataset.vista;
+                const titles = { 'Pendiente': 'pending_orders', 'Enviado': 'shipped_orders', 'Entregado': 'delivered_orders', 'Cancelado': 'canceled_orders' };
+                headerTitle.textContent = translations[getCurrentLanguage()][titles[currentVista]];
+                navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                fetchAllEntregas();
+            });
+        });
+
+        alertOkBtn.addEventListener('click', () => closeModal(alertModal));
+        confirmOkBtn.addEventListener('click', () => {
+            if (confirmCallback) confirmCallback();
+            closeModal(confirmationModal);
+        });
+        confirmCancelBtn.addEventListener('click', () => closeModal(confirmationModal));
+        
     } catch(e) {
-        console.error("Error al inicializar Google Maps o la app", e);
+        console.error("Error al inicializar la app", e);
         showAlert('error', "Error fatal al iniciar. Verifique la consola.");
     }
 }
